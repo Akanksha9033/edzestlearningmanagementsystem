@@ -43,7 +43,7 @@ const Hero = () => {
               Prepare for your PMP certification exam with expert-led training to pass in your first attempt!
             </p>
             <div className="mt-6">
-              <a href="https://exams.edzest.org/learn/PMP-5th-Oct" target="_blank" rel="noopener noreferrer"
+              <a href="https://exams.edzest.org/learn/PMP-Training-Bundle-14th-June" target="_blank" rel="noopener noreferrer"
                 className="btn btn-primary rounded-pill px-4 py-2 text-white bg-[#4748ac] hover:bg-[#3636ac] transition-all duration-300">
                 Enroll Now
               </a>
@@ -111,7 +111,7 @@ const Hero = () => {
                 <li>1:1 Discussion Support till your exam</li>
               </ul>
               <div className="flex flex-col sm:flex-row justify-center gap-4 mt-auto w-full animate-fade">
-                <a href="https://exams.edzest.org/learn/PMP-11th-Oct" target="_blank" rel="noopener noreferrer" className="w-full sm:w-1/2">
+                <a href="https://exams.edzest.org/learn/PMP-Training-Bundle-14th-June" target="_blank" rel="noopener noreferrer" className="w-full sm:w-1/2">
                   <button className="bg-[#4748ac] hover:bg-[#3737ac] transition-all duration-300 text-white font-semibold py-3 rounded-lg w-full">
                     Learn More
                   </button>

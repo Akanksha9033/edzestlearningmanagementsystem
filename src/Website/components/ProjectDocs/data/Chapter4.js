@@ -147,7 +147,7 @@ o	Ensuring quality is a core responsibility. The Development Team creates tests,
 o	The team is responsible for constantly improving its performance. They reflect on their processes during retrospectives and take actions to improve efficiency, collaboration, and quality in the next sprint. 
  
 •	Providing Technical Expertise: 
-o	As the subject maler experts, the Development Team applies their technical expertise to solve problems, innovate, and ensure that the product meets both user needs and technical standards. 
+o	As the subject matter experts, the Development Team applies their technical expertise to solve problems, innovate, and ensure that the product meets both user needs and technical standards. 
 `,
           },
 
@@ -192,7 +192,7 @@ Agile also allows teams to choose their scheduling approach, whether iterative o
  
 Progressive elaboration is a key principle in Agile, meaning that the team’s understanding of the project, its requirements, and its scope evolves as they gather more information and feedback from stakeholders. This helps teams stay aligned with customer needs and ensures that the product delivered is always relevant and valuable. 
  
-Semng a clear goal at the beginning of each iteration or phase ensures that the team has a unified focus. The team then works collaboratively to execute the tasks required to achieve that goal, delivering incremental value along the way. AKer completing each phase of work, continuous review through feedback loops, such as sprint reviews and retrospectives, helps identify areas for improvement and ensures that the project is on the right path. 
+Setting a clear goal at the beginning of each iteration or phase ensures that the team has a unified focus. The team then works collaboratively to execute the tasks required to achieve that goal, delivering incremental value along the way. AKer completing each phase of work, continuous review through feedback loops, such as sprint reviews and retrospectives, helps identify areas for improvement and ensures that the project is on the right path. 
  
 This cycle of planning, executing, reviewing, and improving is central to the Agile mindset, driving teams to remain adaptable, responsive, and focused on delivering the highest possible value to their customers. 
 `,
@@ -252,7 +252,7 @@ How MVP Helps Visualize Scope:
 The Product Backlog is a prioritized list of work for the development team. It includes user stories, features, bug fixes, and technical tasks. The backlog is dynamic and continuously evolves as new insights are gained, and priorities change. 
  
 How the Product Backlog Helps Visualize Scope: 
-•	Flexible and Prioritized: The backlog is not a fixed listti it is continually refined and reordered based on feedback, changing priorities, and new requirements. The Product Owner manages the backlog, adding or removing items as necessary. 
+•	Flexible and Prioritized: The backlog is not a fixed list, it is continually refined and reordered based on feedback, changing priorities, and new requirements. The Product Owner manages the backlog, adding or removing items as necessary. 
 •	Dynamic Adjustments: As the project progresses, new requirements may be discovered, or existing items may be removed, ensuring that the scope remains adaptable to the needs of the business and customers. 
 •	Clear Visibility: The backlog provides transparency into what needs to be done and allows the team to focus on the most valuable tasks at any given time. It serves as a detailed visualization of the evolving scope. 
  
@@ -273,11 +273,11 @@ The Product Backlog is central to Agile project management, particularly in fram
 Key Characteristics of a Product Backlog 
  
 1	Dynamic and Evolving: 
-o	The Product Backlog is never complete. It evolves as the product and the understanding of customer needs progress. New backlog items can be added as the project evolves, while existing items can be removed or reprioritized based on new insights, market changes, or feedback from stakeholders. 
+o	The Product Backlog is never complete. It evolves as the product and the understanding of customer needs progress. New backlog items can be added as the project evolves, while existing items can be removed or re-prioritized based on new insights, market changes, or feedback from stakeholders. 
 o	Agile teams frequently review and refine the backlog, oKen in Backlog Refinement Sessions (also called Backlog Grooming Sessions). This allows for continuous adjustment of the scope and ensures the backlog always reflects the most current needs and priorities. 
  
 2	Prioritized: 
-o	The Product Owner is responsible for prioritizing the backlog items. They ensure that the most valuable and highest priority features are at the top, and lowerpriority items are further down the list. The prioritization typically considers business value, customer needs, dependencies, and technical requirements. 
+o	The Product Owner is responsible for prioritizing the backlog items. They ensure that the most valuable and highest priority features are at the top, and lower priority items are further down the list. The prioritization typically considers business value, customer needs, dependencies, and technical requirements. 
 o 	The highest-priority items are usually the features or functionalities that provide the most value to the customer and the business. These are the items that the team should work on next. 
 o 	As the backlog is refined, the priorities can shiK based on new information, such as feedback from users, changes in the market, or shiKs in the business strategy. 
  	 
@@ -363,7 +363,7 @@ Kanban is the most commonly used framework for flow-based scheduling, but it can
 How Flow-Based Scheduling Works: 
  
 •	Work in Progress (WIP) Limits: 
-o	A key aspect of flow-based scheduling is managing Work in Progress (WIP). WIP limits are set for each stage of the process (e.g., "no more than 3 tasks in development at a time"). This helps ensure that the team focuses on completing tasks before starting new ones, reducing bollenecks and improving efficiency. 
+o	A key aspect of flow-based scheduling is managing Work in Progress (WIP). WIP limits are set for each stage of the process (e.g., "no more than 3 tasks in development at a time"). This helps ensure that the team focuses on completing tasks before starting new ones, reducing bottlenecks and improving efficiency. 
  
 •	Continuous Delivery: 
 o	In flow-based scheduling, work is completed in a continuous flow, rather than being organized into discrete iterations. Each work item progresses through different stages, and when one stage is completed, it moves to the next. 
@@ -373,7 +373,7 @@ o 	The team continually pulls new work from the backlog as space becomes availab
 o	Unlike in iterative scheduling, there is no fixed duration for work. Instead, work items are completed as quickly as possible, depending on the size and complexity of the tasks. This allows for more flexibility in adapting to the work's pace and the changing needs of the project. 
  
 •	Frequent Updates: 
-o	The team regularly reviews work items in progress and identifies potential bollenecks. Unlike iterative scheduling, there isn’t a formal end-of-sprint review. Instead, the focus is on continuous progress and keeping tasks moving smoothly through the system. 
+o	The team regularly reviews work items in progress and identifies potential bottlenecks. Unlike iterative scheduling, there isn’t a formal end-of-sprint review. Instead, the focus is on continuous progress and keeping tasks moving smoothly through the system. 
  
 Benefits of Flow-Based Scheduling: 
  
@@ -381,9 +381,9 @@ Benefits of Flow-Based Scheduling:
  
 •	Flexibility: There’s no strict time-boxing, which allows teams to respond quickly to changes in scope or priorities. New items can be added or modified without waiting for the end of a sprint. 
  
-•	Efficiency: By managing WIP limits and focusing on completing tasks before starting new ones, teams can reduce task switching, avoid bollenecks, and streamline workflows. 
+•	Efficiency: By managing WIP limits and focusing on completing tasks before starting new ones, teams can reduce task switching, avoid bottlenecks, and streamline workflows. 
  
-•	Quick Response to Blockages: Teams can identify and address bollenecks more quickly, ensuring that work moves smoothly and that any issues are resolved before they cause delays. 
+•	Quick Response to Blockages: Teams can identify and address bottlenecks more quickly, ensuring that work moves smoothly and that any issues are resolved before they cause delays. 
  
 Common Agile Frameworks with Flow-Based Scheduling: 
  
@@ -393,7 +393,7 @@ Common Agile Frameworks with Flow-Based Scheduling:
  
 •	XP (Extreme Programming): While XP oKen uses iterations, some teams adopt a flowbased approach within their development process, particularly in managing smaller, incremental changes. 
 `,
-iamge : "/docs/images/table4.png",
+image : "/docs/images/table4.png",
          },
          {
             id : "Conclusion",
@@ -416,9 +416,11 @@ A typical work week in Agile focuses on continuous collaboration, communication,
 •	Duration: 15 minutes 
 •	Frequency: Every day (typically at the beginning of the day) 
 •	Purpose: The Daily Stand-Up is a quick, focused meeting where the team synchronizes and aligns on the work. It’s usually time-boxed to 15 minutes, and team members answer three key questions: 
-o	What did I accomplish yesterdayti o 	What will I work on todayti 
-o	Are there any blockers or impediments preventing progressti 
-•	Who APends: All team members (Development Team, Product Owner, Facilitator/Scrum Master). 
+o	What did I accomplish yesterday? 
+o What will I work on today? 
+o	Are there any blockers or impediments preventing progress?
+
+•	Who Attends: All team members (Development Team, Product Owner, Facilitator/Scrum Master). 
 •	Why It’s Important: The Daily Stand-Up helps ensure that everyone is aligned and that issues are identified early so that the team can resolve blockers quickly. 
  
 2	Backlog Refinement (Grooming) 
@@ -454,7 +456,7 @@ o	Ensuring quality through testing and reviews.
 5	Sprint Review (If a Sprint Ends) 
 •	Duration: 1 to 2 hours (for a 1–2 week sprint) 
 •	Frequency: At the end of each sprint (usually once every 1–4 weeks) 
-•	Purpose: The Sprint Review is where the team demonstrates the work they’ve completed during the sprint to stakeholders. This could be a demonstration of the product increment (e.g., a working feature) and involves gemng feedback. 
+•	Purpose: The Sprint Review is where the team demonstrates the work they’ve completed during the sprint to stakeholders. This could be a demonstration of the product increment (e.g., a working feature) and involves getting feedback. 
 •	Who APends: Product Owner, Development Team, Facilitator/Scrum Master, Stakeholders. 
 •	Activities: 
 o	The Development Team shows the work completed and discusses what was done. o 	The Product Owner reviews the backlog to see if any items need to be re-prioritized based on the feedback. o 	Stakeholders provide feedback, and the team discusses whether any changes are needed. 
@@ -514,17 +516,17 @@ Agile measurements focus on providing insights into the performance of the team,
 o	Lead Time is the total time it takes for a work item to go from being requested to being completed. 
 o	Cycle Time is the amount of time it takes for a work item to move through the workflow, from the moment work begins to the moment it’s completed. 
 •	How It Works: Lead time measures how long it takes for the team to deliver an item from the backlog to the customer. Cycle time, on the other hand, measures the efficiency of the team's workflow. Both metrics can be tracked through project management tools or Kanban boards. 
-•	Why It’s Useful: Reducing lead time and cycle time improves the speed of delivery, enabling teams to respond faster to changes and deliver value more efficiently. By tracking these metrics, teams can identify bollenecks or inefficiencies in the process. 
+•	Why It’s Useful: Reducing lead time and cycle time improves the speed of delivery, enabling teams to respond faster to changes and deliver value more efficiently. By tracking these metrics, teams can identify bottlenecks or inefficiencies in the process. 
  
 5	Cumulative Flow Diagram (CFD) 
 •	Definition: The Cumulative Flow Diagram is a visual representation of the flow of work through various stages of the process (e.g., To Do, In Progress, Done). 
-•	How It Works: The CFD shows how work items accumulate in each stage of the process. The diagram tracks work over time and highlights bollenecks or areas where work is gemng stuck. 
+•	How It Works: The CFD shows how work items accumulate in each stage of the process. The diagram tracks work over time and highlights bottlenecks or areas where work is getting stuck. 
 •	Why It’s Useful: The CFD helps teams visualize how work is moving through their workflow and identifies inefficiencies. It also helps teams understand their throughput and capacity over time. 
  
 6	Defect Density 
 •	Definition: Defect density measures the number of defects or bugs found in a specific area of the product relative to the size of that area (e.g., per lines of code, per feature). 
 •	How It Works: This metric is calculated by dividing the number of defects by the size of the work (usually measured in lines of code or user stories). It helps teams understand the quality of their code and features. 
-•	Why It’s Useful: Tracking defect density helps teams identify areas of the product that may need more testing or refactoring. High defect density could indicate a quality issue that needs alention.
+•	Why It’s Useful: Tracking defect density helps teams identify areas of the product that may need more testing or refactoring. High defect density could indicate a quality issue that needs attention.
 `,
          },
          {
@@ -555,17 +557,17 @@ Agile measurements focus on providing insights into the performance of the team,
 o	Lead Time is the total time it takes for a work item to go from being requested to being completed. 
 o	Cycle Time is the amount of time it takes for a work item to move through the workflow, from the moment work begins to the moment it’s completed. 
 •	How It Works: Lead time measures how long it takes for the team to deliver an item from the backlog to the customer. Cycle time, on the other hand, measures the efficiency of the team's workflow. Both metrics can be tracked through project management tools or Kanban boards. 
-•	Why It’s Useful: Reducing lead time and cycle time improves the speed of delivery, enabling teams to respond faster to changes and deliver value more efficiently. By tracking these metrics, teams can identify bollenecks or inefficiencies in the process. 
+•	Why It’s Useful: Reducing lead time and cycle time improves the speed of delivery, enabling teams to respond faster to changes and deliver value more efficiently. By tracking these metrics, teams can identify bottlenecks or inefficiencies in the process. 
  
 5	Cumulative Flow Diagram (CFD) 
 •	Definition: The Cumulative Flow Diagram is a visual representation of the flow of work through various stages of the process (e.g., To Do, In Progress, Done). 
-•	How It Works: The CFD shows how work items accumulate in each stage of the process. The diagram tracks work over time and highlights bollenecks or areas where work is gemng stuck. 
+•	How It Works: The CFD shows how work items accumulate in each stage of the process. The diagram tracks work over time and highlights bottlenecks or areas where work is getting stuck. 
 •	Why It’s Useful: The CFD helps teams visualize how work is moving through their workflow and identifies inefficiencies. It also helps teams understand their throughput and capacity over time. 
  
 6	Defect Density 
 •	Definition: Defect density measures the number of defects or bugs found in a specific area of the product relative to the size of that area (e.g., per lines of code, per feature). 
 •	How It Works: This metric is calculated by dividing the number of defects by the size of the work (usually measured in lines of code or user stories). It helps teams understand the quality of their code and features. 
-•	Why It’s Useful: Tracking defect density helps teams identify areas of the product that may need more testing or refactoring. High defect density could indicate a quality issue that needs alention.
+•	Why It’s Useful: Tracking defect density helps teams identify areas of the product that may need more testing or refactoring. High defect density could indicate a quality issue that needs attention.
 `
          },
          {
@@ -576,14 +578,14 @@ o	Cycle Time is the amount of time it takes for a work item to move through the 
 Types of Information Radiators 
  
 1	Task Boards (Kanban Boards) 
-o 	What It Is: A Kanban board is a visual representation of the flow of tasks, typically organized by columns such as "To Do," "In Progress," and "Done." Each task is represented by a card, which is moved across the board as it progresses through the workflow. o 	Why It’s Useful: Kanban boards give everyone on the team visibility into what work is being done and what’s next. It helps track progress and shows if there are bollenecks in the process. 
+o 	What It Is: A Kanban board is a visual representation of the flow of tasks, typically organized by columns such as "To Do," "In Progress," and "Done." Each task is represented by a card, which is moved across the board as it progresses through the workflow. o 	Why It’s Useful: Kanban boards give everyone on the team visibility into what work is being done and what’s next. It helps track progress and shows if there are bottlenecks in the process. 
  
 2	Burn-down and Burn-up Charts 
 o 	What It Is: These charts visualize the remaining work or completed work over time in the sprint or project. 
 o	Why It’s Useful: Burn-down and burn-up charts provide a quick and easy way to see if the project is on track to meet its goals. These charts can be displayed in the team’s workspace or digitally on project management tools. 
  
 3	Cumulative Flow Diagram (CFD) 
-o 	What It Is: A cumulative flow diagram shows how work is progressing through different stages of the project. It displays the amount of work in each stage (e.g., backlog, in progress, done) over time. o 	Why It’s Useful: The CFD helps teams monitor flow and spot any bollenecks in the process. It’s especially useful in Kanban environments, where visualizing the flow of work is key to improving efficiency. 
+o 	What It Is: A cumulative flow diagram shows how work is progressing through different stages of the project. It displays the amount of work in each stage (e.g., backlog, in progress, done) over time. o 	Why It’s Useful: The CFD helps teams monitor flow and spot any bottlenecks in the process. It’s especially useful in Kanban environments, where visualizing the flow of work is key to improving efficiency. 
  
 4	Velocity Chart 
 o 	What It Is: A velocity chart tracks the amount of work completed by the team in each sprint, usually in terms of story points or completed user stories. 
@@ -591,14 +593,14 @@ o	Why It’s Useful: Velocity charts allow teams to track their progress and pre
  
 5  Defect Trend Chart 
 o 	What It Is: A defect trend chart shows the number of defects reported over time, helping teams visualize how the product’s quality is evolving. 
-o 	Why It’s Useful: By monitoring defects, teams can identify palerns, improve testing, and address quality issues before they become more significant problems. 
+o 	Why It’s Useful: By monitoring defects, teams can identify patterns, improve testing, and address quality issues before they become more significant problems. 
 Why Information Radiators Are Important 
  
 •	Transparency: Information radiators make key metrics visible to the entire team and stakeholders, fostering transparency and trust. 
  
 •	Real-Time Updates: These tools provide up-to-date data about the status of the project, allowing the team to adjust quickly to issues or changes in direction. 
  
-•	Collaboration: They encourage collaboration and communication, as team members can see the current status and identify areas that need alention. 
+•	Collaboration: They encourage collaboration and communication, as team members can see the current status and identify areas that need attention. 
  
 •	Focus on Improvement: By continuously displaying key metrics, teams can reflect on their performance and continuously improve their processes. 
  

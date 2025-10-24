@@ -1,31 +1,30 @@
 import React from "react";
 import { motion } from "framer-motion";
-import personToPersonIcon from '../Assets/person-to-person.png';
-
+ 
 const Benefits = () => {
   const benefits = [
     {
-      title: "Personalized Attention",
-      description: "We work with you individually to understand your experience and aspirations so that we can guide you every step of the way till the exam",
-      icon: personToPersonIcon,
+      title: "Engaging Learning",
+      description: "Reduces monotony and makes learning enjoyable.",
+      icon: "https://cdn-icons-png.freepik.com/256/3686/3686057.png?ga=GA1.1.194110493.1747371900&semt=ais_hybrid",
     },
     {
-      title: "Comprehensive Resources",
-      description: "You will have the access to all the study resources needed to prepare for the exam: Live classes, recorded videos, texts, mock exams etc.",
+      title: "Immersive Learning",
+      description: "Engages multiple senses making learning active and effective.",
       icon: "https://cdn-icons-png.freepik.com/256/18251/18251285.png?ga=GA1.1.194110493.1747371900&semt=ais_hybrid",
     },
     {
       title: "Accelerated Learning",
-      description: "Interact with the trainer real time to grasp concepts faster and retain information longer with concept building exercises shared every week.",
+      description: "Helps grasp concepts faster and retain information longer.",
       icon: "https://cdn-icons-png.freepik.com/256/8132/8132630.png?ga=GA1.1.194110493.1747371900&semt=ais_hybrid",
     },
     {
       title: "Developing Critical Thinking",
-      description: "The trainer encourages critical thinking, decision making, and problem solving skills that are essential for success in the exam.",
+      description: "Encourages critical thinking, decision making, and problem solving skills.",
       icon: "https://cdn-icons-png.freepik.com/256/17555/17555271.png?ga=GA1.1.194110493.1747371900&semt=ais_hybrid",
     },
   ];
-
+ 
   return (
     <section className="container mx-auto px-6 py-16">
       <motion.h2
@@ -34,9 +33,9 @@ const Benefits = () => {
         whileInView={{ scale: 1, opacity: 1 }}
         transition={{ duration: 0.6, ease: "easeOut" }}
       >
-        Benefits of Learning with us
+        Benefits of Practical Learning
       </motion.h2>
-
+ 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
         {benefits.map((benefit, index) => (
           <motion.div
@@ -44,6 +43,7 @@ const Benefits = () => {
             className="flex flex-col items-start bg-white p-6 rounded-2xl shadow-md hover:shadow-2xl border border-gray-100"
             initial={{ opacity: 0, scale: 0.7, y: 50 }}
             whileInView={{ opacity: 1, scale: 1, y: 0 }}
+            whileHover={{  }}
             transition={{
               duration: 0.6,
               delay: index * 0.2,
@@ -51,11 +51,7 @@ const Benefits = () => {
               stiffness: 120,
             }}
           >
-            <img
-              src={benefit.icon}
-              alt={benefit.title}
-              className={`${index === 0 ? "w-22 h-24" : "w-16 h-16"} mb-4 object-contain`}
-            />
+            <img src={benefit.icon} alt={benefit.title} className="w-16 h-16 mb-4" />
             <h3 className="text-2xl font-semibold text-gray-800 mb-2">
               {benefit.title}
             </h3>
@@ -71,5 +67,5 @@ const Benefits = () => {
     </section>
   );
 };
-
+ 
 export default Benefits;

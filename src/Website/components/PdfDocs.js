@@ -13,64 +13,57 @@ const pdfs = [
   {
     _id: '1',
     name: 'PMP exam prep Summary book',
-    path: '/pdfs/pmp-exam-prep-summary-book.pdf',
+    path: 'pdfs/PMP exam prep Summary book.pdf',
     uploadDate: '2025-05-20',
-    wallpaper: '/pdf-img/summery.jpeg'
+    wallpaper: 'pdf-img/summery.jpeg'
   },
   {
     _id: '2',
     name: 'Examination Content Outline Summary',
-    path: '/pdfs/examination-content-outline-summary.pdf',
+    path: 'pdfs/Examination Content Outline Summary.pdf',
     uploadDate: '2025-05-20',
     wallpaper: '/pdf-img/ECO.jpeg'
   },
   {
     _id: '3',
     name: 'Traditional approach overview',
-    path: '/pdfs/traditional-approach-overview.pdf',
+    path: 'pdfs/Traditional approach overview.pdf',
     uploadDate: '2025-05-20',
     wallpaper: '/pdf-img/Traditional.jpeg'
   },
   {
     _id: '4',
     name: 'Project Management Tools and Techniques',
-    path: '/pdfs/project-management.pdf',
+    path: 'pdfs/Project Management.pdf',
     uploadDate: '2025-05-20',
     wallpaper: '/pdf-img/Tools.jpeg'
   },
   {
     _id: '5',
     name: 'Agile approach overview',
-    path: '/pdfs/agile-approach-overview.pdf',
+    path: 'pdfs/Agile approach overview.pdf',
     uploadDate: '2025-05-20',
     wallpaper: '/pdf-img/Agile.jpeg'
   },
-  {
+   {
+   
     _id: '6',
     name: 'PMP Exam Mindset Taskwise',
-    path: '/pdfs/pmp-exam-mindset-taskwise.pdf',
+    path: 'pdfs/PMP exam mindset taskwise.pdf',
     uploadDate: '2025-08-11',
-    wallpaper: '/pdf-img/Mind.jpeg'
-  },
-  {
-    _id: '7',
-    name: 'Project Documents Overview',
-    path: '/pdfs/project-documents-overview.pdf',
-    uploadDate: '2025-08-21',
-    wallpaper: '/pdf-img/Project.jpeg'
-  }
+    wallpaper: '/pdf-img/Mind.jpg',  }
 ];
 
 const PdfDocs = () => {
   const handleDownload = (pdfPath) => {
     const link = document.createElement('a');
-    link.href = pdfPath;
+    link.href = `${process.env.PUBLIC_URL}/${pdfPath}`;
     link.download = pdfPath.split('/').pop();
     link.click();
   };
 
   const handleView = (pdfPath) => {
-    window.open(pdfPath, '_blank');
+    window.open(`${process.env.PUBLIC_URL}/${pdfPath}`, '_blank');
   };
 
   return (
@@ -89,7 +82,7 @@ const PdfDocs = () => {
               <div
                 className="card-wallpaper"
                 style={{
-                  backgroundImage: `url(${pdf.wallpaper})`
+                  backgroundImage: `url(${process.env.PUBLIC_URL}${pdf.wallpaper})`
                 }}
               />
               <CardContent>

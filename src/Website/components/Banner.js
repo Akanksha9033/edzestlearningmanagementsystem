@@ -32,7 +32,9 @@ const Announcement = () => {
         </h2>
  
         <p className="text-gray-700 text-lg md:text-xl max-w-3xl mx-auto leading-relaxed font-[sans-serif]">
-        Keeping the busy working professionals in mind, we have designed the training program in such a way that you will not need to browse multiple platforms and media to learn about PMP® certification exam. All the resources you need to prepare for the exam are placed at one single place.
+          All our programs are designed for case-based <strong>practical learning</strong> to help
+          you relate the theory with your practical work experience and practice
+          the lessons in a simulated project setting.
         </p>
       </motion.div>
  

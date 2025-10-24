@@ -27,7 +27,7 @@ We discuss approaches like Planning Poker, Affinity Estimation, and MoSCoW prior
 Readers gain insights into how these techniques promote shared understanding, foster collaboration, and guide decision-making during the planning process. Release Planning and Road mapping: 
  
 Release planning and road mapping help Agile teams chart a course for delivering value over time. 
-We explore techniques for creating release plans and roadmaps, such as setting release goals, defining feature sets, and establishing timelines. 
+We explore techniques for creating release plans and road maps, such as setting release goals, defining feature sets, and establishing timelines. 
 The chapter provides practical guidance on managing dependencies, balancing scope, and adapting plans as the project progresses.  
  
 Agile Planning Tools: 
@@ -116,7 +116,7 @@ Benefit: Highlights the value or benefit the user expects from the desired funct
 Backlog Management: 
 The backlog is a prioritized list of user stories, bugs, and technical tasks that need to be addressed throughout the project. It serves as a central repository of work items that the development team can pull from during each iteration or sprint. Effective backlog management ensures that the most valuable user stories are given priority and the backlog remains up-to-date. 
  
-Prioritization: Prioritizing the backlog is crucial to ensure that the most valuable and highpriority items are addressed first. This can be done using various techniques such as MoSCoW (Must, Should, Could, Won't) prioritization, business value vs. effort matrix, or cumulative voting. The product owner, in collaboration with stakeholders, plays a key role in determining the priority of user stories. 
+Prioritization: Prioritizing the backlog is crucial to ensure that the most valuable and high priority items are addressed first. This can be done using various techniques such as MoSCoW (Must, Should, Could, Won't) prioritization, business value vs. effort matrix, or cumulative voting. The product owner, in collaboration with stakeholders, plays a key role in determining the priority of user stories. 
  
 Refinement: Backlog refinement involves continuously reviewing, clarifying, and updating user stories to ensure they are ready for implementation. The product owner, development team, and stakeholders collaborate to refine user stories, break them down into smaller ones if necessary, and ensure they are estimated accurately. 
  
@@ -124,7 +124,7 @@ Estimation: Estimating user stories helps the development team understand the ef
  
 Grooming and Sprint Planning: Backlog grooming involves reviewing and updating the backlog regularly to ensure its accuracy and relevance. During sprint planning, the development team selects a set of user stories from the top of the backlog based on their priority and estimated effort. These stories are then committed to be completed during the upcoming sprint. 
  
-User stories and backlog management are fundamental aspects of agile project planning. They facilitate effective collaboration, ensure a shared understanding of requirements, and allow for iterative and incremental development. By creating well-defined user stories and maintaining a prioritized backlog, agile teams can maximize the value delivered to the endusers and stakeholders throughout the project lifecycle. 
+User stories and backlog management are fundamental aspects of agile project planning. They facilitate effective collaboration, ensure a shared understanding of requirements, and allow for iterative and incremental development. By creating well-defined user stories and maintaining a prioritized backlog, agile teams can maximize the value delivered to the end users and stakeholders throughout the project lifecycle. 
  
 `
           },
@@ -216,11 +216,11 @@ Importance: The product roadmap provides a strategic view of the product’s dev
 How to Develop: The roadmap should be developed collaboratively with input from key stakeholders. It should be flexible, allowing for adjustments as priorities change or new information emerges. The roadmap can be presented as a timeline, a series of sprints, or a Kanban board, depending on the team’s preferences. 
  
 4	Prototyping 
-Prototyping involves creating a preliminary version of the product or specific features to visualize how they will work in practice. Prototypes can range from simple sketches or wireframes to fully interactive models, depending on the level of detail required. 
+Prototyping involves creating a preliminary version of the product or specific features to visualize how they will work in practice. Prototypes can range from simple sketches or wire frames to fully interactive models, depending on the level of detail required. 
  
 Importance: Prototyping allows the team to test ideas quickly and gather feedback before committing to full-scale development. It helps identify potential issues early and ensures that the final product aligns with user expectations and needs. 
  
-How to Develop: Start with low-fidelity prototypes, such as sketches or wireframes, to explore basic concepts and workflows. Gradually increase the fidelity of the prototypes as the design evolves, incorporating more details and interactivity. Use tools like Figma, Sketch, or InVision to create and share prototypes with the team and stakeholders. 
+How to Develop: Start with low-fidelity prototypes, such as sketches or wire frames, to explore basic concepts and workflows. Gradually increase the fidelity of the prototypes as the design evolves, incorporating more details and interactivity. Use tools like Figma, Sketch, or InVision to create and share prototypes with the team and stakeholders. 
  
 5	Minimum Viable Product (MVP) 
 The MVP is a version of the product that includes just enough features to satisfy early adopters and provide valuable feedback for future development. The MVP approach helps the team focus on delivering the most critical features first, reducing the time to market and minimizing the risk of investing in features that may not be needed. 
@@ -329,7 +329,7 @@ Major Themes:
     o Payment Integration 
     
 3	User Experience (UX) 
-    o 	Wireframes 
+    o 	Wire frames 
     o 	User Flows 
     o 	User Testing 
     o 	Feedback Loops 
@@ -371,7 +371,7 @@ o	Notifications: Push notifications for important updates (e.g., bill due dates)
 o	Payment Integration: Supporting various payment gateways (e.g., PayPal, Stripe). 
 
 3	User Experience (UX): 
-o	Wireframes: Initial sketches of the app's layout. o 	User Flows: Mapping out the user journey from entry to goal completion. o 	User Testing: Conducting tests with real users to gather feedback. 
+o	Wire frames: Initial sketches of the app's layout. o 	User Flows: Mapping out the user journey from entry to goal completion. o 	User Testing: Conducting tests with real users to gather feedback. 
 o	Feedback Loops: Iterative cycles of feedback and improvement. 
 
 4	Technology Stack: 
@@ -423,7 +423,7 @@ o	Progress Tracking: Indicators that show the current status of features, initia
 o	Dependencies: Relationships between tasks, features, or initiatives where one depends on the completion of another. These dependencies are crucial for understanding the sequence of work. 
 o 	Constraints: Any limitations or challenges that could impact the timeline, such as resource availability, technical debt, or external factors like regulatory requirements. 
 
-Types of Product Roadmaps: 
+Types of Product Road maps: 
 1 Time-Based Roadmap: 
 o	Focus: Timeline and release dates. 
 o	Structure: Organizes features and initiatives by expected release dates or time periods (e.g., quarters, months). 
@@ -441,7 +441,7 @@ o	Best For: Agile teams that prioritize flexibility and iterative development, w
 
 4 Portfolio Roadmap: 
 o	Focus: Multiple products or projects. 
-o 	Structure: Combines roadmaps for different products or projects into a single view, showing how they align with the overall business strategy. 
+o 	Structure: Combines road maps for different products or projects into a single view, showing how they align with the overall business strategy. 
 o 	Best For: Organizations managing a portfolio of products, where it’s important to see how resources and efforts are distributed across different initiatives. 
  	 
 Importance of a Product Roadmap: 
@@ -530,7 +530,7 @@ o	Start by identifying the specific goals of the prototype. Are you testing a ne
 Understanding the purpose will guide the level of detail and fidelity required.
 
 2	Select the Type of Prototype: 
-o	Based on the purpose, choose the appropriate type of prototype. For earlystage exploration, a low-fidelity prototype might be sufficient. For user testing or technical validation, a high-fidelity or functional prototype may be needed. 
+o	Based on the purpose, choose the appropriate type of prototype. For early stage exploration, a low-fidelity prototype might be sufficient. For user testing or technical validation, a high-fidelity or functional prototype may be needed. 
 
 3	Create the Prototype: 
 o	Develop the prototype using appropriate tools and techniques. For low fidelity prototypes, this might involve sketching or using simple wire framing tools. For high-fidelity prototypes, you might use software like Figma, Sketch, or InVision. For functional prototypes, you might need to use coding or development platforms. 
@@ -928,7 +928,7 @@ can respond to change more effectively, deliver high-quality products, and maint
 
 Key Principles of Flow-Based Scheduling 
 1	Continuous Flow: 
-o	Unlike iterative scheduling, which breaks work into time-boxed periods, flowbased scheduling allows tasks to move through the workflow continuously. As soon as a team member completes a task, they pull the next item from the backlog and begin working on it. This creates a steady flow of work, minimizing downtime and ensuring that tasks are completed as soon as possible. 
+o	Unlike iterative scheduling, which breaks work into time-boxed periods, flow based scheduling allows tasks to move through the workflow continuously. As soon as a team member completes a task, they pull the next item from the backlog and begin working on it. This creates a steady flow of work, minimizing downtime and ensuring that tasks are completed as soon as possible. 
 
 2	Work In Progress (WIP) Limits: 
 o	To prevent bottlenecks and ensure a smooth flow of work, flow-based scheduling uses WIP limits. These limits restrict the number of tasks that can be in a particular stage of the workflow at any given time. For example, there might be a limit of three tasks in the "In Progress" column of the Kanban board. WIP limits help the team focus on completing tasks rather than starting new ones, reducing multitasking and improving overall efficiency. 
@@ -956,7 +956,7 @@ o	Flow-based scheduling supports continuous delivery, where tasks are completed 
 o	The use of Kanban boards and visual management tools enhances transparency and visibility across the team. Everyone can see the status of tasks, identify potential issues, and collaborate more effectively to keep work flowing smoothly. 
 
 5	Reduced Waste: 
-o	By focusing on completing tasks before starting new ones, flow-based scheduling reduces waste associated with unfinished work, context switching, and unnecessary delays. This lean approach helps teams deliver higherquality products with fewer resources. 
+o	By focusing on completing tasks before starting new ones, flow-based scheduling reduces waste associated with unfinished work, context switching, and unnecessary delays. This lean approach helps teams deliver higher quality products with fewer resources. 
  	 
 Implementing Flow-Based Scheduling with Kanban 
 1	Setting Up the Kanban Board: 

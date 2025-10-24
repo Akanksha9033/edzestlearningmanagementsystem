@@ -35,7 +35,7 @@ A construction company building a bridge is a project because:
           id: "development_of_new_software",
           title: "Development of a New Software",
           content: `
-  Another example of a project is the development of a new so7ware application. This type of project may be smaller in scope than a construction project, but it still requires a great deal of planning and coordination. The project team may include developers, designers, project managers, and quality assurance personnel. The team will have a specific set of requirements and features that must be incorporated into the application and will work together to create a product that meets these requirements. 
+  Another example of a project is the development of a new software application. This type of project may be smaller in scope than a construction project, but it still requires a great deal of planning and coordination. The project team may include developers, designers, project managers, and quality assurance personnel. The team will have a specific set of requirements and features that must be incorporated into the application and will work together to create a product that meets these requirements. 
           `
         },
         {

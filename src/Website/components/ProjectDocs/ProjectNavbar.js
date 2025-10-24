@@ -13,7 +13,7 @@ const ProjectNavBar = ({ toggleSidebar }) => {
           ☰
         </Button>
       )}
-      <Navbar.Brand href="/docs/:chapterId/:subChapterId">PM Docs</Navbar.Brand>
+      <Navbar.Brand href="/docs">PM Docs</Navbar.Brand>
     </Navbar>
   );
 };
