@@ -109,9 +109,9 @@ const Navbar = () => {
             </Dropdown.Menu>
           </Dropdown>
 
-          <Link to="/blogs" onClick={handleNavClick} className="text-gray-800 text-decoration-none hover:text-[#4748ac]">
+          {/* <Link to="/blogs" onClick={handleNavClick} className="text-gray-800 text-decoration-none hover:text-[#4748ac]">
             Blogs
-          </Link>
+          </Link> */}
 
           <Link to="/about" onClick={handleNavClick} className="text-gray-800 text-decoration-none hover:text-[#4748ac]">
             About us
@@ -232,9 +232,9 @@ const Navbar = () => {
         </div>
       )}
 
-      <Link to="/blogs" onClick={() => handleNavClick("/blogs")} className="mobile-link">
+      {/* <Link to="/blogs" onClick={() => handleNavClick("/blogs")} className="mobile-link">
         Blogs
-      </Link>
+      </Link> */}
 
       <Link to="/about" onClick={() => handleNavClick("/about")} className="mobile-link">
         About us
