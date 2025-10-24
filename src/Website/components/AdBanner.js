@@ -5,10 +5,10 @@ import { X } from "lucide-react";
 
 const AdBanner = () => {
   const [ads, setAds] = useState([
-    {
+   {
       id: 1,
-      text: "📢 New PMP® Exam Batch Starts on 5th July",
-      link: "https://exams.edzest.org/learn/PMP-training-5thJuly",
+      text: "📢 New PMP® Exam Batch Starts on 25th October",
+      link: "https://exams.edzest.org/learn/PMP-Oct25",
     },
   ]);
 
