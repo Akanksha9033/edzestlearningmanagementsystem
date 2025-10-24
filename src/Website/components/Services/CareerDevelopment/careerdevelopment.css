@@ -1,0 +1,17 @@
+.custom-placeholder::placeholder {
+    opacity: 0.7 !important;
+    color: rgba(0, 0, 0, 0.5) !important;
+  }
+
+  .custom-placeholder:-ms-input-placeholder { /* Internet Explorer */
+    color: rgba(0, 0, 0, 0.5);
+  }
+  .custom-placeholder::-moz-placeholder { /* Firefox */
+    color: rgba(0, 0, 0, 0.5);
+  }
+  .custom-placeholder:-moz-placeholder { /* Firefox 19+ */
+    color: rgba(0, 0, 0, 0.5);
+  }
+  .custom-placeholder::-webkit-input-placeholder { /* Chrome, Safari */
+    color: rgba(0, 0, 0, 0.5);
+  }

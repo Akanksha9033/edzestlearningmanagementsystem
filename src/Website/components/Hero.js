@@ -19,10 +19,10 @@ const Hero = () => {
           transition={{ duration: 1 }}
           className="relative z-10 text-center lg:text-left p-4 sm:p-6 flex-1"
         >
-          <h1 className="font-openSansBold font-extrabold leading-tight text-gray-800 text-[40px] sm:text-[50px] lg:text-[70px]">
-            <span className="block">Learn.</span>
-            <span className="block">Apply.</span>
-            <span className="block text-[#4748ac]">Deliver Successful Projects.</span>
+          <h1 className="font-openSansBold font-extrabold leading-tight text-gray-800 text-[20px] sm:text-[50px] lg:text-[70px]">
+            <span className="block">Get PMP® Certified</span>
+            <span className="block">and</span>
+            <span className="block text-[#4748ac]">Manage Projects Better</span>
           </h1>
 
           <motion.p
@@ -32,12 +32,16 @@ const Hero = () => {
             whileInView={{ opacity: 1 }}
             transition={{ delay: 0.5, duration: 1 }}
           >
-            At Edzest Project Academy, we deliver training that goes beyond theory empowering project professionals with real-world skills, recognized certifications, and the confidence to deliver successful projects.
+          
+            <span>Welcome to Edzest Project Academy.</span>
+            <br></br>
+             <span>Your ONE STOP SOLUTION to confidently study for the PMP®  exam and pass in the first attempt.</span>
+          
           </motion.p>
 
           <div className="flex flex-col sm:flex-row justify-center lg:justify-start gap-3 sm:gap-6 mt-5 sm:mt-10">
             <Link
-  to="/training"
+  to="https://exams.edzest.org/learn/PMP-Oct25"
   onClick={() => {
     if (window.gtag) {
       window.gtag('event', 'explore_click', {

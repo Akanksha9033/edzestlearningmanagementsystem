@@ -57,7 +57,7 @@ Software tools and technology: These are project management software, communicat
  
 Market conditions: Factors such as customer preferences, market demand, and competition can influence project scope, budget, and scheduling decisions. 
  
-Government regulations: Laws and regulations imposed by governmental bodies can affect project planning, resource allocation, and compliance requirements. 
+Government regulations: Laws and regulations imposed by governmental bodies can aDect project planning, resource allocation, and compliance requirements. 
  
 Industry standards: Standards and guidelines specific to the industry in which the project operates, such as quality standards, safety regulations, and ethical codes, can impact project execution. 
  

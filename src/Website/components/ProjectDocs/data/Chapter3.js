@@ -55,7 +55,7 @@ According to a 2023 study by the Project Management Institute (PMI), 80% of larg
  	 
 2	Predictable and Stable 
  
-The Traditional approach thrives in predictable and stable environments where project variables are unlikely to change significantly. This makes it ideal for projects where the path to completion is straight forward and well-understood. 
+The Traditional approach thrives in predictable and stable environments where project variables are unlikely to change significantly. This makes it ideal for projects where the path to completion is straigh forward and well-understood. 
  
 For example, manufacturing projects, such as producing a new line of consumer electronics, oUen have stable production processes and defined goals. These projects benefit from the structured and predictable nature of the Traditional approach.  
  
@@ -170,7 +170,7 @@ For example, a company planning to launch a new product might create a project c
  
 Planning Process Group:  
 The planning process group lays the foundation for project execution by developing comprehensive strategies.  
-Research studies show that projects with detailed planning are 20% more likely to meet objectives within budget and schedule. 
+Research studies show that projects with detailed planning are 20% more likely to meet objec:ves within budget and schedule. 
 For example, consider a construction company planning to build a residential complex. Detailed plans specifying materials, timelines, labor requirements, and risk assessments ensure smooth execution and avoid delays.  
  
 Executing Process Group:  
@@ -178,7 +178,7 @@ The executing process group focuses on implementing the project plan and deliver
 For example, software development team executing a mobile application project collaborates using agile tools, conducts code reviews, and performs regular testing to meet the client’s requirements.  
  
 Monitoring and Controlling Process Group: This group runs parallel to execution, ensuring the project stays on track.  
-For example, an event manager planning a large conference monitors venue arrangements, participant registrations, and budgets. Real-time tracking tools help adapt to unexpected changes, such as vendor delays or increased attendee numbers.  
+For example, an event manager planning a large conference monitors venue arrangements, participant registrations, and budgets. Real-time tracking tools help adapt to unexpected changes, such as vendor delays or increased aYendee numbers.  
  
 Closing Process Group 
 The closing process group signifies the end of the project.  
@@ -241,7 +241,7 @@ o 	Early recognition of these risks allows the team to address or mitigate them 
 5	Securing Project Approval: 
 o	AUer the project charter and stakeholder identification are completed, the next step is securing formal approval to proceed. This approval is oUen obtained from the project sponsor or senior management. 
  
-At the initiation stage, imagine a project team having a kickoff meeting where they discuss and align on the project’s goals and deliverables. The project sponsor or senior leaders are involved in signing off on the project charter. Stakeholder mapping and initial risk conversations are happening to ensure a smooth start. The team is in the process of putting everything in place to move forward, but the project is still in its conceptual phase. 
+At the initiation stage, imagine a project team having a kickoff meeting where they discuss and align on the project’s goals and deliverables. The project sponsor or senior leaders are involved in signing off on the project charter. Stakeholder mapping and initial risk conversations are happening to ensure a smooth start. The team is in the process of puhng everything in place to move forward, but the project is still in its conceptual phase. 
  
 Real-World Example 
  
@@ -263,7 +263,7 @@ By completing the Initiation Process Group, the project team gains clarity and h
           {
             id : "Planning_process_group",
             title : "Planning process group",
-            content : `The Planning Process Group is the phase where detailed planning occurs, setting the groundwork for the execution of the project. It is the most comprehensive of the five process groups, as it involves developing strategies and plans that will guide the project team throughout the project lifecycle. During this phase, the project scope, timelines, resources, budgets, and risk management strategies are carefully defined and aligned with stakeholder expectations. 
+            content : `The Planning Process Group is the phase where detailed planning occurs, sehng the groundwork for the execution of the project. It is the most comprehensive of the five process groups, as it involves developing strategies and plans that will guide the project team throughout the project lifecycle. During this phase, the project scope, timelines, resources, budgets, and risk management strategies are carefully defined and aligned with stakeholder expectations. 
 In traditional project management, planning is critical because it establishes the project's roadmap, which helps ensure that everything needed to achieve the project’s objectives is considered and accounted for. Effective planning reduces uncertainty and minimizes risks by anticipating potential issues and preparing solutions. 
  
 Objective/Benefits of the Planning Process Group 
@@ -322,7 +322,7 @@ Real-World Example
  
 In a software development project, the planning phase could involve: 
  
-•	Developing the project management plan, which includes scope (features of the software), schedule (development timelines), cost (budget estimation), and quality (code review and testing standards). 
+•	Developing the project management plan, which includes scope (features of the soUware), schedule (development timelines), cost (budget estimation), and quality (code review and testing standards). 
  
 •	Defining scope in detail by breaking it down into specific features and functionalities (e.g., user login, user dashboard, etc.). 
  

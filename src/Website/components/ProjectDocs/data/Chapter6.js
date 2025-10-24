@@ -31,7 +31,7 @@ In this chapter, we will explore the importance of setting performance targets, 
  
 In project management, three fundamental baselines serve as critical performance measurement baselines: scope, schedule, and cost. These baselines are interdependent and form the foundation of the project plan. 
  
-1	Scope Baseline: The scope baseline defines the project's deliverables and the work required to complete them. It serves as a performance target by establishing what is included in the project and, equally important, what is not. Managing scope effectively ensures that the project team remains focused on delivering the agreed upon outcomes without unnecessary deviations or scope creep. 
+1	Scope Baseline: The scope baseline defines the project's deliverables and the work required to complete them. It serves as a performance target by establishing what is included in the project and, equally important, what is not. Managing scope effectively ensures that the project team remains focused on delivering the agreedupon outcomes without unnecessary deviations or scope creep. 
  
 2	Schedule Baseline: The schedule baseline is the approved project timeline, outlining the start and finish dates for the project’s activities. It serves as a performance target by setting expectations for when each task or milestone should be completed. Monitoring performance against the schedule baseline helps ensure that the project progresses according to plan and that any delays are promptly addressed. 
  
@@ -130,7 +130,7 @@ image : "/docs/images/monitoringandcontrolling.png"
             title : "Plan scope management ",
             content : `In the world of project management, the ability to define and control what is included—and equally important, what is not included—in a project is crucial to its success. This process is known as scope management, and it begins with a key component: the Plan Scope Management process. This article will explore what Plan Scope Management is, why it is essential, and how to effectively implement it in your projects. 
  
-Plan Scope Management is the process that outlines how the scope of a project will be defined, validated, and controlled. It provides a roadmap for managing the scope throughout the project lifecycle, ensuring that all project deliverables are clearly defined and that the project remains on track. The output of this process is the Scope Management Plan, a critical document that guides the project team and stakeholders in managing scope related activities. 
+Plan Scope Management is the process that outlines how the scope of a project will be defined, validated, and controlled. It provides a roadmap for managing the scope throughout the project lifecycle, ensuring that all project deliverables are clearly defined and that the project remains on track. The output of this process is the Scope Management Plan, a critical document that guides the project team and stakeholders in managing scoperelated activities. 
  
 The Importance of the process: Plan Scope Management 
  
@@ -140,7 +140,7 @@ The Importance of the process: Plan Scope Management
 
 3	Effective Change Management: A well-defined Scope Management Plan includes procedures for handling scope changes. This ensures that any changes are properly evaluated, approved, and integrated into the project plan, minimizing the risk of scope creep and ensuring that changes do not derail the project.
 
-4	Control Over Project Deliverables: By establishing a clear plan for scope management, project managers can better control the project’s deliverables, ensuring that they meet the required standards and are delivered within the agreed upon time and budget. 
+4	Control Over Project Deliverables: By establishing a clear plan for scope management, project managers can better control the project’s deliverables, ensuring that they meet the required standards and are delivered within the agreedupon time and budget. 
  
 Key Components of a Scope Management Plan 
 The Scope Management Plan is the primary output of the Plan Scope Management process.  
@@ -277,7 +277,7 @@ Quality Management: Data gathering techniques such as inspections, audits, and r
  
 Monitoring and Control: Data gathering plays a significant role in monitoring project progress, performance, and adherence to project plans. Techniques like progress meetings, data analysis, and reporting help in collecting data on project milestones, schedule variance, cost performance, and other key performance indicators. This data supports effective project control and decision-making. 
  
-Lessons Learned: Data gathering techniques such as interviews, workshops, and post project reviews are used to gather data for lessons learned. This involves collecting information about project successes, failures, and best practices. Data gathered in this area helps in documenting valuable project experiences and improving future project performance. 
+Lessons Learned: Data gathering techniques such as interviews, workshops, and postproject reviews are used to gather data for lessons learned. This involves collecting information about project successes, failures, and best practices. Data gathered in this area helps in documenting valuable project experiences and improving future project performance. 
  
 The specific techniques and methods employed depend on the project's nature, complexity, and available resources, as well as the desired depth of understanding required for effective project management. 
  
@@ -575,7 +575,7 @@ The importance of planning Schedule Management
 
 5	Communicate Schedule Changes Promptly: Any changes to the schedule should be communicated to stakeholders as soon as possible. This ensures that everyone is aware of the updated timeline and can adjust their plans accordingly. 
 
-6	Use Project Management Software: Utilize project management software to automate scheduling tasks, track progress, and generate reports. Tools such as Microsoft Project, Primavera, or Smart sheet can help streamline the scheduling process and improve accuracy. 
+6	Use Project Management Software: Utilize project management software to automate scheduling tasks, track progress, and generate reports. Tools such as Microsoft Project, Primavera, or Smartsheet can help streamline the scheduling process and improve accuracy. 
 `,
           },
           {
@@ -900,7 +900,7 @@ The Cost Management Plan, which is the output of the Plan Cost Management proces
 1	Cost Estimation Methodology: This section outlines the approach that will be used to estimate project costs. It defines the tools, techniques, and data sources that will be used to develop cost estimates, such as analogous estimating, parametric estimating, bottom-up estimating, or expert judgment. 
 2	Budgeting Process: The budgeting process defines how the project budget will be developed, approved, and monitored. It includes the process for aggregating estimated costs to establish the cost baseline, which is the approved budget against which project performance will be measured. 
 3	Cost Control Procedures: This component describes the procedures that will be used to control costs throughout the project. It includes the process for monitoring cost performance, managing cost variances, and implementing corrective actions to keep the project within budget. 
-4	Reporting Formats: The Cost Management Plan should define the formats, frequency, and distribution methods for cost reports. These reports are used to communicate cost performance to stakeholders and to provide a basis for decision making. 
+4	Reporting Formats: The Cost Management Plan should define the formats, frequency, and distribution methods for cost reports. These reports are used to communicate cost performance to stakeholders and to provide a basis for decisionmaking. 
 5	Control Thresholds: Control thresholds define the allowable variances in cost performance before corrective action is required. For example, the plan might specify that if actual costs exceed the budget by a certain percentage, it triggers a review or requires escalation. 
 6.Funding Requirements: This section outlines the funding requirements for the project, including the timing and amounts of funding needed. It ensures that the project has access to the necessary financial resources at the right times to support project activities. 
 7.Earned Value Management (EVM): If applicable, the Cost Management Plan may include a description of how Earned Value Management will be used to integrate cost, schedule, and scope performance. EVM provides a powerful tool for assessing project performance and predicting future outcomes. 
