@@ -1,3 +1,5 @@
+
+
 // import React, { useEffect, useState } from "react";
 // import { useParams, useNavigate } from "react-router-dom";
 // import API from "../../../LoginSystem/axios";
@@ -17,6 +19,7 @@
 //   Checkbox,
 // } from "@mui/material";
 // import SettingsIcon from "@mui/icons-material/Settings";
+// import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 
 // export default function AdminQBankEdit() {
 //   const { bankId } = useParams();
@@ -97,15 +100,30 @@
 //     }
 //   };
 
-//   // ✅ NEW: open the QB settings page (qbsetting.js)
-//   // Adjust this path if your route differs.
+//   // ✅ Open the QB settings page (qbsetting.js)
 //   const openSettings = () => {
 //     navigate(`/admin/qbank/${bankId}/qbsetting`);
+//   };
+
+//   // ✅ FIXED: Go back to the list route you showed in the screenshot
+//   const goBackToList = () => {
+//     navigate("/admin/qbank/list", { replace: true });
 //   };
 
 //   if (!questions.length) {
 //     return (
 //       <Box sx={{ p: 3 }}>
+//         <Box sx={{ display: "flex", alignItems: "center", mb: 2, gap: 1.5 }}>
+//           <Button
+//             variant="text"
+//             startIcon={<ArrowBackIcon />}
+//             onClick={goBackToList}
+//             sx={{ textTransform: "none" }}
+//           >
+//             Back to List
+//           </Button>
+//         </Box>
+
 //         <Typography variant="h6" color="error">
 //           ⚠️ No questions found for this bank.
 //         </Typography>
@@ -117,8 +135,17 @@
 
 //   return (
 //     <Box sx={{ p: 3 }}>
-//       {/* Header row with Settings button on the right (added only) */}
+//       {/* Header row: Back (left), Title (center-ish), Settings (right) */}
 //       <Box sx={{ display: "flex", alignItems: "center", mb: 2, gap: 2 }}>
+//         <Button
+//           variant="text"
+//           startIcon={<ArrowBackIcon />}
+//           onClick={goBackToList}
+//           sx={{ textTransform: "none" }}
+//         >
+//           Back to List
+//         </Button>
+
 //         <Typography variant="h5" gutterBottom sx={{ fontWeight: "bold", m: 0 }}>
 //           ✏️ Edit Question Bank ({currentIndex + 1}/{questions.length})
 //         </Typography>
@@ -255,7 +282,7 @@
 //           )}
 
 //           {/* Dropdowns */}
-//           <Box sx={{ display: "flex", gap: 2, mt: 2 }}>
+//           <Box sx={{ display: "flex", gap: 2, mt: 2, flexWrap: "wrap" }}>
 //             <Select
 //               value={q.difficulty || ""}
 //               onChange={(e) => {
@@ -360,6 +387,7 @@
 //   );
 // }
 
+
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import API from "../../../LoginSystem/axios";
@@ -377,6 +405,7 @@ import {
   FormControlLabel,
   Radio,
   Checkbox,
+  CircularProgress, // ✅ ADDED
 } from "@mui/material";
 import SettingsIcon from "@mui/icons-material/Settings";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
@@ -484,9 +513,17 @@ export default function AdminQBankEdit() {
           </Button>
         </Box>
 
-        <Typography variant="h6" color="error">
-          ⚠️ No questions found for this bank.
-        </Typography>
+        {/* 🔄 Replaced "No questions found" with a loader */}
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            minHeight: 200,
+          }}
+        >
+          <CircularProgress />
+        </Box>
       </Box>
     );
   }

@@ -1,12 +1,13 @@
 // src/WebAdmin/MockTests/AdminMockTestList.jsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../../LoginSystem/context/AuthContext";
 import API from "../../../LoginSystem/axios";
 import {
   Box, Typography, Card, CardContent, CardActionArea, CardMedia,
-  TextField, MenuItem, Stack, Chip, CircularProgress, Button
+  TextField, MenuItem, Stack, Chip, CircularProgress, Button, useMediaQuery
 } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
 
 /** s3://bucket/key -> https://bucket.s3.amazonaws.com/key */
 const resolveImageUrl = (raw) => {
@@ -18,17 +19,30 @@ const resolveImageUrl = (raw) => {
   return `https://${bucket}.s3.amazonaws.com/${encodeURIComponent(key).replace(/%2F/g, "/")}`;
 };
 
+/** creation time in ms (for newest-first sort) */
+const getCreatedMs = (m) => {
+  const c1 = Number(m?.createdAtEpoch);
+  if (Number.isFinite(c1)) return c1 * 1000;
+  const c2 = Number(m?.createdAtMs);
+  if (Number.isFinite(c2)) return c2;
+  const c3 = Date.parse(m?.createdAt);
+  if (Number.isFinite(c3)) return c3;
+  const c4 = Date.parse(m?.createdAtISO);
+  if (Number.isFinite(c4)) return c4;
+  return 0;
+};
+
 export default function AdminMockTestList() {
   const navigate = useNavigate();
   const { user, ready } = useAuth();
+  const theme = useTheme();
+  const isSmUp = useMediaQuery(theme.breakpoints.up("sm"));
 
   const [mockTests, setMockTests] = useState([]);
   const [filtered, setFiltered] = useState([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("");
   const [search, setSearch] = useState("");
-
-  // NEW: selected mock for Settings button
   const [selectedMockId, setSelectedMockId] = useState("");
 
   // fetch list
@@ -41,8 +55,9 @@ export default function AdminMockTestList() {
           params: { instituteId: user?.instituteId },
         });
         const items = Array.isArray(res.data) ? res.data : [];
-        setMockTests(items);
-        setFiltered(items);
+        const sorted = items.slice().sort((a, b) => getCreatedMs(b) - getCreatedMs(a)); // newest first
+        setMockTests(sorted);
+        setFiltered(sorted);
       } catch (err) {
         console.error("Error fetching mocktests:", err);
         alert("❌ Failed to load mocktests");
@@ -52,33 +67,29 @@ export default function AdminMockTestList() {
     })();
   }, [ready, user]);
 
-  // local filters
+  // local filters (keep newest-first)
   useEffect(() => {
-    let data = [...mockTests];
+    let data = mockTests.slice();
     if (statusFilter) data = data.filter((m) => m.status === statusFilter);
-    if (search) data = data.filter((m) =>
-      (m.title || "").toLowerCase().includes(search.toLowerCase())
-    );
+    if (search) {
+      const q = search.toLowerCase();
+      data = data.filter((m) => (m.title || "").toLowerCase().includes(q));
+    }
+    data.sort((a, b) => getCreatedMs(b) - getCreatedMs(a));
     setFiltered(data);
   }, [statusFilter, search, mockTests]);
 
-  // keep selectedMockId sensible when the filtered list changes
+  // keep selection valid
   useEffect(() => {
-    if (filtered.length === 0) {
-      setSelectedMockId("");
-    } else if (!selectedMockId || !filtered.find(m => m.mockTestId === selectedMockId)) {
+    if (filtered.length === 0) setSelectedMockId("");
+    else if (!selectedMockId || !filtered.find(m => m.mockTestId === selectedMockId)) {
       setSelectedMockId(filtered[0].mockTestId);
     }
   }, [filtered, selectedMockId]);
 
   const goToSettings = () => {
-    if (!selectedMockId) {
-      alert("Select a mock test first.");
-      return;
-    }
-    // ⬇️ adjust this route if your router uses a different path
+    if (!selectedMockId) return alert("Select a mock test first.");
     navigate(`/admin/mocktests/editor/${selectedMockId}/settings`);
-
   };
 
   if (!ready || loading) {
@@ -93,19 +104,34 @@ export default function AdminMockTestList() {
   }
 
   return (
-    <Box maxWidth={1100} mx="auto" mt={4}>
-      {/* Header row with top-right actions */}
-      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
+    <Box
+      maxWidth={1400}
+      mx="auto"
+      mt={4}
+      px={{ xs: 1.25, sm: 2, md: 3 }}
+    >
+      {/* Header row */}
+      <Stack
+        direction={{ xs: "column", md: "row" }}
+        alignItems={{ xs: "stretch", md: "center" }}
+        justifyContent="space-between"
+        gap={1.5}
+        sx={{ mb: 2 }}
+      >
         <Typography variant="h5" sx={{ fontWeight: 800 }}>
           Section-wise Breakdown
         </Typography>
 
-        <Stack direction="row" spacing={1} alignItems="center">
-          {/* Select which mock to open in Settings */}
+        <Stack
+          direction={{ xs: "column", sm: "row" }}
+          alignItems={{ xs: "stretch", sm: "center" }}
+          spacing={1}
+          sx={{ width: { xs: "100%", md: "auto" } }}
+        >
           <TextField
             select
             size="small"
-            sx={{ minWidth: 220 }}
+            sx={{ minWidth: { xs: "100%", sm: 240 } }}
             label="Select Mock"
             value={selectedMockId}
             onChange={(e) => setSelectedMockId(e.target.value)}
@@ -117,42 +143,62 @@ export default function AdminMockTestList() {
             ))}
           </TextField>
 
-          {/* Settings button */}
-          <Button variant="outlined" onClick={goToSettings} disabled={!selectedMockId}>
-            Settings
-          </Button>
-
-          {/* Create New Mock Test button */}
-          <Button variant="contained" onClick={() => navigate("/admin/mocktests/create")}>
-            Create New Mock Test
-          </Button>
+          <Stack
+            direction={{ xs: "column", sm: "row" }}
+            spacing={1}
+            sx={{ width: { xs: "100%", sm: "auto" } }}
+          >
+            <Button
+              variant="outlined"
+              onClick={goToSettings}
+              disabled={!selectedMockId}
+              fullWidth={{ xs: true, sm: false }}
+            >
+              Settings
+            </Button>
+            <Button
+              variant="contained"
+              onClick={() => navigate("/admin/mocktests/create")}
+              fullWidth={{ xs: true, sm: false }}
+            >
+              Create New Mock Test
+            </Button>
+          </Stack>
         </Stack>
       </Stack>
 
+      {/* Filters card */}
       <Card sx={{ mb: 3, borderRadius: 2 }}>
-        <CardContent>
-          <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1.5, display:"flex", alignItems:"center", gap:1 }}>
-            <span style={{
-              width: 10, height: 10, borderRadius: 2, background: "#7c3aed", display: "inline-block"
-            }} />
+        <CardContent sx={{ p: { xs: 2, sm: 2.5 } }}>
+          <Typography
+            variant="subtitle1"
+            sx={{ fontWeight: 700, mb: 1.25, display: "flex", alignItems: "center", gap: 1 }}
+          >
+            <span
+              style={{
+                width: 10, height: 10, borderRadius: 2,
+                background: "#7c3aed", display: "inline-block"
+              }}
+            />
             All Mock Tests
           </Typography>
 
-          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+          <Stack direction={{ xs: "column", md: "row" }} spacing={1.5}>
             <TextField
               label="Search Title"
               fullWidth
               value={search}
               onChange={(e) => setSearch(e.target.value)}
+              inputProps={{ maxLength: 100 }}
             />
             <TextField
               select
               label="Status"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              sx={{ minWidth: 160 }}
+              sx={{ minWidth: { xs: "100%", md: 220 } }}
             >
-              <MenuItem value="">Status</MenuItem>
+              <MenuItem value="">All Status</MenuItem>
               <MenuItem value="PUBLISHED">Published</MenuItem>
               <MenuItem value="DRAFT">Draft</MenuItem>
               <MenuItem value="UNPUBLISHED">Unpublished</MenuItem>
@@ -162,58 +208,107 @@ export default function AdminMockTestList() {
         </CardContent>
       </Card>
 
-      {/* grid */}
+      {/* Responsive GRID */}
       {filtered.length === 0 ? (
         <Typography color="text.secondary" textAlign="center" mt={5}>
           No mock tests found.
         </Typography>
       ) : (
-        <Stack direction="row" flexWrap="wrap" useFlexGap spacing={2} sx={{ rowGap: 2 }}>
+        <Box
+          sx={{
+            display: "grid",
+            gap: { xs: 2, sm: 2.5, md: 3 }, // compact, responsive spacing
+            gridTemplateColumns: {
+              xs: "1fr",                         // phones
+              sm: "repeat(2, minmax(0, 1fr))",   // small tablets
+              md: "repeat(3, minmax(0, 1fr))",   // laptops
+              lg: "repeat(4, minmax(0, 1fr))",   // desktops
+              xl: "repeat(5, minmax(0, 1fr))",   // wide screens
+            },
+            alignItems: "stretch",
+          }}
+        >
           {filtered.map((m) => {
             const img = resolveImageUrl(m.imageUrl || "");
             const statusColor =
               m.status === "PUBLISHED" ? "success" :
               m.status === "DRAFT" ? "warning" : "default";
+
             return (
-              <Card key={m.mockTestId} sx={{ width: { xs: "100%", sm: 360 }, borderRadius: 2 }}>
+              <Card
+                key={m.mockTestId}
+                sx={{
+                  borderRadius: 2,
+                  height: "100%",
+                  display: "flex",
+                  flexDirection: "column",
+                  boxShadow: 1,
+                  transition: "box-shadow .18s ease, transform .12s ease",
+                  "&:hover": { boxShadow: 4, transform: "translateY(-1px)" },
+                }}
+              >
                 <CardActionArea
                   onClick={() => navigate(`/admin/mocktests/editor/${m.mockTestId}/sections`)}
+                  sx={{ alignSelf: "stretch" }}
                 >
                   {img ? (
-                    <CardMedia component="img" height="180" image={img} alt={m.title}
-                               sx={{ objectFit: "cover" }} />
+                    <CardMedia
+                      component="img"
+                      image={img}
+                      alt={m.title}
+                      sx={{ aspectRatio: "16 / 9", objectFit: "cover" }}
+                    />
                   ) : (
-                    <Box sx={{
-                      height: 180, bgcolor: "#f3f4f6", display:"flex",
-                      alignItems:"center", justifyContent:"center", color:"text.secondary"
-                    }}>
+                    <Box
+                      sx={{
+                        aspectRatio: "16 / 9",
+                        bgcolor: "#f3f4f6",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: "text.secondary",
+                        fontSize: 14,
+                      }}
+                    >
                       No cover image
                     </Box>
                   )}
 
-                  <CardContent>
-                    <Typography variant="h6" sx={{
-                      fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis",
-                      whiteSpace: "nowrap", mb: 1
-                    }}>
+                  <CardContent sx={{ pb: 2 }}>
+                    <Typography
+                      variant={isSmUp ? "h6" : "subtitle1"}
+                      sx={{
+                        fontWeight: 700,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                        mb: 1,
+                      }}
+                      title={m.title}
+                    >
                       {m.title}
                     </Typography>
 
-                    <Stack direction="row" spacing={1} alignItems="center">
-                      <Chip size="small" label={m.status}
-                            color={statusColor}
-                            variant={statusColor === "default" ? "outlined" : "filled"} />
-                      <Chip size="small"
-                            label={m.isFree ? "Free" : `₹${m.price}`}
-                            color={m.isFree ? "default" : "primary"}
-                            variant={m.isFree ? "outlined" : "filled"} />
+                    <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
+                      <Chip
+                        size="small"
+                        label={m.status}
+                        color={statusColor}
+                        variant={statusColor === "default" ? "outlined" : "filled"}
+                      />
+                      <Chip
+                        size="small"
+                        label={m.isFree ? "Free" : `₹${m.price}`}
+                        color={m.isFree ? "default" : "primary"}
+                        variant={m.isFree ? "outlined" : "filled"}
+                      />
                     </Stack>
                   </CardContent>
                 </CardActionArea>
               </Card>
             );
           })}
-        </Stack>
+        </Box>
       )}
     </Box>
   );

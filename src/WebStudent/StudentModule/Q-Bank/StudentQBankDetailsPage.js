@@ -1,12 +1,8 @@
-
-
-// src/components/student/StudentQBankDetailsPage.js
-
-
+// src/WebStudent/StudentModule/Q-Bank/StudentQBankDetailsPage.js
 import React, { useEffect, useState, useMemo } from "react";
 import { useAuth } from "../../../LoginSystem/context/AuthContext";
 import API from "../../../LoginSystem/axios";
-import { useNavigate, useParams,useLocation } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
 import {
   Box,
@@ -19,9 +15,11 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Grid,
   Dialog, DialogTitle, DialogContent, DialogActions,
   CircularProgress, Stack,
+  useMediaQuery,
+  Divider,
+  Grid, // ✅ classic Grid
 } from "@mui/material";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 
@@ -43,6 +41,9 @@ export default function StudentQBankDetailsPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
+  const isSmDown = useMediaQuery("(max-width:600px)");
+  const isMdUp   = useMediaQuery("(min-width:900px)");
+
   const [attemptsMap, setAttemptsMap] = useState({});
   const [bankMeta, setBankMeta] = useState(null);
 
@@ -62,7 +63,7 @@ export default function StudentQBankDetailsPage() {
       .catch(() => {});
   }, [bankId]);
 
-  // fetch attempts (for chart/table + to know if any attempt exists)
+  // fetch attempts
   useEffect(() => {
     const fetchAttempts = async () => {
       try {
@@ -111,19 +112,15 @@ export default function StudentQBankDetailsPage() {
   }, [timeline, denom]);
 
   const startSession = () =>
-  navigate(`/student/qbank/filter?bankId=${encodeURIComponent(bankId)}`);
-  
+    navigate(`/student/qbank/filter?bankId=${encodeURIComponent(bankId)}`);
 
-  // Enable button if there’s any attempt at all
   const hasAnyAttempt = Boolean((timeline && timeline.length) || latest);
 
-  // 🚀 Fetch latest explanation from new backend alias
   const openExplanation = async () => {
     setExpOpen(true);
     setLoadingExp(true);
     setExpData(null);
     try {
-      // If your backend reads studentId from JWT, the params are optional
       const studentId = user?.sub || user?.id || user?.userId;
       const res = await API.get(
         `/api/student/qbank/${encodeURIComponent(bankId)}/latest-explanation`,
@@ -138,10 +135,12 @@ export default function StudentQBankDetailsPage() {
     }
   };
 
+  const chartHeight = isMdUp ? 420 : isSmDown ? 280 : 340;
+
   return (
-    <Box sx={{ p: 3 }}>
+    <Box sx={{ px: { xs: 1.25, sm: 2 }, py: { xs: 1.25, sm: 2 }, maxWidth: 1200, mx: "auto" }}>
       {/* Back to list */}
-      <Box sx={{ mb: 2 }}>
+      <Box sx={{ mb: 1.5 }}>
         <Button
           variant="text"
           startIcon={<ArrowBackIosNewIcon />}
@@ -152,35 +151,38 @@ export default function StudentQBankDetailsPage() {
         </Button>
       </Box>
 
-      <Typography variant="h5" gutterBottom>
+      <Typography
+        variant="h5"
+        gutterBottom
+        sx={{ fontSize: { xs: 18, sm: 20, md: 22 }, fontWeight: 700, lineHeight: 1.3 }}
+      >
         {bankMeta?.name || "Question Bank"} — Details
       </Typography>
 
       {/* TOP SECTION */}
-      <Grid container spacing={2} sx={{ mb: 3 }}>
+      <Grid container spacing={2} sx={{ mb: 2 }}>
         <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 2 }}>
-            <Typography variant="subtitle1" sx={{ mb: 1 }}>
+          <Paper sx={{ p: { xs: 1.5, sm: 2 } }}>
+            <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 700 }}>
               🧾 Summary
             </Typography>
-            <Typography variant="body2">
-              Total Questions (last): <b>{denom}</b>
-            </Typography>
-            <Typography variant="body2">
-              Total Attempts: <b>{chartData.length}</b>
-            </Typography>
-            <Typography variant="body2" sx={{ mb: 2 }}>
-              Last Attempt:{" "}
-              <b>
-                {latest?.startTime
-                  ? new Date(latest.startTime).toLocaleString("en-IN")
-                  : (timeline?.length
-                      ? (timeline[timeline.length - 1]?.attemptDate
-                          ? new Date(timeline[timeline.length - 1].attemptDate).toLocaleString("en-IN")
-                          : "—")
-                      : "—")}
-              </b>
-            </Typography>
+
+            <Stack spacing={0.5} sx={{ fontSize: { xs: 13, sm: 14 } }}>
+              <Typography variant="body2">Total Questions (last): <b>{denom}</b></Typography>
+              <Typography variant="body2">Total Attempts: <b>{chartData.length}</b></Typography>
+              <Typography variant="body2" sx={{ mb: 1 }}>
+                Last Attempt:{" "}
+                <b>
+                  {latest?.startTime
+                    ? new Date(latest.startTime).toLocaleString("en-IN")
+                    : (timeline?.length
+                        ? (timeline[timeline.length - 1]?.attemptDate
+                            ? new Date(timeline[timeline.length - 1].attemptDate).toLocaleString("en-IN")
+                            : "—")
+                        : "—")}
+                </b>
+              </Typography>
+            </Stack>
 
             <Grid container spacing={1}>
               <Grid item xs={12} sm={6}>
@@ -214,11 +216,11 @@ export default function StudentQBankDetailsPage() {
         </Grid>
 
         <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 2, height: "100%" }}>
-            <Typography variant="subtitle1" sx={{ mb: 1 }}>
+          <Paper sx={{ p: { xs: 1.5, sm: 2 }, height: "100%" }}>
+            <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 700 }}>
               ℹ️ Info
             </Typography>
-            <Typography variant="body2">
+            <Typography variant="body2" sx={{ mb: 0.5 }}>
               View your complete attempt history and analyze progress.
             </Typography>
             <Typography variant="body2">
@@ -229,24 +231,54 @@ export default function StudentQBankDetailsPage() {
       </Grid>
 
       {/* CHART */}
-      <Paper sx={{ p: 2, mb: 3 }}>
-        <Typography variant="subtitle1" sx={{ mb: 1 }}>
+      <Paper sx={{ p: { xs: 1.5, sm: 2 }, mb: 2 }}>
+        <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 700 }}>
           📊 Performance Trend (All Attempts)
         </Typography>
-        <Box sx={{ width: "100%", height: 420 }}>
-          <ResponsiveContainer width="100%" height={420}>
-            <BarChart data={chartData} margin={{ top: 40, right: 20, left: 10, bottom: 60 }}>
+        <Box sx={{ width: "100%", height: chartHeight }}>
+          <ResponsiveContainer width="100%" height={chartHeight}>
+            <BarChart
+              data={chartData}
+              margin={{
+                top: isSmDown ? 20 : 40,
+                right: isSmDown ? 10 : 20,
+                left: isSmDown ? 0 : 10,
+                bottom: isSmDown ? 40 : 60,
+              }}
+            >
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis
                 dataKey="idx"
-                tickFormatter={(v) => v}
-                ticks={chartData.map((d) => d.idx)}
-                label={{ value: "Attempt #", position: "insideBottom", dy: 45 }}
+                tick={{ fontSize: isSmDown ? 10 : 12 }}
+                label={{
+                  value: "Attempt #",
+                  position: "insideBottom",
+                  dy: isSmDown ? 30 : 45,
+                  fontSize: isSmDown ? 11 : 12,
+                }}
               />
-              <YAxis domain={[0, 100]} tickFormatter={(v) => `${v}%`} label={{ value: "Score (%)", angle: -90, position: "insideLeft" }} />
-              <Legend verticalAlign="top" height={30} />
-              <Tooltip formatter={(v) => [`${v}%`, "Score"]} labelFormatter={(_, p) => p?.[0]?.payload?.attempt || ""} />
-              <Bar dataKey="percent" name="Score (%)" maxBarSize={30}>
+              <YAxis
+                domain={[0, 100]}
+                tickFormatter={(v) => `${v}%`}
+                tick={{ fontSize: isSmDown ? 10 : 12 }}
+                label={{
+                  value: "Score (%)",
+                  angle: -90,
+                  position: "insideLeft",
+                  fontSize: isSmDown ? 11 : 12,
+                }}
+              />
+              <Legend
+                verticalAlign="top"
+                height={30}
+                wrapperStyle={{ fontSize: isSmDown ? 11 : 12 }}
+              />
+              <Tooltip
+                formatter={(v) => [`${v}%`, "Score"]}
+                labelFormatter={(_, p) => p?.[0]?.payload?.attempt || ""}
+                contentStyle={{ fontSize: isSmDown ? 12 : 13 }}
+              />
+              <Bar dataKey="percent" name="Score (%)" maxBarSize={isSmDown ? 22 : 30}>
                 {chartData.map((d, i, arr) => {
                   const prev = i > 0 ? arr[i - 1].percent : d.percent;
                   let color = "#B0BEC5";
@@ -255,49 +287,80 @@ export default function StudentQBankDetailsPage() {
                   return <Cell key={i} fill={color} />;
                 })}
               </Bar>
-              <Line type="monotone" dataKey="percent" name="Trend" stroke="#1976D2" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} />
+              <Line
+                type="monotone"
+                dataKey="percent"
+                name="Trend"
+                stroke="#1976D2"
+                strokeWidth={2}
+                dot={{ r: isSmDown ? 2.5 : 3 }}
+                activeDot={{ r: isSmDown ? 4 : 5 }}
+              />
             </BarChart>
           </ResponsiveContainer>
         </Box>
       </Paper>
 
       {/* TABLE */}
-      <TableContainer component={Paper} sx={{ mt: 2 }}>
-        <Table size="small">
-          <TableHead>
-            <TableRow>
-              <TableCell>#</TableCell>
-              <TableCell>Date</TableCell>
-              <TableCell align="right">Score</TableCell>
-              <TableCell align="right">Percent</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {timeline.map((a, idx) => {
-              const total = a.total || denom || 1;
-              const pct = Math.round(((a.score || 0) / total) * 100);
-              return (
-                <TableRow key={idx}>
-                  <TableCell>{idx + 1}</TableCell>
-                  <TableCell>{a.attemptDate ? new Date(a.attemptDate).toLocaleString("en-IN") : "—"}</TableCell>
-                  <TableCell align="right">
-                    {a.score || 0} / {total}
-                  </TableCell>
-                  <TableCell align="right">{pct}%</TableCell>
-                </TableRow>
-              );
-            })}
-            {!timeline.length && (
+      <Paper sx={{ p: { xs: 1, sm: 1.5 } }}>
+        <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 700 }}>
+          📋 Attempts Table
+        </Typography>
+
+        <Divider sx={{ mb: 1 }} />
+
+        <TableContainer
+          sx={{
+            overflowX: "auto",            // horizontal scroll on mobile
+            borderRadius: 2,
+          }}
+        >
+          <Table size="small" sx={{ minWidth: 520 }}>
+            <TableHead>
               <TableRow>
-                <TableCell colSpan={4}>No attempts yet.</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>#</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Date</TableCell>
+                <TableCell align="right" sx={{ fontWeight: 700 }}>Score</TableCell>
+                <TableCell align="right" sx={{ fontWeight: 700 }}>Percent</TableCell>
               </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
+            </TableHead>
+            <TableBody>
+              {timeline.map((a, idx) => {
+                const total = a.total || denom || 1;
+                const pct = Math.round(((a.score || 0) / total) * 100);
+                return (
+                  <TableRow key={idx} hover>
+                    <TableCell>{idx + 1}</TableCell>
+                    <TableCell sx={{ whiteSpace: "nowrap" }}>
+                      {a.attemptDate ? new Date(a.attemptDate).toLocaleString("en-IN") : "—"}
+                    </TableCell>
+                    <TableCell align="right">
+                      {a.score || 0} / {total}
+                    </TableCell>
+                    <TableCell align="right">{pct}%</TableCell>
+                  </TableRow>
+                );
+              })}
+              {!timeline.length && (
+                <TableRow>
+                  <TableCell colSpan={4}>No attempts yet.</TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Paper>
 
       {/* Explanation Modal */}
-      <Dialog open={expOpen} onClose={() => setExpOpen(false)} fullWidth maxWidth="md">
+      {/* full screen on small devices */}
+      <Dialog
+        open={expOpen}
+        onClose={() => setExpOpen(false)}
+        fullWidth
+        maxWidth="md"
+        fullScreen={isSmDown}
+        PaperProps={{ sx: { m: { xs: 0, sm: 2 } } }}
+      >
         <DialogTitle sx={{ fontWeight: "bold" }}>
           Latest Attempt Explanation
         </DialogTitle>
@@ -317,19 +380,21 @@ export default function StudentQBankDetailsPage() {
           {!loadingExp && expData?.review?.length > 0 && (
             <Box sx={{ display: "grid", gap: 2 }}>
               {expData.review.map((r, idx) => {
-                const isCorrect = String(r.selected ?? "").trim().toUpperCase() === String(r.correct ?? "").trim().toUpperCase();
+                const isCorrect =
+                  String(r.selected ?? "").trim().toUpperCase() ===
+                  String(r.correct ?? "").trim().toUpperCase();
                 return (
                   <Paper
                     key={r.questionId || idx}
-                    elevation={2}
+                    elevation={0}
                     sx={{
-                      p: 2,
+                      p: { xs: 1.5, sm: 2 },
                       borderRadius: "12px",
                       border: "1px solid #eee",
                       background: isCorrect ? "#f5fff7" : "#fff6f6",
                     }}
                   >
-                    <Typography sx={{ fontWeight: 600, mb: 1 }}>
+                    <Typography sx={{ fontWeight: 600, mb: 1, fontSize: { xs: 14, sm: 16 } }}>
                       Q{idx + 1}. {r.questionText || "Question"}
                     </Typography>
 
@@ -338,12 +403,22 @@ export default function StudentQBankDetailsPage() {
                       {(r.options || []).map((opt, i) => {
                         const label = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"[i] || `${i + 1}`;
                         return (
-                          <Box key={i} sx={{ display: "flex", gap: 1, alignItems: "center", mb: 0.5 }}>
+                          <Box
+                            key={i}
+                            sx={{
+                              display: "flex",
+                              gap: 1,
+                              alignItems: "center",
+                              mb: 0.5,
+                              fontSize: { xs: 13, sm: 14 },
+                            }}
+                          >
                             <Box
                               sx={{
                                 width: 26, height: 26, borderRadius: "6px",
                                 display: "inline-flex", alignItems: "center", justifyContent: "center",
                                 fontWeight: 700, border: "1px solid #ddd",
+                                flex: "0 0 auto",
                               }}
                             >
                               {label}
@@ -355,7 +430,7 @@ export default function StudentQBankDetailsPage() {
                     </Box>
 
                     {/* Selected vs Correct */}
-                    <Stack direction="row" spacing={2} sx={{ mb: 1, flexWrap: "wrap" }}>
+                    <Stack direction="row" spacing={1} sx={{ mb: 1, flexWrap: "wrap" }}>
                       <Tag label="Selected" value={r.selected} />
                       <Tag label="Correct" value={r.correct} highlight />
                     </Stack>
@@ -385,8 +460,10 @@ export default function StudentQBankDetailsPage() {
           )}
         </DialogContent>
 
-        <DialogActions>
-          <Button onClick={() => setExpOpen(false)}>Close</Button>
+        <DialogActions sx={{ px: { xs: 1, sm: 2 }, py: { xs: 1, sm: 1.5 } }}>
+          <Button onClick={() => setExpOpen(false)} fullWidth={isSmDown}>
+            Close
+          </Button>
         </DialogActions>
       </Dialog>
     </Box>
