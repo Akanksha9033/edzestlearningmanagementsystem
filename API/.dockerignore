@@ -1,0 +1,10 @@
+# Keep the build context small
+node_modules
+npm-debug.log
+.git
+.gitignore
+.env
+uploads
+temp
+*.md
+**/__tests__/
