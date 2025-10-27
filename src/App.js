@@ -107,6 +107,14 @@ import AddLessonPage from "./WebStudent/Pages/Course/LMS/LMS_Pages/AddLessonPage
 import LessonPreviewWrapper from "./WebStudent/Pages/Course/LMS/LessonPreviewWrapper"
 
 
+import EBookEditor from "./WebAdmin/AdminModule/E-Books/Admin/EBookEditor"
+import EBookReader from "./WebAdmin/AdminModule/E-Books/Student/EBookReader"
+import StudentBookshelf from "./WebAdmin/AdminModule/E-Books/Student/StudentBookshelf"
+import AdminEBookList from "./WebAdmin/AdminModule/E-Books/Admin/AdminEBookList"
+import Title from "./WebAdmin/AdminModule/E-Books/Admin/Title"
+import EBookSettings from "./WebAdmin/AdminModule/E-Books/Admin/EBookSettings"
+
+
 
 const AppContent = () => {
   const location = useLocation();
@@ -431,6 +439,90 @@ const AppContent = () => {
         />
 
 
+
+{/* =================== E-BOOK ROUTES (added) =================== */}
+        {/* Settings */}
+        <Route
+          path="/admin/ebooks/settings/:ebookid"
+          element={
+            <ProtectedRoute>
+              <EBookSettings />
+            </ProtectedRoute>
+          }
+        />
+        {/* Title step (moved to avoid duplicate path) */}
+        <Route
+          path="/admin/ebooks/create/title"
+          element={
+            <ProtectedRoute>
+              <Title />
+            </ProtectedRoute>
+          }
+        />
+        {/* Create */}
+        <Route
+          path="/admin/ebooks/create"
+          element={
+            <ProtectedRoute allowedRoles={["Admin", "Teacher", "SuperAdmin"]}>
+              <EBookEditor />
+            </ProtectedRoute>
+          }
+        />
+        {/* Edit */}
+        <Route
+          path="/admin/ebooks/edit/:ebookid"
+          element={
+            <ProtectedRoute allowedRoles={["Admin", "Teacher", "SuperAdmin"]}>
+              <EBookEditor />
+            </ProtectedRoute>
+          }
+        />
+        {/* Admin list */}
+        <Route
+          path="/admin/ebooks"
+          element={
+            <ProtectedRoute allowedRoles={["Admin", "Teacher", "SuperAdmin"]}>
+              <AdminEBookList />
+            </ProtectedRoute>
+          }
+        />
+
+         <Route
+          path="/admin/ebook/create"
+          element={
+            <ProtectedRoute allowedRoles={["Admin", "Teacher", "SuperAdmin"]}>
+              <AdminEBookList />
+            </ProtectedRoute>
+          }
+        />
+        {/* Reader by slug (via query params) */}
+        <Route
+          path="/ebooks/read"
+          element={
+            <ProtectedRoute allowedRoles={["Student", "Admin", "Teacher", "SuperAdmin"]}>
+              <EBookReader />
+            </ProtectedRoute>
+          }
+        />
+        {/* Reader by id */}
+        <Route
+          path="/ebooks/read/:ebookid"
+          element={
+            <ProtectedRoute allowedRoles={["Student", "Admin", "Teacher", "SuperAdmin"]}>
+              <EBookReader />
+            </ProtectedRoute>
+          }
+        />
+        {/* Student bookshelf */}
+        <Route
+          path="/ebooks"
+          element={
+            <ProtectedRoute allowedRoles={["Student", "Admin", "Teacher", "SuperAdmin"]}>
+              <StudentBookshelf />
+            </ProtectedRoute>
+          }
+        />
+        {/* ================= END E-BOOK ROUTES ================= */}
 
  {/* Course list (role-protected) */}
 <Route
