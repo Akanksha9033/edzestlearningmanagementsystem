@@ -11,7 +11,7 @@ import ProtectedRoute from "./LoginSystem/protectedroutes/ProtectedRoute"
 // ✅ Landing Pages
 import Navbar from "./Website/components/Navbar";
 import Hero from "./Website/components/Hero";
-import Banner from "./Website/components/Banner";
+// import Banner from "./Website/components/Banner";
 import Benefit from "./Website/components/Benefit";
 import Preparation from "./Website/components/Preparation";
 import Whychooseus from "./Website/components/Whychooseus";
@@ -161,7 +161,7 @@ const AppContent = () => {
           element={
             <>
               <Hero />
-              <Banner />
+              {/* <Banner /> */}
               <Benefit />
               <Preparation />
               <Whychooseus />
