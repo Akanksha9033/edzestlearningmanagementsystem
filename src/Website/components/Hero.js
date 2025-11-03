@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import AdBanner from './AdBanner';
+// import AdBanner from './AdBanner';
 
 import teacher from "../Assets/teacher.png";
 
@@ -9,7 +9,7 @@ const Hero = () => {
   return (
     <>
       {/* Dynamic Ad Banner */}
-      <AdBanner />
+      {/* <AdBanner /> */}
 
       <section className="relative h-auto lg:h-[100vh] flex flex-col-reverse lg:flex-row items-center justify-between px-4 sm:px-6 overflow-hidden bg-white">
         {/* Left Text Section */}
