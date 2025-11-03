@@ -206,7 +206,7 @@ const AppContent = () => {
         <Route path="/drag-and-drop" element={<InstructionPage startQuiz={startQuiz} />} />
         <Route path="/drag-and-drop/set1" element={<DragAndDropQuiz1 />} />
         <Route path="/drag-and-drop/set2" element={<DragAndDropQuiz2 />} />
-        <Route path="/drag-and-drop/set3" element={<DragAndDropQuiz3 />} />
+        {/* <Route path="/drag-and-drop/set3" element={<DragAndDropQuiz3 />} /> */}
         <Route path="/docs/*" element={<Docs />} />
 
 
