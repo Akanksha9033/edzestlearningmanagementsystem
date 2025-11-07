@@ -26,11 +26,99 @@ const pickDate = (x) =>
 // ======================================================
 // 📌 1️⃣ Get available filter options for a Question Bank
 // ======================================================
+// router.get("/:bankId/filters", async (req, res) => {
+//   try {
+//     const { bankId } = req.params;
+
+//     // Us bank ke saare questions fetch kar rahe hain
+//     const result = await ddb
+//       .query({
+//         TableName: process.env.DDB_QUESTIONS,
+//         KeyConditionExpression: "bankId = :b",
+//         ExpressionAttributeValues: { ":b": bankId },
+//       })
+//       .promise();
+
+//     const questions = result.Items || [];
+
+//     // Helpers
+//     const uniq = (arr) =>
+//       [...new Set(arr.map((v) => (typeof v === "string" ? v.trim() : v)).filter(Boolean))];
+
+//     // ✅ tasks (prefer q.tasks; accept legacy q.tags)
+//     const tasks = uniq(
+//       questions.flatMap((q) => {
+//         const collect = (v) => {
+//           if (!v) return [];
+//           if (Array.isArray(v)) return v;
+//           if (typeof v === "string") return v.split(",").map((s) => s.trim());
+//           return [];
+//         };
+//         return [...collect(q.tasks), ...collect(q.tags)];
+//       })
+//     );
+
+//     // Question Type
+//     const questionType = uniq(questions.map((q) => q.questionType));
+
+//     // Difficulty (normalized)
+//     const difficulty = uniq(
+//       questions.map((q) => normalizeDifficulty(q.difficulty)).filter(Boolean)
+//     );
+
+//     // performanceDomain list
+//     const performanceDomain = uniq(
+//       questions.flatMap((q) => {
+//         const v = q.performanceDomain;
+//         if (!v) return [];
+//         if (Array.isArray(v)) return v;
+//         if (typeof v === "string") return v.split(",").map((s) => s.trim());
+//         return [];
+//       })
+//     );
+
+//     // approach list
+//     const approach = uniq(
+//       questions.flatMap((q) => {
+//         const v = q.approach;
+//         if (!v) return [];
+//         if (Array.isArray(v)) return v;
+//         if (typeof v === "string") return v.split(",").map((s) => s.trim());
+//         return [];
+//       })
+//     );
+
+//     // exam list
+//     const exam = uniq(
+//       questions.flatMap((q) => {
+//         const v = q.exam;
+//         if (!v) return [];
+//         if (Array.isArray(v)) return v;
+//         if (typeof v === "string") return v.split(",").map((s) => s.trim());
+//         return [];
+//       })
+//     );
+
+//     // ✅ Return tasks (canonical) and tags: tasks (mirror for legacy)
+//     return res.json({
+//       tasks,               // new canonical
+//       tags: tasks,         // mirror for legacy clients
+//       difficulty,
+//       questionType,
+//       performanceDomain,
+//       approach,
+//       exam,
+//     });
+//   } catch (err) {
+//     console.error("❌ filters error", err);
+//     return res.status(500).json({ error: "Failed to load filters" });
+//   }
+// });
+
 router.get("/:bankId/filters", async (req, res) => {
   try {
     const { bankId } = req.params;
 
-    // Us bank ke saare questions fetch kar rahe hain
     const result = await ddb
       .query({
         TableName: process.env.DDB_QUESTIONS,
@@ -41,12 +129,11 @@ router.get("/:bankId/filters", async (req, res) => {
 
     const questions = result.Items || [];
 
-    // Helpers
     const uniq = (arr) =>
       [...new Set(arr.map((v) => (typeof v === "string" ? v.trim() : v)).filter(Boolean))];
 
-    // ✅ tasks (prefer q.tasks; accept legacy q.tags)
-    const tasks = uniq(
+    // collect tasks/tags from all questions
+    let rawTasks = uniq(
       questions.flatMap((q) => {
         const collect = (v) => {
           if (!v) return [];
@@ -58,15 +145,43 @@ router.get("/:bankId/filters", async (req, res) => {
       })
     );
 
-    // Question Type
+    // 🔥 NEW: sort rawTasks by numeric prefix "1.1 –", "2.5 –", etc.
+    const taskSortKey = (str) => {
+      // str like "2.5 – Plan and Manage Budget ..."
+      if (typeof str !== "string") return { major: 999, minor: 999 };
+
+      // grab the "2.5" before the dash
+      const match = str.trim().match(/^(\d+)\.(\d+)/);
+      if (!match) return { major: 999, minor: 999 }; // unknowns go to bottom
+
+      return {
+        major: parseInt(match[1], 10),
+        minor: parseInt(match[2], 10),
+      };
+    };
+
+    rawTasks = rawTasks.sort((a, b) => {
+      const A = taskSortKey(a);
+      const B = taskSortKey(b);
+      if (A.major !== B.major) return A.major - B.major;
+      return A.minor - B.minor;
+    });
+
+    // other filter lists (unchanged)
     const questionType = uniq(questions.map((q) => q.questionType));
 
-    // Difficulty (normalized)
     const difficulty = uniq(
-      questions.map((q) => normalizeDifficulty(q.difficulty)).filter(Boolean)
+      questions.map((q) => {
+        const s = String(q.difficulty ?? "").trim().toLowerCase();
+        if (!s) return "";
+        if (s === "difficult" || s.startsWith("diff")) return "Hard";
+        if (s === "hard") return "Hard";
+        if (s.startsWith("easy")) return "Easy";
+        if (s.startsWith("med")) return "Medium";
+        return q.difficulty;
+      }).filter(Boolean)
     );
 
-    // performanceDomain list
     const performanceDomain = uniq(
       questions.flatMap((q) => {
         const v = q.performanceDomain;
@@ -77,7 +192,6 @@ router.get("/:bankId/filters", async (req, res) => {
       })
     );
 
-    // approach list
     const approach = uniq(
       questions.flatMap((q) => {
         const v = q.approach;
@@ -88,7 +202,6 @@ router.get("/:bankId/filters", async (req, res) => {
       })
     );
 
-    // exam list
     const exam = uniq(
       questions.flatMap((q) => {
         const v = q.exam;
@@ -99,10 +212,10 @@ router.get("/:bankId/filters", async (req, res) => {
       })
     );
 
-    // ✅ Return tasks (canonical) and tags: tasks (mirror for legacy)
+    // ✅ send sorted tasks
     return res.json({
-      tasks,               // new canonical
-      tags: tasks,         // mirror for legacy clients
+      tasks: rawTasks,      // canonical sorted list
+      tags: rawTasks,       // mirror for legacy
       difficulty,
       questionType,
       performanceDomain,
@@ -114,6 +227,7 @@ router.get("/:bankId/filters", async (req, res) => {
     return res.status(500).json({ error: "Failed to load filters" });
   }
 });
+
 
 // ======================================================
 // 📌 2️⃣ Create practice session with filters

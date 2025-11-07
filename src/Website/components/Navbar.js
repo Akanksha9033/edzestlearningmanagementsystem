@@ -1,4 +1,4 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useContext } from "react"; 
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import Logo from "../Assets/Logo.png";
 import { AuthContext } from "../../LoginSystem/context/AuthContext";
@@ -15,7 +15,10 @@ const Navbar = () => {
 
   const toggleMenu = () => setIsMenuOpen((prev) => !prev);
   const closeMenu = () => setIsMenuOpen(false);
-  const closeDropdown = () => { setShow(false); closeMenu(); };
+  const closeDropdown = () => {
+    setShow(false);
+    closeMenu();
+  };
 
   const handleNavClick = () => {
     window.scrollTo(0, 0);
@@ -24,12 +27,19 @@ const Navbar = () => {
   };
 
   const HIDE_ON = [
-    /^\/student\/attempt\/.+$/,  // ExamRunner route
-    /^\/student\/exam\/.+$/,     // if you have this path too
+    /^\/student\/attempt\/.+$/, // ExamRunner route
+    /^\/student\/exam\/.+$/, // if you have this path too
   ];
 
-  const handleLogout = async () => { await logout(); navigate("/"); };
-  const handleMobileLogout = async () => { await logout(); closeMenu(); navigate("/"); };
+  const handleLogout = async () => {
+    await logout();
+    navigate("/");
+  };
+  const handleMobileLogout = async () => {
+    await logout();
+    closeMenu();
+    navigate("/");
+  };
 
   const trackEvent = (eventName, label) => {
     if (typeof window.gtag === "function") {
@@ -89,21 +99,41 @@ const Navbar = () => {
                   <Col className="d-flex flex-column">
                     <Link
                       to="/docs"
-                      onClick={() => { trackEvent("project_docs_click", "Project Docs"); handleNavClick(); }}
+                      onClick={() => {
+                        trackEvent("project_docs_click", "Project Docs");
+                        handleNavClick();
+                      }}
                       className="text-dark text-decoration-none py-2 px-3 rounded hover-bg-light"
                     >
                       Project Docs
                     </Link>
                     <Link
                       to="/flashcards"
-                      onClick={() => { trackEvent("flashcards_click", "Flashcards"); handleNavClick(); }}
+                      onClick={() => {
+                        trackEvent("flashcards_click", "Flashcards");
+                        handleNavClick();
+                      }}
                       className="text-dark text-decoration-none py-2 px-3 rounded hover-bg-light"
                     >
                       Flashcards
                     </Link>
+
+                    <Link
+                      to="/drag-and-drop"
+                      onClick={() => {
+                        trackEvent("practice_questions_click", "Practice Questions");
+                        handleNavClick("/drag-and-drop");
+                      }}
+                      className="text-dark text-decoration-none py-2 px-3 rounded hover-bg-light"
+                    >
+                      Practice Questions
+                    </Link>
                     <Link
                       to="/PdfDocs"
-                      onClick={() => { trackEvent("pdf_docs_click", "PDF Docs"); handleNavClick(); }}
+                      onClick={() => {
+                        trackEvent("pdf_docs_click", "PDF Docs");
+                        handleNavClick();
+                      }}
                       className="text-dark text-decoration-none py-2 px-3 rounded hover-bg-light"
                     >
                       Pdf Docs
@@ -135,13 +165,15 @@ const Navbar = () => {
               Logout
             </button>
           ) : (
-            <button
-              onClick={() => navigate("/login")}
-              className="px-3 py-2 rounded text-white text-decoration-none bg-[#4748ac] hover:bg-[#37378c]"
+            // ✅ Desktop: Login → internal /login route
+            <Link
+              to="/login"
+              onClick={handleNavClick}
+              className="px-3 py-2 rounded text-decoration-none text-white text-center bg-[#4748ac] hover:bg-[#37378c]"
               style={{ marginTop: "-7px" }}
             >
               Log in
-            </button>
+            </Link>
           )}
         </nav>
 
@@ -214,24 +246,44 @@ const Navbar = () => {
               <div className="sub-links">
                 <Link
                   to="/docs"
-                  onClick={() => { trackEvent("project_docs_click", "Project Docs"); handleNavClick("/docs"); }}
+                  onClick={() => {
+                    trackEvent("project_docs_click", "Project Docs");
+                    handleNavClick("/docs");
+                  }}
                   className="mobile-sublink"
                 >
                   Project Docs
                 </Link>
                 <Link
                   to="/flashcards"
-                  onClick={() => { trackEvent("flashcards_click", "Flashcards"); handleNavClick("/flashcards"); }}
+                  onClick={() => {
+                    trackEvent("flashcards_click", "Flashcards");
+                    handleNavClick("/flashcards");
+                  }}
                   className="mobile-sublink"
                 >
                   Flashcards
                 </Link>
                 <Link
                   to="/PdfDocs"
-                  onClick={() => { trackEvent("pdf_docs_click", "PDF Docs"); handleNavClick("/PdfDocs"); }}
+                  onClick={() => {
+                    trackEvent("pdf_docs_click", "PDF Docs");
+                    handleNavClick("/PdfDocs");
+                  }}
                   className="mobile-sublink"
                 >
                   Pdf Docs
+                </Link>
+
+                <Link
+                  to="/drag-and-drop"
+                  onClick={() => {
+                    trackEvent("practice_questions_click", "Practice Questions");
+                    handleNavClick("/drag-and-drop");
+                  }}
+                  className="text-dark text-decoration-none py-2 px-3 rounded hover-bg-light"
+                >
+                  Practice Questions
                 </Link>
               </div>
             )}
@@ -253,12 +305,14 @@ const Navbar = () => {
                 Logout
               </button>
             ) : (
-              <button
-                onClick={() => { navigate("/login"); closeMenu(); }}
+              // ✅ Mobile: Login → internal /login route
+              <Link
+                to="/login"
+                onClick={() => handleNavClick("/login")}
                 className="mobile-primary-btn"
               >
                 Log in
-              </button>
+              </Link>
             )}
           </nav>
         </div>
@@ -341,6 +395,9 @@ const Navbar = () => {
           background-color:#4748ac; color:#fff; border:none;
           margin:12px auto 0;
           font-weight:600;
+          text-align:center;
+          text-decoration:none;
+          display:block;
         }
         .mobile-primary-btn:hover, .mobile-primary-btn:focus-visible{
           background-color:#37378c; outline:none;

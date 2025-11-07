@@ -172,12 +172,12 @@ const InstructionPage = ({ startQuiz }) => {
         >
           Set 2
         </button>
-        <button
+        {/* <button
           className="set-btn"
           onClick={() => redirectToSet("/drag-and-drop/set3")}
         >
           Set 3
-        </button>
+        </button> */}
       </div>
     </div>
   );

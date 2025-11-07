@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
+import { FiEye, FiEyeOff } from "react-icons/fi"; // 👁️ icons
 
 // map role -> route (unchanged)
 const roleToPath = (role) => {
@@ -17,13 +18,17 @@ const roleToPath = (role) => {
 };
 
 export default function Login() {
-  const { login, user, ready } = useAuth();  // ✅ added user & ready here
+  const { login, user, ready } = useAuth();  // ✅ keep as-is
   const [form, setForm] = useState({ email: "", password: "", deviceName: "" });
   const [needsNewPass, setNeedsNewPass] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+
+  // 👁️ visibility states (UI-only; no logic change)
+  const [showPassword, setShowPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
 
   const onSubmit = async (e) => {
     e.preventDefault();
@@ -89,6 +94,7 @@ export default function Login() {
       navigate(roleToPath(user.role), { replace: true });
     }
   }, [ready, user, navigate]);
+
   return (
     <div className="container py-5">
       <div className="row justify-content-center">
@@ -130,32 +136,59 @@ export default function Login() {
                   <label htmlFor="password" className="form-label">
                     {needsNewPass ? "Current (temporary) password" : "Password"}
                   </label>
-                  <input
-                    id="password"
-                    type="password"
-                    className="form-control"
-                    placeholder="••••••••"
-                    value={form.password}
-                    onChange={(e) => setForm({ ...form, password: e.target.value })}
-                    required
-                    autoComplete={needsNewPass ? "one-time-code" : "current-password"}
-                    disabled={needsNewPass} // lock temp password during second step
-                  />
-                </div>
+                  <div className="position-relative">
+  <input
+    id="password"
+    type={showPassword ? "text" : "password"}
+    className="form-control"
+    placeholder="••••••••"
+    value={form.password}
+    onChange={(e) => setForm({ ...form, password: e.target.value })}
+    required
+    autoComplete={needsNewPass ? "one-time-code" : "current-password"}
+    disabled={needsNewPass} // lock temp password during second step
+    style={{ paddingRight: "2.75rem" }} // space for the eye button
+  />
+  <button
+    type="button"
+    
+    className="btn border-0 p-0 position-absolute top-50 end-0 translate-middle-y me-2 d-inline-flex align-items-center justify-content-center"
+    onClick={() => setShowPassword((v) => !v)}
+    aria-label={showPassword ? "Hide password" : "Show password"}
+    tabIndex={-1}
+    style={{ width: "2rem", height: "2rem", marginTop:"-1px"}} // keeps icon fully inside the input
+  >
+    {showPassword ? <FiEyeOff /> : <FiEye />}
+  </button>
+</div>
+</div>
 
                 {needsNewPass && (
                   <div className="mb-3">
                     <label htmlFor="newPassword" className="form-label">New password</label>
-                    <input
-                      id="newPassword"
-                      type="password"
-                      className="form-control"
-                      placeholder="Create a strong password"
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      required
-                      autoComplete="new-password"
-                    />
+                    <div className="position-relative">
+                      <input
+                        id="newPassword"
+                        type={showNewPassword ? "text" : "password"}
+                        className="form-control"
+                        placeholder="Create a strong password"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        required
+                        autoComplete="new-password"
+                        style={{ paddingRight: "2.75rem" }}
+                      />
+                      <button
+                        type="button"
+                        className="btn border-0 p-0 position-absolute top-50 end-0 translate-middle-y me-2 d-inline-flex align-items-center justify-content-center"
+                        onClick={() => setShowNewPassword((v) => !v)}
+                        aria-label={showNewPassword ? "Hide new password" : "Show new password"}
+                        tabIndex={-1}
+                        style={{ width: "2rem", height: "2rem", marginTop:"-1px"}}
+                      >
+                        {showNewPassword ? <FiEyeOff /> : <FiEye />}
+                      </button>
+                    </div>
                     <div className="form-text">At least 8 characters recommended.</div>
                   </div>
                 )}
@@ -188,9 +221,18 @@ export default function Login() {
               </form>
 
               {!needsNewPass && (
-                <div className="text-center mt-3">
-                  <span className="text-muted">Don’t have an account?</span>{" "}
-                  <Link to="/register" className="link-primary">Create one</Link>
+                <div className="mt-3">
+                  <div className="d-flex flex-column  align-items-md-center gap-2">
+                    
+                      <span className="text-muted">Don’t have an account?</span>{" "}
+                      <Link to="/register" className="link-primary">Create one</Link>
+                   
+                    
+                      <Link to="/forgot-password" style={{ color: "#4748ac", fontWeight: 600 }}>
+                        Forgot password?
+                      </Link>
+                    
+                  </div>
                 </div>
               )}
             </div>
