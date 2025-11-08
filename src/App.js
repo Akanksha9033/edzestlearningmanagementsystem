@@ -79,6 +79,7 @@ import StudentQBankFilterForm from "./WebStudent/StudentModule/Q-Bank/StudentQBa
 import StudentQBankHistory from "./WebStudent/StudentModule/Q-Bank/StudentQBankHistory";
 import StudentQBankSession from "./WebStudent/StudentModule/Q-Bank/StudentQBankSession";
 import StudentQBankLatestExplanationPage from "./WebStudent/StudentModule/Q-Bank/StudentQBankLatestExplanationPage";
+import StudentQBankSolutions from "./WebStudent/StudentModule/Q-Bank/StudentQBankSolutions";
 
 // Course Components
 // ✅ ADD: CoursesPage import (your given path)
@@ -188,7 +189,7 @@ const AppContent = () => {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/reset-password/:token" element={<ResetPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/verify-email" element={<VerifyEmail />} />
         <Route path="/invite-accept" element={<InviteAccept />} />
 
@@ -437,6 +438,11 @@ const AppContent = () => {
           path="/student/qbank/:bankId/explanation/latest"
           element={<StudentQBankLatestExplanationPage />}
         />
+
+        <Route
+  path="/student/qbank/solutions"
+  element={<StudentQBankSolutions />}
+/>
 
 
 

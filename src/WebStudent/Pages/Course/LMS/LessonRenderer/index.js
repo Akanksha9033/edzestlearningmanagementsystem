@@ -10,6 +10,66 @@ import ArticleLesson    from "./ArticleLesson";
 
 
 /* ---------- S3/CloudFront PDF को inline compel करने का helper ---------- */
+// ✅ ExternalLinkLesson: handles YouTube or other external resource embeds
+// ✅ ExternalLinkLesson: handles YouTube or other external resource embeds
+function ExternalLinkLesson({ lesson }) {
+  const url = lesson?.fileUrl || lesson?.url || "";
+
+  if (!url) {
+    return (
+      <div className="alert alert-warning">
+        No external link found for this lesson.
+      </div>
+    );
+  }
+
+  // ✅ Detect YouTube and auto-fix embed format
+  const match = url.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]+)/);
+  const embedUrl = match
+    ? `https://www.youtube.com/embed/${match[1]}`
+    : url;
+
+  return (
+    <div
+      style={{
+        width: "100%",
+        maxWidth: "1000px",
+        margin: "0 auto",
+        padding: "1rem",
+      }}
+    >
+      <div
+        style={{
+          position: "relative",
+          paddingBottom: "56.25%", // keeps 16:9 aspect ratio
+          height: 0,
+          overflow: "hidden",
+          borderRadius: "12px",
+          boxShadow: "0 0 10px rgba(0,0,0,0.2)",
+          backgroundColor: "#000", // keeps frame background clean
+        }}
+      >
+        <iframe
+          src={embedUrl}
+          title={lesson?.title || "External Resource"}
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            border: "none",
+            borderRadius: "12px",
+          }}
+        ></iframe>
+      </div>
+    </div>
+  );
+}
+
+
 function forceInlineForS3Pdf(u = "") {
   try {
     const url = new URL(u);
@@ -144,6 +204,8 @@ const RENDERERS = {
   audio:   AudioLesson,
   article: ArticleLesson,
   live:    LiveLesson,
+  external: ExternalLinkLesson,
+  "external link": ExternalLinkLesson,
 
   // docs
   pdf:     PdfLesson,

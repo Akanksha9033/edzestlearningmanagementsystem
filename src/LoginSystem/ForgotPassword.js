@@ -1,54 +1,76 @@
-import { useState } from "react";
+import React, { useState } from "react";
+import { Box, Paper, TextField, Button, Typography, Stack, Alert } from "@mui/material";
+import { useNavigate } from "react-router-dom";              // ⬅️ added
+import API from "./axios";
 
-// const REACT_APP_API_URL = "https://mocktest-ljru.onrender.com";
-const REACT_APP_API_URL = process.env.REACT_APP_API_URL;
+export default function ForgotPassword() {
+  const [username, setUsername] = useState("");
+  const [sent, setSent] = useState(false);
+  const [err, setErr] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const navigate = useNavigate();                            // ⬅️ added
 
-const ForgotPassword = () => {
-  const [email, setEmail] = useState("");
-  const [message, setMessage] = useState("");
-  const [loading, setLoading] = useState(false);
+  // inline API call (unchanged logic)
+  const forgotPasswordStart = (u) =>
+    API.post("/api/auth/forgot/start", { username: u });
 
-  const handleSubmit = async (e) => {
+  const submit = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    setMessage("");
+    if (submitting) return;            // prevent double submit
+    setErr("");
+    setSubmitting(true);
+    const u = username.trim();
 
     try {
-      const res = await fetch(`${REACT_APP_API_URL}/api/auth/forgot-password`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-
-      const data = await res.json();
-      setMessage(res.ok ? data.message || "Password reset email sent successfully." : data.message || "Failed to send password reset email.");
-    } catch (error) {
-      console.error("Forgot password error:", error);
-      setMessage("Network error. Please try again later.");
+      await forgotPasswordStart(u);
+      setSent(true);                   // generic success (don’t reveal existence)
+      navigate(`/reset-password?u=${encodeURIComponent(u)}`);   // ⬅️ added
+    } catch {
+      setSent(true);                   // keep generic even on error
+      navigate(`/reset-password?u=${encodeURIComponent(u)}`);   // ⬅️ added
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
   return (
-    <div className="container mt-5" style={{ maxWidth: "400px" }}>
-      <h2>Forgot Password</h2>
-      {message && <div className="alert alert-info">{message}</div>}
-      <form onSubmit={handleSubmit}>
-        <input
-          type="email"
-          required
-          className="form-control mb-2"
-          placeholder="Enter your email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-        <button type="submit" className="btn btn-primary w-100" disabled={loading}>
-          {loading ? "Sending..." : "Send Reset Link"}
-        </button>
-      </form>
-    </div>
-  );
-};
+    <Box maxWidth={420} mx="auto" my={6} px={2}>
+      <Paper sx={{ p: 3 }}>
+        <Typography variant="h5" fontWeight={800} gutterBottom>
+          Forgot password
+        </Typography>
+        <Typography variant="body2" color="text.secondary" mb={2}>
+          Enter your registered email / username. We’ll send a verification code.
+        </Typography>
 
-export default ForgotPassword;
+        {err && <Alert severity="error" sx={{ mb: 2 }}>{err}</Alert>}
+        {sent && (
+          <Alert severity="success" sx={{ mb: 2 }}>
+            If the account exists, a code has been sent.
+          </Alert>
+        )}
+
+        <form onSubmit={submit} noValidate>
+          <Stack spacing={2}>
+            <TextField
+              label="Email / Username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              fullWidth
+              required
+              autoComplete="username"
+            />
+            <Button
+              type="submit"
+              variant="contained"
+              sx={{ background: "#4748ac" }}
+              disabled={!username.trim() || submitting}
+            >
+              {submitting ? "Sending…" : "Send code"}
+            </Button>
+          </Stack>
+        </form>
+      </Paper>
+    </Box>
+  );
+}
