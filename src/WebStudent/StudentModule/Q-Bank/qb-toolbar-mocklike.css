@@ -1,0 +1,57 @@
+:root{
+  --brand:#4748ac;
+  --brand-ghost:#ececff;
+  --white:#fff;
+  --shadow:0 4px 10px rgba(0,0,0,.08);
+}
+
+/* Purple header bar (like mocktest screenshot) */
+.qbml-bar{
+  position: sticky; top: 0; z-index: 20;
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  padding:10px 14px;
+  background:var(--brand); color:var(--white);
+  border-bottom:1px solid rgba(255,255,255,.15);
+}
+.qbml-left,.qbml-right{ display:flex; align-items:center; gap:10px; }
+
+/* Buttons */
+.qbml-btn{
+  appearance:none; border:0; outline:0; cursor:pointer;
+  font-weight:700; letter-spacing:.2px;
+  padding:8px 12px; border-radius:8px;
+  background:var(--white); color:var(--brand);
+  box-shadow:var(--shadow);
+  transition:transform .06s ease, background .15s ease;
+}
+.qbml-btn:hover{ transform:translateY(-1px); }
+.qbml-btn:active{ transform:translateY(0); }
+.qbml-btn.active{ background:#ffd24d; color:#5a4600; }
+.qbml-btn.ghost{ background:var(--brand-ghost); color:var(--brand); }
+
+/* Scratch Pad panel */
+.qbml-scratch{
+  position:fixed; right:0; top:0; height:100vh; width:min(420px,92vw);
+  background:var(--white); box-shadow:-6px 0 18px rgba(0,0,0,.15);
+  transform:translateX(100%); transition:transform .22s ease-in-out;
+  z-index:50; display:flex; flex-direction:column;
+}
+.qbml-scratch.open{ transform:translateX(0%); }
+
+.qbml-scratch-header{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:14px 16px; background:var(--brand); color:var(--white);
+  font-weight:700;
+}
+.qbml-close{ background:transparent; border:0; color:var(--white); font-size:22px; cursor:pointer; }
+
+.qbml-scratch-body{ padding:12px 16px; flex:1; }
+.qbml-textarea{
+  width:100%; height:100%; resize:none;
+  border:1px solid #e3e3e3; border-radius:10px; padding:12px;
+  font-size:14px; line-height:1.4;
+}
+.qbml-scratch-footer{ padding:12px 16px 16px; border-top:1px solid #eee; }
+
+/* Backdrop */
+.qbml-backdrop{ position:fixed; inset:0; background:rgba(0,0,0,.35); z-index:45; }

@@ -227,7 +227,7 @@ const Solution = ({ solutions, closeSolution, totalQuestions, quizData, quizComp
 
       {/* Link to practice more exam-like questions */}
       <a
-        href="https://exams.edzest.org/learn/PMP-mock-exams-by-edzest"
+        href="https://exams.edzest.org/learn/PMP-Mock-Exams"
         target="_blank"
         rel="noopener noreferrer"
         className="mt-auto text-center text-[#4748ac] text-decoration-none font-semibold py-2 px-6 rounded mt-6 inline-block"
