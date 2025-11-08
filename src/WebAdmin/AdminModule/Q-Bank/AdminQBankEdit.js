@@ -6,17 +6,15 @@
 
 // import {
 //   Box,
-//   Card,
-//   CardContent,
 //   Typography,
 //   TextField,
 //   Select,
 //   MenuItem,
 //   Button,
 //   RadioGroup,
-//   FormControlLabel,
 //   Radio,
 //   Checkbox,
+//   CircularProgress,
 // } from "@mui/material";
 // import SettingsIcon from "@mui/icons-material/Settings";
 // import ArrowBackIcon from "@mui/icons-material/ArrowBack";
@@ -100,12 +98,12 @@
 //     }
 //   };
 
-//   // ✅ Open the QB settings page (qbsetting.js)
+//   // Settings page
 //   const openSettings = () => {
 //     navigate(`/admin/qbank/${bankId}/qbsetting`);
 //   };
 
-//   // ✅ FIXED: Go back to the list route you showed in the screenshot
+//   // Back to list
 //   const goBackToList = () => {
 //     navigate("/admin/qbank/list", { replace: true });
 //   };
@@ -124,18 +122,59 @@
 //           </Button>
 //         </Box>
 
-//         <Typography variant="h6" color="error">
-//           ⚠️ No questions found for this bank.
-//         </Typography>
+//         <Box
+//           sx={{
+//             display: "flex",
+//             alignItems: "center",
+//             justifyContent: "center",
+//             minHeight: 200,
+//           }}
+//         >
+//           <CircularProgress />
+//         </Box>
 //       </Box>
 //     );
 //   }
 
 //   const q = questions[currentIndex];
 
+//   // Unique options for Approach & Exam (from data / Excel)
+//   const approachOptions = Array.from(
+//     new Set(
+//       (questions || [])
+//         .map((qq) => qq.approach)
+//         .filter((v) => v && String(v).trim() !== "")
+//     )
+//   );
+
+//   const examOptions = Array.from(
+//     new Set(
+//       (questions || [])
+//         .map((qq) => qq.exam)
+//         .filter((v) => v && String(v).trim() !== "")
+//     )
+//   );
+
+//   // ✅ NEW: Unique options for Tags & Domain (from Excel data)
+//   const tagOptions = Array.from(
+//     new Set(
+//       (questions || [])
+//         .map((qq) => qq.tags)
+//         .filter((v) => v && String(v).trim() !== "")
+//     )
+//   );
+
+//   const domainOptions = Array.from(
+//     new Set(
+//       (questions || [])
+//         .map((qq) => qq.performanceDomain)
+//         .filter((v) => v && String(v).trim() !== "")
+//     )
+//   );
+
 //   return (
 //     <Box sx={{ p: 3 }}>
-//       {/* Header row: Back (left), Title (center-ish), Settings (right) */}
+//       {/* Header row */}
 //       <Box sx={{ display: "flex", alignItems: "center", mb: 2, gap: 2 }}>
 //         <Button
 //           variant="text"
@@ -146,7 +185,7 @@
 //           Back to List
 //         </Button>
 
-//         <Typography variant="h5" gutterBottom sx={{ fontWeight: "bold", m: 0 }}>
+//         <Typography variant="h5" sx={{ fontWeight: "normal", m: 0 }}>
 //           ✏️ Edit Question Bank ({currentIndex + 1}/{questions.length})
 //         </Typography>
 
@@ -162,232 +201,352 @@
 //         </Box>
 //       </Box>
 
-//       <Card
-//         sx={{
-//           boxShadow: 3,
-//           borderRadius: "12px",
-//           p: 2,
-//           transition: "0.3s",
-//           "&:hover": { boxShadow: 6 },
-//         }}
-//       >
-//         <CardContent>
-//           {/* Question Text */}
-//           <TextField
-//             label="Question Text"
-//             fullWidth
-//             multiline
-//             rows={3}
-//             value={q.questionText}
-//             onChange={(e) => handleChange("questionText", e.target.value)}
-//             sx={{ mb: 2 }}
-//           />
+//       {/* MAIN CONTENT (no Card wrapper) */}
+//       <Box sx={{ mt: 2 }}>
+//         {/* Question Text */}
+//         <TextField
+//           label="Question Text"
+//           fullWidth
+//           multiline
+//           minRows={3}
+//           value={q.questionText}
+//           onChange={(e) => handleChange("questionText", e.target.value)}
+//           sx={{
+//             mb: 2,
+//             "& .MuiOutlinedInput-root": {
+//               fontSize: "1.05rem",
+//               fontWeight: 600,
+//               lineHeight: 1.6,
+//               paddingY: 1.5,
+//             },
+//             "& .MuiInputLabel-root": {
+//               fontSize: "0.9rem",
+//               fontWeight: 500,
+//             },
+//           }}
+//         />
 
-//           {/* Options */}
-//           <Typography variant="subtitle1" sx={{ fontWeight: "bold", mb: 1 }}>
-//             Options:
-//           </Typography>
+//         {/* OPTIONS */}
+//         <Typography variant="subtitle1" sx={{ fontWeight: "", mb: 1 }}>
+//           Options:
+//         </Typography>
 
-//           {q.questionType === "Multi-Select" ? (
-//             q.options?.map((opt, i) => (
-//               <FormControlLabel
+//         {q.questionType === "Multi-Select" ? (
+//           // ✅ MULTI-SELECT
+//           q.options?.map((opt, i) => {
+//             const val = String.fromCharCode(65 + i);
+//             const checked = q.correctAnswer?.includes(val);
+//             return (
+//               <Box
 //                 key={i}
-//                 control={
-//                   <Checkbox
-//                     checked={q.correctAnswer?.includes(
-//                       String.fromCharCode(65 + i)
-//                     )}
-//                     onChange={(e) => {
-//                       const val = String.fromCharCode(65 + i);
-//                       let updatedAnswers = [...(q.correctAnswer || [])];
-//                       if (e.target.checked) {
-//                         if (!updatedAnswers.includes(val))
-//                           updatedAnswers.push(val);
-//                       } else {
-//                         updatedAnswers = updatedAnswers.filter(
-//                           (ans) => ans !== val
-//                         );
-//                       }
-//                       handleChange("correctAnswer", updatedAnswers);
-//                     }}
-//                   />
-//                 }
-//                 label={
-//                   <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-//                     <Typography sx={{ minWidth: "20px", fontWeight: "bold" }}>
-//                       {String.fromCharCode(65 + i)}.
-//                     </Typography>
-//                     <TextField
-//                       value={opt}
-//                       onChange={(e) => {
-//                         const updated = [...q.options];
-//                         updated[i] = e.target.value;
-//                         handleChange("options", updated);
-//                       }}
-//                       sx={{ flex: 1, background: "#fff", borderRadius: "8px" }}
-//                     />
-//                   </Box>
-//                 }
 //                 sx={{
-//                   mb: 1,
-//                   alignItems: "flex-start",
-//                   background: "#fff",
-//                   borderRadius: "8px",
-//                   p: 1,
-//                   boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+//                   mb: 1.5,
+//                   position: "relative",
+//                   width: "100%",
 //                 }}
-//               />
-//             ))
-//           ) : (
-//             <RadioGroup
-//               value={q.correctAnswer?.[0] || ""}
-//               onChange={(e) => handleChange("correctAnswer", [e.target.value])}
-//             >
-//               {q.options?.map((opt, i) => (
-//                 <FormControlLabel
-//                   key={i}
-//                   value={String.fromCharCode(65 + i)}
-//                   control={<Radio />}
-//                   label={
-//                     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-//                       <Typography sx={{ minWidth: "20px", fontWeight: "bold" }}>
-//                         {String.fromCharCode(65 + i)}.
-//                       </Typography>
-//                       <TextField
-//                         value={opt}
-//                         onChange={(e) => {
-//                           const updated = [...q.options];
-//                           updated[i] = e.target.value;
-//                           handleChange("options", updated);
-//                         }}
-//                         sx={{
-//                           flex: 1,
-//                           background: "#fff",
-//                           borderRadius: "8px",
-//                         }}
-//                       />
-//                     </Box>
-//                   }
+//               >
+//                 <Checkbox
+//                   checked={checked}
+//                   onChange={(e) => {
+//                     let updatedAnswers = [...(q.correctAnswer || [])];
+//                     if (e.target.checked) {
+//                       if (!updatedAnswers.includes(val)) {
+//                         updatedAnswers.push(val);
+//                       }
+//                     } else {
+//                       updatedAnswers = updatedAnswers.filter(
+//                         (ans) => ans !== val
+//                       );
+//                     }
+//                     handleChange("correctAnswer", updatedAnswers);
+//                   }}
 //                   sx={{
-//                     mb: 1,
-//                     alignItems: "flex-start",
-//                     background: "#fff",
-//                     borderRadius: "8px",
-//                     p: 1,
-//                     boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+//                     position: "absolute",
+//                     left: 8,
+//                     top: "50%",
+//                     transform: "translateY(-50%)",
+//                     zIndex: 1,
 //                   }}
 //                 />
-//               ))}
-//             </RadioGroup>
-//           )}
 
-//           {/* Dropdowns */}
-//           <Box sx={{ display: "flex", gap: 2, mt: 2, flexWrap: "wrap" }}>
-//             <Select
-//               value={q.difficulty || ""}
-//               onChange={(e) => {
-//                 handleChange("difficulty", e.target.value);
-//                 handleFilterChange("difficulty", e.target.value);
-//               }}
-//             >
-//               <MenuItem value="Easy">Easy</MenuItem>
-//               <MenuItem value="Medium">Medium</MenuItem>
-//               <MenuItem value="Difficult">Difficult</MenuItem>
-//             </Select>
+//                 <TextField
+//                   fullWidth
+//                   multiline
+//                   minRows={1}
+//                   value={opt}
+//                   onChange={(e) => {
+//                     const updated = [...q.options];
+//                     updated[i] = e.target.value;
+//                     handleChange("options", updated);
+//                   }}
+//                   sx={{
+//                     "& .MuiOutlinedInput-root": {
+//                       fontSize: "0.95rem",
+//                       lineHeight: 1.6,
+//                       minHeight: 88, // roughly 3 lines height
+//                       display: "flex",
+//                       alignItems: "center", // vertical center
+//                     },
+//                     "& .MuiOutlinedInput-inputMultiline": {
+//                       padding: 0, // so flex centering works
+//                     },
+//                   }}
+//                   InputProps={{
+//                     sx: {
+//                       pl: 7, // space from checkbox
+//                     },
+//                   }}
+//                 />
+//               </Box>
+//             );
+//           })
+//         ) : (
+//           // ✅ SINGLE-SELECT (Radio)
+//           <RadioGroup
+//             value={q.correctAnswer?.[0] || ""}
+//             onChange={(e) => handleChange("correctAnswer", [e.target.value])}
+//           >
+//             {q.options?.map((opt, i) => {
+//               const val = String.fromCharCode(65 + i);
+//               return (
+//                 <Box
+//                   key={i}
+//                   sx={{
+//                     mb: 1.5,
+//                     position: "relative",
+//                     width: "100%",
+//                   }}
+//                 >
+//                   <Radio
+//                     value={val}
+//                     sx={{
+//                       position: "absolute",
+//                       left: 8,
+//                       top: "50%",
+//                       transform: "translateY(-50%)",
+//                       zIndex: 1,
+//                     }}
+//                   />
 
-//             <Select
-//               value={q.questionType || ""}
-//               onChange={(e) => {
-//                 handleChange("questionType", e.target.value);
-//                 handleFilterChange("questionType", e.target.value);
-//               }}
-//             >
-//               <MenuItem value="Single-Select">Single-Select</MenuItem>
-//               <MenuItem value="Multi-Select">Multi-Select</MenuItem>
-//               <MenuItem value="Fill-in-the-Blank">Fill-in-the-Blank</MenuItem>
-//               <MenuItem value="True/False">True/False</MenuItem>
-//             </Select>
+//                   <TextField
+//                     fullWidth
+//                     multiline
+//                     minRows={1}
+//                     value={opt}
+//                     onChange={(e) => {
+//                       const updated = [...q.options];
+//                       updated[i] = e.target.value;
+//                       handleChange("options", updated);
+//                     }}
+//                     sx={{
+//                       "& .MuiOutlinedInput-root": {
+//                         fontSize: "0.95rem",
+//                         lineHeight: 1.6,
+//                         minHeight: 88,
+//                         display: "flex",
+//                         alignItems: "center",
+//                       },
+//                       "& .MuiOutlinedInput-inputMultiline": {
+//                         padding: 0,
+//                       },
+//                     }}
+//                     InputProps={{
+//                       sx: {
+//                         pl: 7,
+//                       },
+//                     }}
+//                   />
+//                 </Box>
+//               );
+//             })}
+//           </RadioGroup>
+//         )}
 
-//             <TextField
-//               label="Tags"
-//               value={q.tags || ""}
-//               onChange={(e) => {
-//                 handleChange("tags", e.target.value);
-//                 handleFilterChange("tags", e.target.value);
-//               }}
-//             />
+//         {/* Dropdowns / Meta */}
+//         <Box sx={{ display: "flex", gap: 2, mt: 2, flexWrap: "wrap" }}>
+//           {/* Difficulty filter + edit */}
+//           <Select
+//             value={q.difficulty || ""}
+//             onChange={(e) => {
+//               handleChange("difficulty", e.target.value);
+//               handleFilterChange("difficulty", e.target.value);
+//             }}
+//             displayEmpty
+//             sx={{ minWidth: 140 }}
+//           >
+//             <MenuItem value="">
+//               <em>Difficulty</em>
+//             </MenuItem>
+//             <MenuItem value="Easy">Easy</MenuItem>
+//             <MenuItem value="Medium">Medium</MenuItem>
+//             <MenuItem value="Difficult">Difficult</MenuItem>
+//           </Select>
 
-//             <TextField
-//               label="Domain"
-//               value={q.performanceDomain || ""}
-//               onChange={(e) => {
-//                 handleChange("performanceDomain", e.target.value);
-//                 handleFilterChange("performanceDomain", e.target.value);
-//               }}
-//             />
-//           </Box>
+//           {/* Question type filter + edit */}
+//           <Select
+//             value={q.questionType || ""}
+//             onChange={(e) => {
+//               handleChange("questionType", e.target.value);
+//               handleFilterChange("questionType", e.target.value);
+//             }}
+//             displayEmpty
+//             sx={{ minWidth: 160 }}
+//           >
+//             <MenuItem value="">
+//               <em>Question Type</em>
+//             </MenuItem>
+//             <MenuItem value="Single-Select">Single-Select</MenuItem>
+//             <MenuItem value="Multi-Select">Multi-Select</MenuItem>
+//             <MenuItem value="Fill-in-the-Blank">Fill-in-the-Blank</MenuItem>
+//             <MenuItem value="True/False">True/False</MenuItem>
+//           </Select>
 
-//           {/* Explanation */}
+//           {/* ✅ Tags as DROPDOWN (from Excel values) */}
 //           <TextField
-//             label="Explanation"
-//             fullWidth
-//             multiline
-//             rows={2}
-//             value={q.explanation || ""}
-//             onChange={(e) => handleChange("explanation", e.target.value)}
-//             sx={{ mt: 2 }}
-//           />
+//             select
+//             label="Tags"
+//             value={q.tags || ""}
+//             onChange={(e) => {
+//               // only edit current question's tag
+//               handleChange("tags", e.target.value);
+//             }}
+//             size="small"
+//             sx={{ minWidth: 180 }}
+//           >
+//             {tagOptions.map((opt) => (
+//               <MenuItem key={opt} value={opt}>
+//                 {opt}
+//               </MenuItem>
+//             ))}
+//           </TextField>
 
-//           {/* ✅ Save, Nav & Publish Buttons */}
-//           <Box sx={{ display: "flex", gap: 2, mt: 3, flexWrap: "wrap" }}>
-//             <Button
-//               variant="outlined"
-//               disabled={currentIndex === 0}
-//               onClick={prevQuestion}
-//             >
-//               ⬅ Previous
-//             </Button>
+//           {/* ✅ Domain as DROPDOWN (from Excel values) */}
+//           <TextField
+//             select
+//             label="Domain"
+//             value={q.performanceDomain || ""}
+//             onChange={(e) => {
+//               // only edit current question's domain
+//               handleChange("performanceDomain", e.target.value);
+//             }}
+//             size="small"
+//             sx={{ minWidth: 200 }}
+//           >
+//             {domainOptions.map((opt) => (
+//               <MenuItem key={opt} value={opt}>
+//                 {opt}
+//               </MenuItem>
+//             ))}
+//           </TextField>
 
-//             <Button
-//               variant="contained"
-//               sx={{
-//                 backgroundColor: "#4748ac",
-//                 "&:hover": { backgroundColor: "#373885" },
-//               }}
-//               onClick={handleSave}
-//             >
-//               💾 Save
-//             </Button>
+//           {/* Approach dropdown (already there) */}
+//           <TextField
+//             select
+//             label="Approach"
+//             value={q.approach || ""}
+//             onChange={(e) => handleChange("approach", e.target.value)}
+//             size="small"
+//             sx={{ minWidth: 160 }}
+//           >
+//             {approachOptions.map((opt) => (
+//               <MenuItem key={opt} value={opt}>
+//                 {opt}
+//               </MenuItem>
+//             ))}
+//           </TextField>
 
-//             <Button
-//               variant="outlined"
-//               disabled={currentIndex === questions.length - 1}
-//               onClick={nextQuestion}
-//             >
-//               Next ➡
-//             </Button>
+//           {/* Exam dropdown (already there) */}
+//           <TextField
+//             select
+//             label="Exam"
+//             value={q.exam || ""}
+//             onChange={(e) => handleChange("exam", e.target.value)}
+//             size="small"
+//             sx={{ minWidth: 160 }}
+//           >
+//             {examOptions.map((opt) => (
+//               <MenuItem key={opt} value={opt}>
+//                 {opt}
+//               </MenuItem>
+//             ))}
+//           </TextField>
+//         </Box>
 
-//             {/* 🚀 Publish Button */}
-//             <Button
-//               variant="contained"
-//               color="success"
-//               sx={{
-//                 backgroundColor: "#2e7d32",
-//                 "&:hover": { backgroundColor: "#1b5e20" },
-//                 ml: "auto",
-//               }}
-//               onClick={handlePublish}
-//             >
-//               🚀 Publish
-//             </Button>
-//           </Box>
-//         </CardContent>
-//       </Card>
+//         {/* Explanation */}
+//         <TextField
+//           label="Explanation"
+//           fullWidth
+//           multiline
+//           minRows={3}
+//           value={q.explanation || ""}
+//           onChange={(e) => handleChange("explanation", e.target.value)}
+//           sx={{
+//             mt: 2,
+//             "& .MuiInputLabel-root": {
+//               color: "#4748ac",
+//               fontWeight: 600,
+//             },
+//             "& .MuiInputLabel-root.Mui-focused": {
+//               color: "#4748ac",
+//             },
+//             "& .MuiOutlinedInput-root": {
+//               fontSize: "0.95rem",
+//               lineHeight: 1.6,
+//               paddingY: 1.5,
+//             },
+//           }}
+//         />
+
+//         {/* Buttons */}
+//         <Box sx={{ display: "flex", gap: 2, mt: 3, flexWrap: "wrap" }}>
+//           <Button
+//             variant="outlined"
+//             disabled={currentIndex === 0}
+//             onClick={prevQuestion}
+//           >
+//             ⬅ PREVIOUS
+//           </Button>
+
+//           <Button
+//             variant="contained"
+//             sx={{
+//               backgroundColor: "#4748ac",
+//               "&:hover": { backgroundColor: "#373885" },
+//             }}
+//             onClick={handleSave}
+//           >
+//             💾 SAVE
+//           </Button>
+
+//           <Button
+//             variant="outlined"
+//             disabled={currentIndex === questions.length - 1}
+//             onClick={nextQuestion}
+//           >
+//             NEXT ➡
+//           </Button>
+
+//           <Button
+//             variant="contained"
+//             color="success"
+//             sx={{
+//               backgroundColor: "#2e7d32",
+//               "&:hover": { backgroundColor: "#1b5e20" },
+//               ml: "auto",
+//             }}
+//             onClick={handlePublish}
+//           >
+//             🚀 PUBLISH
+//           </Button>
+//         </Box>
+//       </Box>
 //     </Box>
 //   );
 // }
 
 
+
+// src/pages/Admin/QBank/AdminQBankEdit.js
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import API from "../../../LoginSystem/axios";
@@ -398,17 +557,16 @@ import {
   CardContent,
   Typography,
   TextField,
-  Select,
   MenuItem,
   Button,
   RadioGroup,
-  FormControlLabel,
   Radio,
   Checkbox,
-  CircularProgress, // ✅ ADDED
+  CircularProgress,
+  Divider,
 } from "@mui/material";
-import SettingsIcon from "@mui/icons-material/Settings";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import SettingsIcon from "@mui/icons-material/Settings";
 
 export default function AdminQBankEdit() {
   const { bankId } = useParams();
@@ -416,28 +574,20 @@ export default function AdminQBankEdit() {
 
   const [questions, setQuestions] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [filters, setFilters] = useState({
-    difficulty: "",
-    questionType: "",
-    tags: "",
-    performanceDomain: "",
-  });
 
-  // 🔹 Fetch questions of this bank
   useEffect(() => {
     async function fetchQuestions() {
       try {
-        const res = await API.get(`/api/admin/qbank/${bankId}/questions`, {
-          params: filters,
-        });
+        const res = await API.get(`/api/admin/qbank/${bankId}/questions`);
         setQuestions(Array.isArray(res.data) ? res.data : []);
         setCurrentIndex(0);
+        window.scrollTo({ top: 0, behavior: "smooth" });
       } catch (err) {
         console.error("❌ Error loading questions:", err);
       }
     }
     fetchQuestions();
-  }, [bankId, filters]);
+  }, [bankId]);
 
   const handleChange = (field, value) => {
     const updated = [...questions];
@@ -456,23 +606,21 @@ export default function AdminQBankEdit() {
     }
   };
 
-  const handleFilterChange = (field, value) => {
-    setFilters((prev) => ({ ...prev, [field]: value }));
-  };
-
   const nextQuestion = () => {
     if (currentIndex < questions.length - 1) {
-      setCurrentIndex(currentIndex + 1);
+      setCurrentIndex((prev) => prev + 1);
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
 
   const prevQuestion = () => {
     if (currentIndex > 0) {
-      setCurrentIndex(currentIndex - 1);
+      setCurrentIndex((prev) => prev - 1);
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
 
-  // 🟢 Publish
+  // ✅ Publish handler (from first version)
   const handlePublish = async () => {
     if (
       window.confirm(
@@ -489,65 +637,195 @@ export default function AdminQBankEdit() {
     }
   };
 
-  // ✅ Open the QB settings page (qbsetting.js)
-  const openSettings = () => {
-    navigate(`/admin/qbank/${bankId}/qbsetting`);
-  };
+  const openSettings = () => navigate(`/admin/qbank/${bankId}/qbsetting`);
+  const goBackToList = () => navigate("/admin/qbank/list", { replace: true });
 
-  // ✅ FIXED: Go back to the list route you showed in the screenshot
-  const goBackToList = () => {
-    navigate("/admin/qbank/list", { replace: true });
-  };
-
-  if (!questions.length) {
+  if (!questions.length)
     return (
-      <Box sx={{ p: 3 }}>
-        <Box sx={{ display: "flex", alignItems: "center", mb: 2, gap: 1.5 }}>
-          <Button
-            variant="text"
-            startIcon={<ArrowBackIcon />}
-            onClick={goBackToList}
-            sx={{ textTransform: "none" }}
-          >
-            Back to List
-          </Button>
-        </Box>
+      <Box sx={{ p: 3, display: "flex", justifyContent: "center" }}>
+        <CircularProgress />
+      </Box>
+    );
 
-        {/* 🔄 Replaced "No questions found" with a loader */}
+  const q = questions[currentIndex];
+
+  // 🔹 Extract unique dropdown values for sidebar
+  const uniqueValues = (key) => [
+    ...new Set(questions.map((item) => item[key]).filter(Boolean)),
+  ];
+  const difficulties = ["Easy", "Medium", "Difficult"];
+  const types = uniqueValues("questionType");
+  const tags = uniqueValues("tags");
+  const domains = uniqueValues("performanceDomain");
+  const approaches = uniqueValues("approach");
+  const exams = uniqueValues("exam");
+
+  return (
+    <Box sx={{ display: "flex", p: 2 }}>
+      {/* ================= LEFT SIDEBAR ================= */}
+<Box
+  sx={{
+    width: 260,
+    pr: 2,
+    borderRight: "1px solid #ddd",
+    height: "calc(100vh - 40px)",
+    position: "sticky",
+    top: 20,
+    overflowY: "auto",
+  }}
+>
+  {/* 🔝 TOP BUTTONS: SAVE + PUBLISH */}
+  <Button
+    variant="contained"
+    fullWidth
+    onClick={handleSave}
+    sx={{
+      backgroundColor: "#4748ac",
+      textTransform: "none",
+      py: 1.1,
+      mb: 1.5,
+    }}
+  >
+    💾 Save Changes
+  </Button>
+
+  <Button
+    variant="contained"
+    color="success"
+    fullWidth
+    onClick={handlePublish}
+    sx={{ py: 1.1, mb: 2 }}
+  >
+    🚀 Publish
+  </Button>
+
+  <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
+    Edit Filters
+  </Typography>
+
+  {/* 🔹 Difficulty */}
+  <Typography variant="subtitle2">Difficulty</Typography>
+  <TextField
+    select
+    fullWidth
+    value={q.difficulty || ""}
+    onChange={(e) => handleChange("difficulty", e.target.value)}
+    sx={{ mb: 2 }}
+  >
+    {difficulties.map((d) => (
+      <MenuItem key={d} value={d}>
+        {d}
+      </MenuItem>
+    ))}
+  </TextField>
+
+  {/* 🔹 Question Type */}
+  <Typography variant="subtitle2">Question Type</Typography>
+  <TextField
+    select
+    fullWidth
+    value={q.questionType || ""}
+    onChange={(e) => handleChange("questionType", e.target.value)}
+    sx={{ mb: 2 }}
+  >
+    {types.map((t) => (
+      <MenuItem key={t} value={t}>
+        {t}
+      </MenuItem>
+    ))}
+  </TextField>
+
+  {/* 🔹 Tags */}
+  <Typography variant="subtitle2">Tags</Typography>
+  <TextField
+    select
+    fullWidth
+    value={q.tags || ""}
+    onChange={(e) => handleChange("tags", e.target.value)}
+    sx={{ mb: 2 }}
+  >
+    {tags.map((t) => (
+      <MenuItem key={t} value={t}>
+        {t}
+      </MenuItem>
+    ))}
+  </TextField>
+
+  {/* 🔹 Domain */}
+  <Typography variant="subtitle2">Domain</Typography>
+  <TextField
+    select
+    fullWidth
+    value={q.performanceDomain || ""}
+    onChange={(e) => handleChange("performanceDomain", e.target.value)}
+    sx={{ mb: 2 }}
+  >
+    {domains.map((d) => (
+      <MenuItem key={d} value={d}>
+        {d}
+      </MenuItem>
+    ))}
+  </TextField>
+
+  {/* 🔹 Approach */}
+  <Typography variant="subtitle2">Approach</Typography>
+  <TextField
+    select
+    fullWidth
+    value={q.approach || ""}
+    onChange={(e) => handleChange("approach", e.target.value)}
+    sx={{ mb: 2 }}
+  >
+    {approaches.map((a) => (
+      <MenuItem key={a} value={a}>
+        {a}
+      </MenuItem>
+    ))}
+  </TextField>
+
+  {/* 🔹 Exam */}
+  <Typography variant="subtitle2">Exam</Typography>
+  <TextField
+    select
+    fullWidth
+    value={q.exam || ""}
+    onChange={(e) => handleChange("exam", e.target.value)}
+    sx={{ mb: 2 }}
+  >
+    {exams.map((e) => (
+      <MenuItem key={e} value={e}>
+        {e}
+      </MenuItem>
+    ))}
+  </TextField>
+</Box>
+
+
+      {/* ================= RIGHT CONTENT ================= */}
+      <Box sx={{ flexGrow: 1, pl: 3 }}>
+        {/* Header Row */}
         <Box
           sx={{
             display: "flex",
             alignItems: "center",
-            justifyContent: "center",
-            minHeight: 200,
+            mb: 2,
+            justifyContent: "space-between",
           }}
         >
-          <CircularProgress />
-        </Box>
-      </Box>
-    );
-  }
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <Button
+              variant="text"
+              startIcon={<ArrowBackIcon />}
+              onClick={goBackToList}
+              sx={{ textTransform: "none" }}
+            >
+              Back
+            </Button>
+            <Typography variant="h6">
+              ✏️ Edit Question ({currentIndex + 1}/{questions.length})
+            </Typography>
+          </Box>
 
-  const q = questions[currentIndex];
-
-  return (
-    <Box sx={{ p: 3 }}>
-      {/* Header row: Back (left), Title (center-ish), Settings (right) */}
-      <Box sx={{ display: "flex", alignItems: "center", mb: 2, gap: 2 }}>
-        <Button
-          variant="text"
-          startIcon={<ArrowBackIcon />}
-          onClick={goBackToList}
-          sx={{ textTransform: "none" }}
-        >
-          Back to List
-        </Button>
-
-        <Typography variant="h5" gutterBottom sx={{ fontWeight: "bold", m: 0 }}>
-          ✏️ Edit Question Bank ({currentIndex + 1}/{questions.length})
-        </Typography>
-
-        <Box sx={{ ml: "auto" }}>
           <Button
             size="small"
             variant="outlined"
@@ -557,229 +835,156 @@ export default function AdminQBankEdit() {
             Settings
           </Button>
         </Box>
-      </Box>
 
-      <Card
-        sx={{
-          boxShadow: 3,
-          borderRadius: "12px",
-          p: 2,
-          transition: "0.3s",
-          "&:hover": { boxShadow: 6 },
-        }}
-      >
-        <CardContent>
-          {/* Question Text */}
-          <TextField
-            label="Question Text"
-            fullWidth
-            multiline
-            rows={3}
-            value={q.questionText}
-            onChange={(e) => handleChange("questionText", e.target.value)}
-            sx={{ mb: 2 }}
-          />
+        {/* Question Editor */}
+        <Card sx={{ mb: 3 }}>
+          <CardContent>
+            {/* Question Text */}
+            <TextField
+              label="Question Text"
+              fullWidth
+              multiline
+              minRows={3}
+              value={q.questionText}
+              onChange={(e) => handleChange("questionText", e.target.value)}
+              sx={{
+                mb: 2,
+                "& .MuiOutlinedInput-root": {
+                  fontSize: "1.05rem",
+                  fontWeight: 500,
+                  lineHeight: 1.6,
+                },
+              }}
+            />
 
-          {/* Options */}
-          <Typography variant="subtitle1" sx={{ fontWeight: "bold", mb: 1 }}>
-            Options:
-          </Typography>
+            {/* Options */}
+            <Typography variant="subtitle1" sx={{ mb: 1 }}>
+              Options:
+            </Typography>
 
-          {q.questionType === "Multi-Select" ? (
-            q.options?.map((opt, i) => (
-              <FormControlLabel
-                key={i}
-                control={
-                  <Checkbox
-                    checked={q.correctAnswer?.includes(
-                      String.fromCharCode(65 + i)
-                    )}
-                    onChange={(e) => {
-                      const val = String.fromCharCode(65 + i);
-                      let updatedAnswers = [...(q.correctAnswer || [])];
-                      if (e.target.checked) {
-                        if (!updatedAnswers.includes(val))
-                          updatedAnswers.push(val);
-                      } else {
-                        updatedAnswers = updatedAnswers.filter(
-                          (ans) => ans !== val
-                        );
-                      }
-                      handleChange("correctAnswer", updatedAnswers);
-                    }}
-                  />
-                }
-                label={
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <Typography sx={{ minWidth: "20px", fontWeight: "bold" }}>
-                      {String.fromCharCode(65 + i)}.
-                    </Typography>
+            {q.questionType === "Multi-Select" ? (
+              q.options?.map((opt, i) => {
+                const val = String.fromCharCode(65 + i);
+                const checked = q.correctAnswer?.includes(val);
+                return (
+                  <Box key={i} sx={{ mb: 1.5, position: "relative" }}>
+                    <Checkbox
+                      checked={checked}
+                      onChange={(e) => {
+                        let updatedAnswers = [...(q.correctAnswer || [])];
+                        if (e.target.checked) {
+                          if (!updatedAnswers.includes(val))
+                            updatedAnswers.push(val);
+                        } else {
+                          updatedAnswers = updatedAnswers.filter(
+                            (ans) => ans !== val
+                          );
+                        }
+                        handleChange("correctAnswer", updatedAnswers);
+                      }}
+                      sx={{
+                        position: "absolute",
+                        left: 8,
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        zIndex: 1,
+                      }}
+                    />
+
                     <TextField
+                      fullWidth
+                      multiline
+                      minRows={1}
                       value={opt}
                       onChange={(e) => {
                         const updated = [...q.options];
                         updated[i] = e.target.value;
                         handleChange("options", updated);
                       }}
-                      sx={{ flex: 1, background: "#fff", borderRadius: "8px" }}
+                      InputProps={{ sx: { pl: 7 } }}
                     />
                   </Box>
-                }
-                sx={{
-                  mb: 1,
-                  alignItems: "flex-start",
-                  background: "#fff",
-                  borderRadius: "8px",
-                  p: 1,
-                  boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-                }}
-              />
-            ))
-          ) : (
-            <RadioGroup
-              value={q.correctAnswer?.[0] || ""}
-              onChange={(e) => handleChange("correctAnswer", [e.target.value])}
-            >
-              {q.options?.map((opt, i) => (
-                <FormControlLabel
-                  key={i}
-                  value={String.fromCharCode(65 + i)}
-                  control={<Radio />}
-                  label={
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                      <Typography sx={{ minWidth: "20px", fontWeight: "bold" }}>
-                        {String.fromCharCode(65 + i)}.
-                      </Typography>
+                );
+              })
+            ) : (
+              <RadioGroup
+                value={q.correctAnswer?.[0] || ""}
+                onChange={(e) => handleChange("correctAnswer", [e.target.value])}
+              >
+                {q.options?.map((opt, i) => {
+                  const val = String.fromCharCode(65 + i);
+                  return (
+                    <Box key={i} sx={{ mb: 1.5, position: "relative" }}>
+                      <Radio
+                        value={val}
+                        sx={{
+                          position: "absolute",
+                          left: 8,
+                          top: "50%",
+                          transform: "translateY(-50%)",
+                          zIndex: 1,
+                        }}
+                      />
                       <TextField
+                        fullWidth
+                        multiline
+                        minRows={1}
                         value={opt}
                         onChange={(e) => {
                           const updated = [...q.options];
                           updated[i] = e.target.value;
                           handleChange("options", updated);
                         }}
-                        sx={{
-                          flex: 1,
-                          background: "#fff",
-                          borderRadius: "8px",
-                        }}
+                        InputProps={{ sx: { pl: 7 } }}
                       />
                     </Box>
-                  }
-                  sx={{
-                    mb: 1,
-                    alignItems: "flex-start",
-                    background: "#fff",
-                    borderRadius: "8px",
-                    p: 1,
-                    boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-                  }}
-                />
-              ))}
-            </RadioGroup>
-          )}
+                  );
+                })}
+              </RadioGroup>
+            )}
 
-          {/* Dropdowns */}
-          <Box sx={{ display: "flex", gap: 2, mt: 2, flexWrap: "wrap" }}>
-            <Select
-              value={q.difficulty || ""}
-              onChange={(e) => {
-                handleChange("difficulty", e.target.value);
-                handleFilterChange("difficulty", e.target.value);
-              }}
-            >
-              <MenuItem value="Easy">Easy</MenuItem>
-              <MenuItem value="Medium">Medium</MenuItem>
-              <MenuItem value="Difficult">Difficult</MenuItem>
-            </Select>
-
-            <Select
-              value={q.questionType || ""}
-              onChange={(e) => {
-                handleChange("questionType", e.target.value);
-                handleFilterChange("questionType", e.target.value);
-              }}
-            >
-              <MenuItem value="Single-Select">Single-Select</MenuItem>
-              <MenuItem value="Multi-Select">Multi-Select</MenuItem>
-              <MenuItem value="Fill-in-the-Blank">Fill-in-the-Blank</MenuItem>
-              <MenuItem value="True/False">True/False</MenuItem>
-            </Select>
-
+            {/* Explanation */}
             <TextField
-              label="Tags"
-              value={q.tags || ""}
-              onChange={(e) => {
-                handleChange("tags", e.target.value);
-                handleFilterChange("tags", e.target.value);
+              label="Explanation"
+              fullWidth
+              multiline
+              minRows={3}
+              value={q.explanation || ""}
+              onChange={(e) => handleChange("explanation", e.target.value)}
+              sx={{
+                mt: 2,
+                "& .MuiInputLabel-root": {
+                  color: "#4748ac",
+                  fontWeight: 600,
+                },
+                "& .MuiOutlinedInput-root": {
+                  fontSize: "0.95rem",
+                  lineHeight: 1.6,
+                },
               }}
             />
+          </CardContent>
+        </Card>
 
-            <TextField
-              label="Domain"
-              value={q.performanceDomain || ""}
-              onChange={(e) => {
-                handleChange("performanceDomain", e.target.value);
-                handleFilterChange("performanceDomain", e.target.value);
-              }}
-            />
-          </Box>
-
-          {/* Explanation */}
-          <TextField
-            label="Explanation"
-            fullWidth
-            multiline
-            rows={2}
-            value={q.explanation || ""}
-            onChange={(e) => handleChange("explanation", e.target.value)}
-            sx={{ mt: 2 }}
-          />
-
-          {/* ✅ Save, Nav & Publish Buttons */}
-          <Box sx={{ display: "flex", gap: 2, mt: 3, flexWrap: "wrap" }}>
-            <Button
-              variant="outlined"
-              disabled={currentIndex === 0}
-              onClick={prevQuestion}
-            >
-              ⬅ Previous
-            </Button>
-
-            <Button
-              variant="contained"
-              sx={{
-                backgroundColor: "#4748ac",
-                "&:hover": { backgroundColor: "#373885" },
-              }}
-              onClick={handleSave}
-            >
-              💾 Save
-            </Button>
-
-            <Button
-              variant="outlined"
-              disabled={currentIndex === questions.length - 1}
-              onClick={nextQuestion}
-            >
-              Next ➡
-            </Button>
-
-            {/* 🚀 Publish Button */}
-            <Button
-              variant="contained"
-              color="success"
-              sx={{
-                backgroundColor: "#2e7d32",
-                "&:hover": { backgroundColor: "#1b5e20" },
-                ml: "auto",
-              }}
-              onClick={handlePublish}
-            >
-              🚀 Publish
-            </Button>
-          </Box>
-        </CardContent>
-      </Card>
+        {/* Navigation Buttons */}
+        <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+          <Button
+            variant="outlined"
+            onClick={prevQuestion}
+            disabled={currentIndex === 0}
+          >
+            ⬅ PREVIOUS
+          </Button>
+          <Button
+            variant="outlined"
+            onClick={nextQuestion}
+            disabled={currentIndex === questions.length - 1}
+          >
+            NEXT ➡
+          </Button>
+        </Box>
+      </Box>
     </Box>
   );
 }
+

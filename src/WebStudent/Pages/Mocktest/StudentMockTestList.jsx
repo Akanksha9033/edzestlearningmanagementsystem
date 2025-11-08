@@ -1,3 +1,216 @@
+// import React, { useEffect, useState } from "react";
+// import { useNavigate } from "react-router-dom";
+// import API from "../../../LoginSystem/axios";
+// import { useAuth } from "../../../LoginSystem/context/AuthContext";
+
+// import {
+//   Box, Typography, Stack, Card, CardActionArea, CardMedia, CardContent,
+//   Chip, Button, CircularProgress
+// } from "@mui/material";
+
+// /* unchanged */
+// const resolveImageUrl = (raw) => {
+//   if (!raw) return "";
+//   if (/^https?:\/\//i.test(raw)) return raw;
+//   const m = String(raw).match(/^s3:\/\/([^/]+)\/(.+)$/i);
+//   if (!m) return raw;
+//   const [, bucket, key] = m;
+//   return `https://${bucket}.s3.amazonaws.com/${encodeURIComponent(key).replace(/%2F/g, "/")}`;
+// };
+
+// export default function StudentMockTestList() {
+//   const nav = useNavigate();
+//   const { ready, user } = useAuth();
+
+//   const [loading, setLoading] = useState(true);
+//   const [items, setItems] = useState([]);
+
+//   // Auth gate (unchanged)
+//   useEffect(() => {
+//     if (!ready) return;
+//     if (!user) nav("/login", { replace: true });
+//   }, [ready, user, nav]);
+
+//   // Fetch available mock tests (unchanged)
+//   useEffect(() => {
+//     if (!ready || !user) return;
+//     (async () => {
+//       try {
+//         const r = await API.get("/api/student/mocktests");
+//         setItems(Array.isArray(r.data?.items) ? r.data.items : []);
+//       } catch (e) {
+//         console.error(e);
+//         alert("Failed to load mock tests");
+//       } finally {
+//         setLoading(false);
+//       }
+//     })();
+//   }, [ready, user]);
+
+//   // Keep existing behavior (unchanged function kept, not used below per your current logic)
+//   const startOrResume = async (mockTestId) => {
+//     try {
+//       const r = await API.post("/api/student/attempts", { mockTestId });
+//       nav(`/student/exam/${r.data?.attemptId}`);
+//     } catch (e) {
+//       console.error(e);
+//       alert("Could not start attempt");
+//     }
+//   };
+
+//   // Clicking the card or button -> Attempts page (unchanged)
+//   const openAttemptsForMock = (mockTestId) => {
+//     nav(`/student/attempts/${mockTestId}`);
+//   };
+
+//   if (!ready) {
+//     return (
+//       <Box textAlign="center" mt={10} px={2}>
+//         <CircularProgress />
+//         <Typography mt={2}>Preparing your session…</Typography>
+//       </Box>
+//     );
+//   }
+
+//   if (loading) {
+//     return (
+//       <Box textAlign="center" mt={10} px={2}>
+//         <CircularProgress />
+//         <Typography mt={2}>Loading…</Typography>
+//       </Box>
+//     );
+//   }
+
+//   return (
+//     <Box
+//       maxWidth={1200}
+//       mx="auto"
+//       mt={{ xs: 2, md: 3 }}
+//       px={{ xs: 1.25, sm: 2 }}
+//       sx={{
+//         WebkitOverflowScrolling: "touch",
+//         overscrollBehavior: "auto",
+//       }}
+//     >
+//       <Typography variant="h5" fontWeight={800} mb={{ xs: 1.25, sm: 2 }}>
+//         Available Mock Tests
+//       </Typography>
+
+//       {/* Responsive grid: 1 col on phones, auto-fit up to 320px cards */}
+//       <Box
+//         sx={{
+//           display: "grid",
+//           gridTemplateColumns: {
+//             xs: "1fr",
+//             sm: "repeat(2, minmax(0, 1fr))",
+//             md: "repeat(3, minmax(0, 1fr))",
+//           },
+//           gap: 16, // 8px * 2
+//         }}
+//       >
+//         {items.map((m) => {
+//           const img = resolveImageUrl(m.imageUrl || "");
+//           const price = m.isFree ? "Free" : (m.price > 0 ? `₹${m.price}` : "Free");
+//           return (
+//             <Card
+//               key={m.mockTestId}
+//               elevation={1}
+//               sx={{
+//                 borderRadius: 2,
+//                 height: "100%",
+//                 display: "flex",
+//                 flexDirection: "column",
+//                 overflow: "hidden",
+//               }}
+//             >
+//               {/* Card click -> Attempts page */}
+//               <CardActionArea onClick={() => openAttemptsForMock(m.mockTestId)} sx={{ alignItems: "stretch" }}>
+//                 {img ? (
+//                   <CardMedia
+//                     component="img"
+//                     image={img}
+//                     alt={m.title}
+//                     sx={{
+//                       aspectRatio: "16 / 9",
+//                       objectFit: "cover",
+//                       width: "100%",
+//                       height: "auto",
+//                     }}
+//                   />
+//                 ) : (
+//                   <Box
+//                     sx={{
+//                       aspectRatio: "16 / 9",
+//                       display: "grid",
+//                       placeItems: "center",
+//                       bgcolor: "#f3f4f6",
+//                       color: "text.secondary",
+//                       width: "100%",
+//                     }}
+//                   >
+//                     No image
+//                   </Box>
+//                 )}
+
+//                 <CardContent sx={{ pb: 1.25 }}>
+//                   <Stack direction="row" alignItems="center" spacing={1}>
+//                     <Typography
+//                       variant="subtitle1"
+//                       fontWeight={700}
+//                       sx={{
+//                         flex: 1,
+//                         overflow: "hidden",
+//                         textOverflow: "ellipsis",
+//                         display: "-webkit-box",
+//                         WebkitLineClamp: 2,
+//                         WebkitBoxOrient: "vertical",
+//                         lineHeight: 1.25,
+//                       }}
+//                     >
+//                       {m.title}
+//                     </Typography>
+//                     <Chip
+//                       size="small"
+//                       label={m.status || "DRAFT"}
+//                       color={m.status === "PUBLISHED" ? "success" : "default"}
+//                       sx={{ flexShrink: 0, ml: 0.5 }}
+//                     />
+//                   </Stack>
+
+//                   <Typography
+//                     variant="body2"
+//                     color="text.secondary"
+//                     mt={0.75}
+//                     sx={{ wordBreak: "break-word" }}
+//                   >
+//                     {price}
+//                   </Typography>
+//                 </CardContent>
+//               </CardActionArea>
+
+//               {/* Button (kept same destination as your current code) */}
+//               <Box px={2} pb={2} pt={0}>
+//                 <Button
+//                   fullWidth
+//                   variant="contained"
+//                   onClick={() => openAttemptsForMock(m.mockTestId)}
+//                   sx={{
+//                     backgroundColor: "#4748ac",
+//                     textTransform: "none",
+//                     py: 1,
+//                   }}
+//                 >
+//                   Start / Resume
+//                 </Button>
+//               </Box>
+//             </Card>
+//           );
+//         })}
+//       </Box>
+//     </Box>
+//   );
+// }
+
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import API from "../../../LoginSystem/axios";
@@ -7,6 +220,7 @@ import {
   Box, Typography, Stack, Card, CardActionArea, CardMedia, CardContent,
   Chip, Button, CircularProgress
 } from "@mui/material";
+import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew"; // ✅ added
 
 /* unchanged */
 const resolveImageUrl = (raw) => {
@@ -47,7 +261,7 @@ export default function StudentMockTestList() {
     })();
   }, [ready, user]);
 
-  // Keep existing behavior (unchanged function kept, not used below per your current logic)
+  // Keep existing behavior (unchanged function kept)
   const startOrResume = async (mockTestId) => {
     try {
       const r = await API.post("/api/student/attempts", { mockTestId });
@@ -92,6 +306,29 @@ export default function StudentMockTestList() {
         overscrollBehavior: "auto",
       }}
     >
+      {/* 🔙 Back Button */}
+      <Box sx={{ mb: 1 }}>
+        <Button
+          variant="text"
+          startIcon={<ArrowBackIosNewIcon />}
+          onClick={() => nav("/student/dashboard")} // 👈 change this if your dashboard route is different
+          sx={{
+            color: "#4748ac",
+            textTransform: "none",
+            fontWeight: 600,
+            px: 0,
+            minWidth: 0,
+            "&:hover": {
+              backgroundColor: "transparent",
+              textDecoration: "underline",
+            },
+          }}
+        >
+          Back to Dashboard
+        </Button>
+      </Box>
+
+      {/* Page heading */}
       <Typography variant="h5" fontWeight={800} mb={{ xs: 1.25, sm: 2 }}>
         Available Mock Tests
       </Typography>
@@ -124,7 +361,10 @@ export default function StudentMockTestList() {
               }}
             >
               {/* Card click -> Attempts page */}
-              <CardActionArea onClick={() => openAttemptsForMock(m.mockTestId)} sx={{ alignItems: "stretch" }}>
+              <CardActionArea
+                onClick={() => openAttemptsForMock(m.mockTestId)}
+                sx={{ alignItems: "stretch" }}
+              >
                 {img ? (
                   <CardMedia
                     component="img"

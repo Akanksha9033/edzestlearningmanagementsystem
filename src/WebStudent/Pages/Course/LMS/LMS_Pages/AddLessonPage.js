@@ -11,6 +11,15 @@ import ArticleEditor from "../ArticleEditor";
 import { createZoomMeeting } from "../../../../../utils/zoomApi";
 import API from "../../../../../LoginSystem/axios";
 
+const _chk = (name, C) => console.log(`[AddLessonPage] ${name}:`, typeof C);
+
+_chk("LessonPreview", LessonPreview);
+_chk("LessonTitleInput", LessonTitleInput);
+_chk("LessonUploadArea", LessonUploadArea);
+_chk("DeleteSectionButton", DeleteSectionButton);
+_chk("ArticleEditor", ArticleEditor);
+
+
 const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
 /* -------------------- Debug helpers (no logic change) -------------------- */
@@ -215,17 +224,30 @@ async function resolveSignedUrl(key) {
         setTitle(lesson.title || "");
         setDuration(lesson.duration || 0);
 
-        if (lesson.videoKey) {
-          try {
-            const s = await fetch(`${API_BASE}/api/media/sign?key=${encodeURIComponent(lesson.videoKey)}`);
-            const { url } = await s.json();
-            setFileUrl(url);
-            dbg("signed video url", { key: lesson.videoKey, url });
-          } catch (e) {
-            dbgw("sign video url failed", e?.message);
-            setFileUrl("");
-          }
-        } else if (lesson.fileKey) {
+       if (lesson.videoKey) {
+  try {
+    const s = await fetch(`${API_BASE}/api/media/sign?key=${encodeURIComponent(lesson.videoKey)}`);
+    const { url } = await s.json();
+    setFileUrl(url);
+    setVideoKey(lesson.videoKey); // ✅ restore videoKey so Save works
+    dbg("signed video url", { key: lesson.videoKey, url });
+  } catch (e) {
+    dbgw("sign video url failed", e?.message);
+    setFileUrl("");
+  }
+} else if (lesson.fileKey) {
+  try {
+    const s = await fetch(`${API_BASE}/api/media/sign?key=${encodeURIComponent(lesson.fileKey)}`);
+    const { url } = await s.json();
+    setFileUrl(url);
+    setFileKey(lesson.fileKey); // ✅ restore fileKey so Save works for PDFs/others
+    dbg("signed file url", { key: lesson.fileKey, url });
+  } catch (e) {
+    dbgw("sign file url failed", e?.message);
+    setFileUrl("");
+  }
+}
+ else if (lesson.fileKey) {
           try {
             const s = await fetch(`${API_BASE}/api/media/sign?key=${encodeURIComponent(lesson.fileKey)}`);
             const { url } = await s.json();
@@ -583,18 +605,27 @@ async function resolveSignedUrl(key) {
           >
             Cancel
           </button>
-          <button
-            className="btn btn-success"
-            disabled={
-              saving ||
-              !title ||
-              (currentType.toLowerCase().trim() === "video" && !videoKey) ||
-              (currentType.toLowerCase().trim() === "pdf" && !fileKey)
-            }
-            onClick={handleSave}
-          >
-            {saving ? "Saving..." : "Save Lesson"}
-          </button>
+         <button
+  className="btn btn-success"
+  disabled={
+    saving ||
+    !title ||
+    (
+      currentType.toLowerCase().trim() === "video" &&
+      !videoKey &&
+      !fileUrl // ✅ allow existing video
+    ) ||
+    (
+      currentType.toLowerCase().trim() === "pdf" &&
+      !fileKey &&
+      !fileUrl // ✅ allow existing PDF
+    )
+  }
+  onClick={handleSave}
+>
+  {saving ? "Saving..." : "Save Lesson"}
+</button>
+
         </div>
       )}
     </div>
