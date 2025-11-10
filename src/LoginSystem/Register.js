@@ -111,7 +111,7 @@ export default function Register() {
                       id="regPassword"
                       type={showPassword ? "text" : "password"}
                       className="form-control"
-                      placeholder="Create a strong password"
+                      placeholder="create a strong password"
                       value={form.password}
                       onChange={(e) =>
                         setForm({ ...form, password: e.target.value })
@@ -131,7 +131,7 @@ export default function Register() {
                       {showPassword ? <FiEyeOff /> : <FiEye />}
                     </button>
                   </div>
-                  <div className="form-text">At least 8 characters recommended.</div>
+                  <div className="form-text">Password should contain at least 8 characters and include: one uppercase letter (A–Z), one lowercase letter (a–z), one number (0–9), and one special character (like @, #, $, !)</div>
                 </div>
 
                 <button
