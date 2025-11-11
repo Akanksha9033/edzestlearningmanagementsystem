@@ -252,16 +252,16 @@ router.post("/:bankId/session/create", async (req, res) => {
     } = req.body;
 
     // Validation: all required (allow tasks OR tags)
-    if (
-      !(tasks || tags) ||
-      !difficulty ||
-      !questionType ||
-      !performanceDomain ||
-      !duration ||
-      !questionCount
-    ) {
-      return res.status(400).json({ error: "All fields are required." });
-    }
+    // if (
+    //   !(tasks || tags) ||
+    //   !difficulty ||
+    //   !questionType ||
+    //   !performanceDomain ||
+    //   !duration ||
+    //   !questionCount
+    // ) {
+    //   return res.status(400).json({ error: "All fields are required." });
+    // }
 
     // ✅ Student ID: agar login user hai to req.user.sub, warna request body se ya fallback
     const studentId =

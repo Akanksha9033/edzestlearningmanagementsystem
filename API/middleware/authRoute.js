@@ -66,7 +66,7 @@ router.post("/register", tight, async (req, res) => {
       if (e.code === "InvalidPasswordException") {
       return res.status(400).json({
         message:
-          "Please enter a strong password with at least 8 characters, including uppercase, lowercase, a number and a special character.",
+          "Please enter a strong password.",
       });
     }
     
