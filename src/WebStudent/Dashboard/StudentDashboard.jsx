@@ -399,7 +399,7 @@ export default function StudentDashboard() {
 
               {/* ---------------- Mock Tests (commented out) ---------------- */}
               
-              <div className="col-12 col-sm-6 col-lg-4">
+              {/* <div className="col-12 col-sm-6 col-lg-4">
                 <div className="ez-card">
                   <div className="ez-ribbon" />
                   <div className="ez-blob" />
@@ -416,7 +416,7 @@ export default function StudentDashboard() {
                     <Link to="/student/mocktests" className="ez-link" />
                   </div>
                 </div>
-              </div>
+              </div> */}
              
 
             </div>
