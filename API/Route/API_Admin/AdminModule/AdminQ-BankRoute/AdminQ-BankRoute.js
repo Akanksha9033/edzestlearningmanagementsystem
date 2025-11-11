@@ -1100,18 +1100,19 @@ router.put("/:bankId", uploadMem.single("thumbnail"), async (req, res) => {
     const { bankId } = req.params; // which bank to update
     const { name = "", description = "" } = req.body; // new name/description
 
-    let thumbnailUrl;
-    if (req.file) {
-      // we keep existing UI contract: pretend there's an /uploads/... path
-      // (you can later switch this to call uploadThumbnailBufferToS3 if you want S3 here too)
-      const ext = path.extname(req.file.originalname || "");
-      const base = path
-        .basename(req.file.originalname || "thumb", ext)
-        .replace(/[^\w.-]/g, "_");
-      const synthesized = `${Date.now()}-${base}${ext || ""}`;
+   let thumbnailUrl;
+if (req.file) {
+  // ✅ Ab settings se bhi thumbnail S3 par upload hoga
+  const uploadedThumb = await uploadThumbnailBufferToS3({
+    bankId,
+    fileObj: req.file,
+  });
 
-      thumbnailUrl = `/uploads/${synthesized}`; // fake local uploads URL just for front-end contract
-    }
+  if (uploadedThumb) {
+    thumbnailUrl = uploadedThumb; // full S3 URL / CLOUDFRONT URL
+  }
+}
+
 
     const fields = { name, description }; // fields to update
     if (thumbnailUrl) fields.thumbnailUrl = thumbnailUrl; // only add thumbnailUrl if we have one

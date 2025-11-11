@@ -689,7 +689,7 @@ export default function AdminQBankEdit() {
     💾 Save Changes
   </Button>
 
-  <Button
+  {/* <Button
     variant="contained"
     color="success"
     fullWidth
@@ -697,7 +697,7 @@ export default function AdminQBankEdit() {
     sx={{ py: 1.1, mb: 2 }}
   >
     🚀 Publish
-  </Button>
+  </Button> */}
 
   <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
     Edit Filters
