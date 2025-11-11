@@ -494,15 +494,22 @@ export default function StudentQBankSession() {
                 </Typography>
                 <Button
                   variant="contained"
-                  onClick={() =>
-                    navigate("/student/qbank/solutions", {
-                      state: {
-                        results: result?.results || [],
-                        score: result?.score,
-                        total: result?.total,
-                      },
-                    })
-                  }
+                  onClick={() => {
+  // 🔹 Sort explanations to match question order
+  const orderedResults = [...(result?.results || [])].sort((a, b) => {
+    const ids = questions.map(q => q.questionId);
+    return ids.indexOf(a.questionId) - ids.indexOf(b.questionId);
+  });
+
+  navigate("/student/qbank/solutions", {
+    state: {
+      results: orderedResults,
+      score: result?.score,
+      total: result?.total,
+    },
+  });
+}}
+
                   sx={styles.explanationToggle}
                 >
                   Show Explanation
