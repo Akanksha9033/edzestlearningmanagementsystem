@@ -26,7 +26,7 @@ import PrivacyPolicy from "./Website/components/Privacy Policy";
 import TermsAndConditions from "./Website/components/TermsAndConditions";
 import RefundPolicy from "./Website/components/Refund Policy";
 import JoinNowForm from "./Website/components/Joinnow";
-import WhatsAppChat from "./Website/components/Whatsappchat";
+// import WhatsAppChat from "./Website/components/Whatsappchat";
 import FlashMain from "./Website/FlashcardApp/FlashMain";
 import Acp from "./Website/components/Acp";
 import Pmp from "./Website/components/Pmp";
@@ -642,8 +642,8 @@ const AppContent = () => {
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
 
-      <ToastContainer position="top-center" />
-      <WhatsAppChat />
+      {/* <ToastContainer position="top-center" />
+      <WhatsAppChat /> */}
     </>
   );
 };
