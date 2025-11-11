@@ -193,7 +193,7 @@ export default function Login() {
                   </div>
                 )}
 
-                <div className="mb-4">
+                {/* <div className="mb-4">
                   <label htmlFor="deviceName" className="form-label">
                     Device name <span className="text-muted">(optional)</span>
                   </label>
@@ -207,7 +207,7 @@ export default function Login() {
                     disabled={needsNewPass}
                   />
                   <div className="form-text">Helps you recognize active sessions.</div>
-                </div>
+                </div> */}
 
                 <button type="submit" className="btn btn-primary w-100" disabled={loading}>
                   {loading

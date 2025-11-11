@@ -55,7 +55,7 @@ export default function AdminDashboard() {
                   label="Create"
                   items={[
                     { label: "Question Bank", to: "/admin/qbank/upload" },
-                    // { label: "MockTest", to: "/admin/mocktests" },
+                    { label: "MockTest", to: "/admin/mocktests" },
                     // { label: "Course", to: "/admin/courses/create" },
                     // { label: "E-Book", to: "/admin/ebooks/create/title" },
                   ]}
