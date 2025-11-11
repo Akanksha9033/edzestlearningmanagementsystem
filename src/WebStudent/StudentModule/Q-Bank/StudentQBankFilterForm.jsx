@@ -505,11 +505,12 @@ export default function StudentQBankFilterForm() {
           </FormControl>
 
           {/* 🔔 Info notification when blank chosen */}
-          {approachNotice && (
+
+          {/* {approachNotice && (
             <Alert severity="info" sx={{ mb: 2 }}>
               Is task ke <strong>saare approaches ke saare questions</strong> dikh jayenge.
             </Alert>
-          )}
+          )} */}
 
           {/* Question Type */}
           <FormControl fullWidth sx={{ mb: 2 }}>
