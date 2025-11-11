@@ -16,7 +16,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 ====================================================== */
 const menuItems = [
   { id: "dashboard", icon: <FaTachometerAlt />, label: "Dashboard", path: "/admin/dashboard" },
-  // { id: "mocktest", icon: <FaBookOpen />, label: "MockTest", path: "/admin/mocktests" },
+  { id: "mocktest", icon: <FaBookOpen />, label: "MockTest", path: "/admin/mocktests" },
   { id: "q-bank", icon: <FaSchool />, label: "Q-Bank", path: "/admin/qbank/list" },
   // { id: "e-book", icon: <FaSchool />, label: "E-Book", path: "/admin/ebooks" },
   // { id: "course", icon: <FaSchool />, label: "Courses", path: "/courses" },

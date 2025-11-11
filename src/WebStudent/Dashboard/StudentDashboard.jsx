@@ -398,7 +398,7 @@ export default function StudentDashboard() {
               </div>
 
               {/* ---------------- Mock Tests (commented out) ---------------- */}
-              {/*
+              
               <div className="col-12 col-sm-6 col-lg-4">
                 <div className="ez-card">
                   <div className="ez-ribbon" />
@@ -417,7 +417,7 @@ export default function StudentDashboard() {
                   </div>
                 </div>
               </div>
-              */}
+             
 
             </div>
           </div>
