@@ -131,7 +131,7 @@ export default function Register() {
                       {showPassword ? <FiEyeOff /> : <FiEye />}
                     </button>
                   </div>
-                  <div className="form-text">Password should contain at least 8 characters and include: one uppercase letter (A–Z), one lowercase letter (a–z), one number (0–9), and one special character (like @, #, $, !)</div>
+                  <div className="form-text">Password should contain 8 characters include:uppercase (A–Z),lowercase (a–z),number (0–9), and one special character (like @, #, $, !)</div>
                 </div>
 
                 <button
