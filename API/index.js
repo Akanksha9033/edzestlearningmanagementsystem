@@ -91,6 +91,8 @@ if (IS_PROD) {
   });
 }
 
+
+
 /* -------------------- AWS SDK -------------------- */
 AWS.config.update({ region: process.env.AWS_REGION || "ap-south-1" });
 const dynamoDB = new AWS.DynamoDB.DocumentClient();
@@ -255,6 +257,8 @@ app.use("/api/courses", coursesCoverRouter);
 // Optional: alias if frontend uses singular /api/course
 app.use("/api/course", coursesCoverRouter);
 
+
+app.use("/api/payments", require("./Route/payments"));
 
 /* -------------------- 404 & Error -------------------- */
 app.use((req, res) => res.status(404).json({ error: "Not Found", path: req.originalUrl }));
