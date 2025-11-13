@@ -1,5 +1,6 @@
 
 
+
 // import React, { useEffect, useState } from "react";
 // import { useParams, useNavigate } from "react-router-dom";
 // import API from "../../../LoginSystem/axios";
@@ -542,9 +543,8 @@
 //       </Box>
 //     </Box>
 //   );
-// }
 
-
+ 
 // src/pages/Admin/QBank/AdminQBankEdit.js
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
@@ -731,6 +731,7 @@ export default function AdminQBankEdit() {
       scheduleAutosave();
       return updated;
     });
+
   };
 
   const handleCorrectAnswerChange = (newCorrect) => {
@@ -744,6 +745,19 @@ export default function AdminQBankEdit() {
     });
   };
 
+=======
+  };
+
+  const handleCorrectAnswerChange = (newCorrect) => {
+    setQuestions((prev) => {
+      const updated = [...prev];
+      const qx = { ...updated[currentIndex], correctAnswer: newCorrect };
+      updated[currentIndex] = qx;
+      markDirty(qx);
+      scheduleAutosave();
+      return updated;
+    });
+  };
   // ===================== Manual Save (kept, but rarely needed) =====================
   const handleSave = async () => {
     try {
