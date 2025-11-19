@@ -1133,7 +1133,11 @@ const SectionBuilderUI = ({
                               paddingBottom: 6,
                             }}
                           >
-                            {sec.lessons.map((lesson, idx) => (
+                          {(sec.lessons || [])
+  .slice()
+  .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt)) // ✅ oldest first
+  .map((lesson, idx) => (
+
                               <li
                                 key={lesson._id || idx}
                                 className="list-group-item d-flex align-items-center"

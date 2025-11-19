@@ -7,6 +7,7 @@ import LessonTitleInput from "../LessonTitleInput";
 import LessonUploadArea from "../LessonUploadArea";
 import DeleteSectionButton from "../DeleteSectionButton";
 import ArticleEditor from "../ArticleEditor";
+import QLesson from "../../../../../WebStudent/Pages/Course/LMS/LessonRenderer/QLesson";
 
 import { createZoomMeeting } from "../../../../../utils/zoomApi";
 import API from "../../../../../LoginSystem/axios";
@@ -308,7 +309,7 @@ async function resolveSignedUrl(key) {
     const isLive = lower === "live";
     const isOtherFile = ["slides", "audio", "assignment", "scorm/tincan"].includes(lower);
     const isExternal = lower === "external link";
-    const isQuiz = lower === "section quiz";
+    const isQuiz = lower === "quiz"; // ✅ keep as-is
 
     dbg("save click", {
       courseId, sectionId, lessonId, createUsingUrlId,
@@ -387,9 +388,10 @@ async function resolveSignedUrl(key) {
       if (!fileUrl) return alert("Please provide an external link URL.");
       payload.fileUrl = fileUrl;
     } else if (isQuiz) {
-      if (!fileKey) return alert("Please upload a quiz file to S3.");
-      payload.fileKey = fileKey;
-    }
+  // ✅ Skip file uploads for quizzes; handled in QLesson
+  return alert("Use the Quiz Builder below to add and save quiz questions.");
+}
+
 
     try {
       setSaving(true);
@@ -441,6 +443,19 @@ async function resolveSignedUrl(key) {
   };
 
   const currentType = (typeParam || lessonType || "").toString();
+// ✅ If this is a Quiz lesson → render QLesson instead of default form
+if (["quiz", "section quiz"].includes(currentType.toLowerCase().trim())) {
+  return (
+    <div className="container py-4">
+      <QLesson
+        courseId={courseId}
+        sectionId={sectionId}
+        title={title}
+        navigate={navigate}
+      />
+    </div>
+  );
+}
 
   return (
     <div className="container py-4">

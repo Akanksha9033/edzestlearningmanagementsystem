@@ -16,12 +16,15 @@ const { authAccess, requireRoles } =
 /* -------------------- types -------------------- */
 const ALLOWED_TYPES = new Set([
   "video","pdf","doc","ppt","audio","slides","assignment","scorm/tincan",
-  "article","live","external link","section quiz",
+  "article","live","external link","section quiz","quiz",
 ]);
+
 const normalizeType = (t) => {
-  const v = String(t || "video").toLowerCase();
+  const v = String(t || "").toLowerCase();
+  if (v.includes("quiz")) return "quiz";   // ⭐ QUIZ FORCE
   return ALLOWED_TYPES.has(v) ? v : "video";
 };
+
 
 /* -------------------- S3 helpers -------------------- */
 const s3 = new S3Client({
@@ -96,6 +99,23 @@ router.post(
       if (!title) return res.status(400).json({ message: "Title is required" });
 
       const normType = normalizeType(type);
+      // ⭐ QUIZ CREATE HANDLER — no video/file needed
+if (normType === "quiz") {
+  const doc = await Lesson.create({
+    _id: _idFromClient,
+    courseId,
+    sectionId,
+    title: String(title).trim(),
+    type: "quiz",
+    questions: req.body.questions || [],
+    explanation: req.body.explanation || "",
+    duration: Number(duration) || 0,
+    status: status || "draft",
+  });
+
+  return res.status(201).json({ ok: true, lesson: doc });
+}
+
       const folder = `courses/${courseId}/sections/${sectionId}`;
 
       let videoKey = "";
@@ -175,9 +195,21 @@ router.put(
         : "lessons";
 
       const $set = {};
-      ["title","type","duration","status","videoKey","fileKey","fileUrl","videoUrl"].forEach((f) => {
-        if (body[f] !== undefined) $set[f] = body[f];
-      });
+      [
+  "title",
+  "type",
+  "duration",
+  "status",
+  "videoKey",
+  "fileKey",
+  "fileUrl",
+  "videoUrl",
+  "questions",       // ⭐ added
+  "explanation"      // ⭐ added
+].forEach((f) => {
+  if (body[f] !== undefined) $set[f] = body[f];
+});
+
       if ($set.type) $set.type = normalizeType($set.type);
 
       if (body.videoBase64) $set.videoKey = await uploadBase64ToS3(body.videoBase64, body.videoContentType || "video/mp4", body.videoFilename || "video.mp4", folder);

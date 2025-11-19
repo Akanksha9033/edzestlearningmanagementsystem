@@ -1,4 +1,7 @@
+
+
 // src/pages/Admin/QBank/AdminQBankEdit.js
+
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import API from "../../../LoginSystem/axios";
@@ -28,20 +31,65 @@ export default function AdminQBankEdit() {
   const [questions, setQuestions] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  // ---- Autosave state ----
-  const [autoSaveState, setAutoSaveState] = useState("idle"); // idle | saving | saved | error
-  const dirtyRef = useRef(new Set()); // questionIds that are dirty
+  // ===================== Autosave State =====================
+  const [autoSaveState, setAutoSaveState] = useState("idle");
+  const dirtyRef = useRef(new Set());
   const debounceTimerRef = useRef(null);
-  const pendingSaveRef = useRef(false); // true while a PUT is in-flight
-  const forceSaveOnLeaveRef = useRef(false); // to trigger beforeunload prompt
-  const lastSavedSnapshotRef = useRef({}); // questionId -> JSON.stringify(question)
+  const pendingSaveRef = useRef(false);
+  const forceSaveOnLeaveRef = useRef(false);
+  const lastSavedSnapshotRef = useRef({});
 
-  // snack for save errors (optional)
-  const [snack, setSnack] = useState({ open: false, msg: "", severity: "error" });
 
-  // ===================== Fetch Questions =====================
+  
+
+  // ⭐ Q-ID / Question # search input
+  const [searchInput, setSearchInput] = useState("");
+  // Snack for errors / saved
+  const [snack, setSnack] = useState({
+    open: false,
+    msg: "",
+    severity: "error",
+  });
+
+  // ⭐⭐⭐ NEW SEARCH STATES
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
+
+
+  
+
+  // ⭐⭐⭐ SEARCH HANDLER
+  const handleSearch = (value) => {
+    setSearchQuery(value);
+
+    // Jump to question #
+    if (/^\d+$/.test(value)) {
+      const num = parseInt(value);
+      if (num >= 1 && num <= questions.length) {
+        setCurrentIndex(num - 1);
+        setSearchResults([]);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+      return;
+    }
+
+    // Keyword search
+    if (value.trim().length >= 2) {
+      const lower = value.toLowerCase();
+      const results = questions
+        .map((q, i) => ({ index: i, text: q.questionText }))
+        .filter((item) => item.text?.toLowerCase().includes(lower));
+
+      setSearchResults(results.slice(0, 25));
+    } else {
+      setSearchResults([]);
+    }
+  };
+
+  // ===================== FETCH QUESTIONS =====================
   useEffect(() => {
     let mounted = true;
+
     (async () => {
       try {
         const res = await API.get(`/api/admin/qbank/${bankId}/questions`);
@@ -52,7 +100,7 @@ export default function AdminQBankEdit() {
         setCurrentIndex(0);
         window.scrollTo({ top: 0, behavior: "smooth" });
 
-        // Snapshot initial saved versions
+        // Snapshot initial versions
         const map = {};
         for (const q of list) {
           map[q.questionId] = JSON.stringify(q);
@@ -64,6 +112,7 @@ export default function AdminQBankEdit() {
         console.error("❌ Error loading questions:", err);
       }
     })();
+
     return () => {
       mounted = false;
     };
@@ -71,57 +120,54 @@ export default function AdminQBankEdit() {
 
   const q = questions[currentIndex];
 
-  // ===================== Helpers =====================
+  // ===================== HELPERS =====================
   const markDirty = useCallback((questionObj) => {
     if (!questionObj?.questionId) return;
-    const id = questionObj.questionId;
-    const nowStr = JSON.stringify(questionObj);
-    const lastStr = lastSavedSnapshotRef.current[id];
 
-    if (nowStr !== lastStr) {
+    const id = questionObj.questionId;
+    const now = JSON.stringify(questionObj);
+    const saved = lastSavedSnapshotRef.current[id];
+
+    if (now !== saved) {
       dirtyRef.current.add(id);
       forceSaveOnLeaveRef.current = true;
     } else {
       dirtyRef.current.delete(id);
-      if (dirtyRef.current.size === 0) {
-        forceSaveOnLeaveRef.current = false;
-      }
+      if (dirtyRef.current.size === 0) forceSaveOnLeaveRef.current = false;
     }
   }, []);
 
   const putQuestion = useCallback(
     async (questionObj) => {
       if (!questionObj?.questionId) return;
+
       pendingSaveRef.current = true;
       setAutoSaveState("saving");
+
       try {
         await API.put(
           `/api/admin/qbank/${bankId}/questions/${questionObj.questionId}`,
           questionObj
         );
-        // Update snapshots & dirty set
-        lastSavedSnapshotRef.current[questionObj.questionId] = JSON.stringify(
-          questionObj
-        );
+
+        lastSavedSnapshotRef.current[questionObj.questionId] =
+          JSON.stringify(questionObj);
+
         dirtyRef.current.delete(questionObj.questionId);
-        if (dirtyRef.current.size === 0) {
-          forceSaveOnLeaveRef.current = false;
-        }
+        if (dirtyRef.current.size === 0) forceSaveOnLeaveRef.current = false;
+
         setAutoSaveState("saved");
-        // brief “saved” pulse, then go idle
         setTimeout(() => {
           if (!pendingSaveRef.current) setAutoSaveState("idle");
         }, 600);
       } catch (err) {
-        console.error("❌ Error autosaving question:", err);
+        console.error("❌ Autosave failed:", err);
         setAutoSaveState("error");
         setSnack({
           open: true,
-          msg: "Autosave failed. Check your connection and try again.",
+          msg: "Autosave failed.",
           severity: "error",
         });
-        // keep dirty so we can retry
-        throw err;
       } finally {
         pendingSaveRef.current = false;
       }
@@ -133,63 +179,62 @@ export default function AdminQBankEdit() {
     const current = questions[currentIndex];
     if (!current) return;
 
-    // if question differs from its last saved snapshot → save it
-    const snapshot = lastSavedSnapshotRef.current[current.questionId];
-    const now = JSON.stringify(current);
-    if (snapshot !== now) {
+    const saved = lastSavedSnapshotRef.current[current.questionId];
+    if (saved !== JSON.stringify(current)) {
       await putQuestion(current);
     }
   }, [questions, currentIndex, putQuestion]);
 
-  // ===================== Autosave Core =====================
+  // ===================== AUTOSAVE =====================
   const scheduleAutosave = useCallback(() => {
-    if (debounceTimerRef.current) {
+    if (debounceTimerRef.current)
       clearTimeout(debounceTimerRef.current);
-    }
+
     debounceTimerRef.current = setTimeout(async () => {
-      const current = questions[currentIndex];
-      if (!current) return;
+      await saveCurrentIfDirty();
+    }, 1200);
+  }, [saveCurrentIfDirty]);
 
-      try {
-        await saveCurrentIfDirty();
-      } catch {
-        // keep error state; do nothing else
-      }
-    }, 1200); // <-- debounce interval
-  }, [questions, currentIndex, saveCurrentIfDirty]);
-
-  // ===================== Change Handlers =====================
+  // ===================== CHANGE HANDLERS =====================
   const handleChange = (field, value) => {
     setQuestions((prev) => {
       const updated = [...prev];
       const copy = { ...updated[currentIndex], [field]: value };
       updated[currentIndex] = copy;
-      // mark dirty & debounce save
       markDirty(copy);
       scheduleAutosave();
       return updated;
     });
   };
 
-  // For options arrays
   const handleOptionChange = (i, newVal) => {
     setQuestions((prev) => {
       const updated = [...prev];
       const qx = { ...updated[currentIndex] };
-      const opts = Array.isArray(qx.options) ? [...qx.options] : [];
+      const opts = [...qx.options];
       opts[i] = newVal;
       qx.options = opts;
       updated[currentIndex] = qx;
+
+
       markDirty(qx);
       scheduleAutosave();
       return updated;
     });
   };
 
-  const handleCorrectAnswerChange = (newCorrect) => {
+
+      markDirty(qx);
+      scheduleAutosave();
+      return updated;
+    });
+  };
+
+
+  const handleCorrectAnswerChange = (newVal) => {
     setQuestions((prev) => {
       const updated = [...prev];
-      const qx = { ...updated[currentIndex], correctAnswer: newCorrect };
+      const qx = { ...updated[currentIndex], correctAnswer: newVal };
       updated[currentIndex] = qx;
       markDirty(qx);
       scheduleAutosave();
@@ -197,24 +242,22 @@ export default function AdminQBankEdit() {
     });
   };
 
+  // ===================== MANUAL SAVE =====================
+
   // ===================== Manual Save (kept, but rarely needed) =====================
+
   const handleSave = async () => {
     try {
       await saveCurrentIfDirty();
       setSnack({ open: true, msg: "Saved.", severity: "success" });
-    } catch {
-      // snack already handled in putQuestion
-    }
+    } catch {}
   };
 
-  // ===================== Navigation: guard with save =====================
+  // ===================== NAVIGATION =====================
   const guardedGo = useCallback(
     async (fn) => {
-      // Flush any debounced timer first
-      if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current);
-        debounceTimerRef.current = null;
-      }
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+
       try {
         await saveCurrentIfDirty();
       } finally {
@@ -243,26 +286,45 @@ export default function AdminQBankEdit() {
     await guardedGo(() => navigate("/admin/qbank/list", { replace: true }));
   };
 
-  // ===================== Publish (unchanged behavior) =====================
-  const handlePublish = async () => {
-    // Ensure save before publish
-    await guardedGo(async () => {});
-    if (
-      window.confirm(
-        "Are you sure you want to publish this Question Bank? Once published, students will be able to see it."
-      )
-    ) {
-      try {
-        await API.put(`/api/admin/qbank/publish/${bankId}`);
-        setSnack({ open: true, msg: "Question Bank published.", severity: "success" });
-      } catch (err) {
-        console.error("❌ Publish failed:", err);
-        setSnack({ open: true, msg: "Publish failed.", severity: "error" });
-      }
-    }
-  };
 
-  // ===================== beforeunload protection =====================
+  // ===================== before unload =====================
+
+
+  // ===================== JUMP TO QUESTION (By Number or Q-ID) =====================
+  const jumpToQuestion = useCallback(
+    (rawValue) => {
+      const value = String(rawValue || "").trim();
+      if (!value) return;
+
+      // 1) If user enters number → jump to that index
+      if (/^\d+$/.test(value)) {
+        const num = parseInt(value, 10);
+        if (num >= 1 && num <= questions.length) {
+          setCurrentIndex(num - 1);
+          window.scrollTo({ top: 0, behavior: "smooth" });
+          return;
+        }
+      }
+
+      // 2) If user enters questionId → jump by ID
+      const idx = questions.findIndex((q) => {
+        const id = String(q.questionId || "").trim().toLowerCase();
+        return id === value.toLowerCase();
+      });
+
+      if (idx !== -1) {
+        setCurrentIndex(idx);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      } else {
+        setSnack({
+          open: true,
+          msg: `No question found for "${value}"`,
+          severity: "error",
+        });
+      }
+    },
+    [questions]
+  );
   useEffect(() => {
     const handler = (e) => {
       if (forceSaveOnLeaveRef.current || pendingSaveRef.current) {
@@ -270,19 +332,22 @@ export default function AdminQBankEdit() {
         e.returnValue = "";
       }
     };
+
     window.addEventListener("beforeunload", handler);
     return () => window.removeEventListener("beforeunload", handler);
   }, []);
 
-  // ===================== Save on unmount (final flush) =====================
+  // ===================== FINAL FLUSH =====================
   useEffect(() => {
     return () => {
-      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
-      // best-effort sync (note: cannot block unmount, but we trigger anyway)
+      if (debounceTimerRef.current)
+        clearTimeout(debounceTimerRef.current);
+
       const current = questions[currentIndex];
-      const snapshot = current && lastSavedSnapshotRef.current[current?.questionId];
-      if (current && JSON.stringify(current) !== snapshot) {
-        // fire and forget
+      if (!current) return;
+
+      const saved = lastSavedSnapshotRef.current[current.questionId];
+      if (JSON.stringify(current) !== saved) {
         API.put(
           `/api/admin/qbank/${bankId}/questions/${current.questionId}`,
           current
@@ -298,10 +363,10 @@ export default function AdminQBankEdit() {
       </Box>
     );
 
-  // 🔹 Extract unique dropdown values
-  const uniqueValues = (key) => [
-    ...new Set(questions.map((item) => item[key]).filter(Boolean)),
-  ];
+  // ================== UNIQUE FILTER VALUES ==================
+  const uniqueValues = (key) =>
+    [...new Set(questions.map((item) => item[key]).filter(Boolean))];
+
   const difficulties = ["Easy", "Medium", "Difficult"];
   const types = uniqueValues("questionType");
   const tags = uniqueValues("tags");
@@ -309,7 +374,7 @@ export default function AdminQBankEdit() {
   const approaches = uniqueValues("approach");
   const exams = uniqueValues("exam");
 
-  // Small autosave badge
+  // ===================== AUTOSAVE BADGE =====================
   const AutoSaveBadge = () => (
     <Typography
       variant="caption"
@@ -338,8 +403,12 @@ export default function AdminQBankEdit() {
     </Typography>
   );
 
+  // ==========================================================
+  //                     RETURN JSX START
+  // ==========================================================
   return (
     <Box sx={{ display: "flex", p: 2 }}>
+
       {/* ================= LEFT SIDEBAR ================= */}
       <Box
         sx={{
@@ -352,7 +421,7 @@ export default function AdminQBankEdit() {
           overflowY: "auto",
         }}
       >
-        {/* 🔝 TOP BUTTONS: SAVE + PUBLISH */}
+        {/* SAVE BUTTON */}
         <Button
           variant="contained"
           fullWidth
@@ -367,21 +436,11 @@ export default function AdminQBankEdit() {
           💾 Save Now
         </Button>
 
-        {/* <Button
-          variant="contained"
-          color="success"
-          fullWidth
-          onClick={handlePublish}
-          sx={{ py: 1.1, mb: 2 }}
-        >
-          🚀 Publish
-        </Button> */}
-
         <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
           Edit Filters <AutoSaveBadge />
         </Typography>
 
-        {/* 🔹 Difficulty */}
+        {/* Difficulty */}
         <Typography variant="subtitle2">Difficulty</Typography>
         <TextField
           select
@@ -398,7 +457,7 @@ export default function AdminQBankEdit() {
           ))}
         </TextField>
 
-        {/* 🔹 Question Type */}
+        {/* Question Type */}
         <Typography variant="subtitle2">Question Type</Typography>
         <TextField
           select
@@ -415,7 +474,7 @@ export default function AdminQBankEdit() {
           ))}
         </TextField>
 
-        {/* 🔹 Tags */}
+        {/* Tags */}
         <Typography variant="subtitle2">Tags</Typography>
         <TextField
           select
@@ -432,7 +491,7 @@ export default function AdminQBankEdit() {
           ))}
         </TextField>
 
-        {/* 🔹 Domain */}
+        {/* Domain */}
         <Typography variant="subtitle2">Domain</Typography>
         <TextField
           select
@@ -449,7 +508,7 @@ export default function AdminQBankEdit() {
           ))}
         </TextField>
 
-        {/* 🔹 Approach */}
+        {/* Approach */}
         <Typography variant="subtitle2">Approach</Typography>
         <TextField
           select
@@ -466,7 +525,7 @@ export default function AdminQBankEdit() {
           ))}
         </TextField>
 
-        {/* 🔹 Exam */}
+        {/* Exam */}
         <Typography variant="subtitle2">Exam</Typography>
         <TextField
           select
@@ -484,9 +543,77 @@ export default function AdminQBankEdit() {
         </TextField>
       </Box>
 
+              {/* ⭐ Q-ID / Question # Search */}
+        <Box sx={{ mb: 2 }}>
+          <TextField
+            fullWidth
+            size="small"
+            placeholder="Search by Question # or Q-ID..."
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                jumpToQuestion(searchInput);
+              }
+            }}
+          />
+        </Box>
+
+        {/* Header Row */}
+
+
       {/* ================= RIGHT CONTENT ================= */}
       <Box sx={{ flexGrow: 1, pl: 3 }}>
-        {/* Header Row */}
+
+        {/* ⭐⭐⭐ SEARCH BAR ADDED HERE ⭐⭐⭐ */}
+        <Box sx={{ mb: 2 }}>
+          <TextField
+            fullWidth
+            placeholder="Search or Jump to Question #"
+            value={searchQuery}
+            onChange={(e) => handleSearch(e.target.value)}
+            InputProps={{
+              style: { fontSize: "15px", padding: "10px" },
+            }}
+          />
+        </Box>
+
+        {/* SEARCH RESULTS DROPDOWN */}
+        {searchResults.length > 0 && (
+          <Box
+            sx={{
+              mb: 2,
+              p: 1,
+              border: "1px solid #ccc",
+              borderRadius: "6px",
+              maxHeight: 200,
+              overflowY: "auto",
+              background: "#fff",
+            }}
+          >
+            {searchResults.map((item) => (
+              <Box
+                key={item.index}
+                sx={{
+                  p: 1,
+                  borderBottom: "1px solid #eee",
+                  cursor: "pointer",
+                  "&:hover": { background: "#f5f5f5" },
+                }}
+                onClick={() => {
+                  setCurrentIndex(item.index);
+                  setSearchResults([]);
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
+              >
+                <strong>#{item.index + 1}</strong> —{" "}
+                {item.text?.slice(0, 70) || "Untitled"}...
+              </Box>
+            ))}
+          </Box>
+        )}
+
+        {/* HEADER ROW */}
         <Box
           sx={{
             display: "flex",
@@ -504,9 +631,11 @@ export default function AdminQBankEdit() {
             >
               Back
             </Button>
+
             <Typography variant="h6">
               ✏️ Edit Question ({currentIndex + 1}/{questions.length})
             </Typography>
+
             <AutoSaveBadge />
           </Box>
 
@@ -520,10 +649,9 @@ export default function AdminQBankEdit() {
           </Button>
         </Box>
 
-        {/* Question Editor */}
+        {/* QUESTION EDITOR */}
         <Card sx={{ mb: 3 }}>
           <CardContent>
-            {/* Question Text */}
             <TextField
               label="Question Text"
               fullWidth
@@ -542,31 +670,28 @@ export default function AdminQBankEdit() {
               }}
             />
 
-            {/* Options */}
             <Typography variant="subtitle1" sx={{ mb: 1 }}>
               Options:
             </Typography>
 
+            {/* ================= MULTI-SELECT ================= */}
             {q.questionType === "Multi-Select" ? (
               q.options?.map((opt, i) => {
                 const val = String.fromCharCode(65 + i);
                 const checked = q.correctAnswer?.includes(val);
+
                 return (
                   <Box key={i} sx={{ mb: 1.5, position: "relative" }}>
                     <Checkbox
                       checked={checked}
                       onChange={(e) => {
-                        let updatedAnswers = [...(q.correctAnswer || [])];
+                        let updated = [...(q.correctAnswer || [])];
                         if (e.target.checked) {
-                          if (!updatedAnswers.includes(val)) {
-                            updatedAnswers.push(val);
-                          }
+                          if (!updated.includes(val)) updated.push(val);
                         } else {
-                          updatedAnswers = updatedAnswers.filter(
-                            (ans) => ans !== val
-                          );
+                          updated = updated.filter((ans) => ans !== val);
                         }
-                        handleCorrectAnswerChange(updatedAnswers);
+                        handleCorrectAnswerChange(updated);
                       }}
                       sx={{
                         position: "absolute",
@@ -576,12 +701,15 @@ export default function AdminQBankEdit() {
                         zIndex: 1,
                       }}
                     />
+
                     <TextField
                       fullWidth
                       multiline
                       minRows={1}
                       value={opt}
-                      onChange={(e) => handleOptionChange(i, e.target.value)}
+                      onChange={(e) =>
+                        handleOptionChange(i, e.target.value)
+                      }
                       onBlur={() => scheduleAutosave()}
                       InputProps={{ sx: { pl: 7 } }}
                     />
@@ -589,6 +717,7 @@ export default function AdminQBankEdit() {
                 );
               })
             ) : (
+              // ================= SINGLE-SELECT =================
               <RadioGroup
                 value={q.correctAnswer?.[0] || ""}
                 onChange={(e) => handleCorrectAnswerChange([e.target.value])}
@@ -607,12 +736,15 @@ export default function AdminQBankEdit() {
                           zIndex: 1,
                         }}
                       />
+
                       <TextField
                         fullWidth
                         multiline
                         minRows={1}
                         value={opt}
-                        onChange={(e) => handleOptionChange(i, e.target.value)}
+                        onChange={(e) =>
+                          handleOptionChange(i, e.target.value)
+                        }
                         onBlur={() => scheduleAutosave()}
                         InputProps={{ sx: { pl: 7 } }}
                       />
@@ -622,7 +754,7 @@ export default function AdminQBankEdit() {
               </RadioGroup>
             )}
 
-            {/* Explanation */}
+            {/* EXPLANATION */}
             <TextField
               label="Explanation"
               fullWidth
@@ -646,7 +778,7 @@ export default function AdminQBankEdit() {
           </CardContent>
         </Card>
 
-        {/* Navigation Buttons */}
+        {/* NAV BUTTONS */}
         <Box sx={{ display: "flex", justifyContent: "space-between" }}>
           <Button
             variant="outlined"
@@ -655,6 +787,7 @@ export default function AdminQBankEdit() {
           >
             ⬅ PREVIOUS
           </Button>
+
           <Button
             variant="outlined"
             onClick={nextQuestion}
@@ -665,7 +798,7 @@ export default function AdminQBankEdit() {
         </Box>
       </Box>
 
-      {/* Save/Error snack */}
+      {/* SNACKBAR */}
       <Snackbar
         open={snack.open}
         autoHideDuration={2000}

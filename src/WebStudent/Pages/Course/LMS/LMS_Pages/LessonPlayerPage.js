@@ -1026,9 +1026,9 @@ const fetchLesson = async (id, course, sectionId) => {
   if (sectionId) params.sectionId = sectionId;
 
   const tries = [
-    { url: `/api/lessons/${id}`, params },
-    { url: `/api/courses/lesson/${id}`, params },
-  ];
+  { url: `/api/courses/lesson/${id}`, params },
+];
+
 
   for (const t of tries) {
     try {
@@ -1210,9 +1210,22 @@ export default function LessonPlayerPage() {
       try {
         if (!courseKey) throw new Error("courseKey missing in URL");
 
-        const c = await fetchCourseSmart(courseKey, { lessonId, sectionId });
-        if (!alive) return;
-        setCourse(c);
+       const c = await fetchCourseSmart(courseKey, { lessonId, sectionId });
+if (!alive) return;
+
+// ✅ Sort lessons in each section by upload time (oldest first)
+if (Array.isArray(c.sections)) {
+  c.sections.forEach((sec) => {
+    if (Array.isArray(sec.lessons)) {
+      sec.lessons.sort(
+        (a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0)
+      );
+    }
+  });
+}
+
+setCourse(c);
+
 
         // resolve missing sid/lid
         let sid = sectionId;
@@ -1248,6 +1261,18 @@ export default function LessonPlayerPage() {
         // lesson
         let l = findLessonInCourse(c, lid);
         if (!l) l = await fetchLesson(lid, c, sid);
+        // 🟦 Load full quiz lesson for student
+if (l?.type === "quiz") {
+  try {
+    const full = await API.get(`/api/quiz/${c._id}/${l._id}`);
+    if (full?.data?.lesson) {
+      l = full.data.lesson; // override shallow lesson
+    }
+  } catch (err) {
+    console.error("Quiz full load failed:", err);
+  }
+}
+
 
         if (!alive) return;
         setLesson(l);
@@ -1264,48 +1289,62 @@ export default function LessonPlayerPage() {
   /* ---------------- progress (guarded) ---------------- */
 const refreshCourseProgress = useCallback(async () => {
   if (!PROG_ENABLED) return;
+
   try {
     const slug = course?.slug || course?._id;
     if (!slug) return;
 
-    // ✅ calculate total lessons from course
-    const totalLessons = Array.isArray(course?.sections)
+    // 🔵 1. UI total lessons (fresh count)
+    const uiTotalLessons = Array.isArray(course?.sections)
       ? course.sections.reduce(
-          (sum, s) => sum + (Array.isArray(s.lessons) ? s.lessons.length : 0),
+          (sum, sec) =>
+            sum + (Array.isArray(sec.lessons) ? sec.lessons.length : 0),
           0
         )
-      : 1;
+      : 0;
 
-    // ✅ fetch backend progress
-    const p = await getCourseProgress(slug, totalLessons);
+    // 🔵 2. Fetch backend progress
+    const p = await getCourseProgress(slug);
 
-    // ✅ safely compute progress %
-    if (p) {
-      const completed =
-  Number(p?.completedLessons) ||
-  (Array.isArray(p?.completedLessonIds) ? p.completedLessonIds.length : 0);
+    if (!p) return;
 
-const total = Math.max(
-  Number(totalLessons) || 0,    // ✅ UI ka sahi total
-  Number(p?.totalLessons) || 0, // backend ka (agar sahi ho)
-  1
-);
+    // 🔵 3. backend completed ids/count
+    const backendCompleted = Array.isArray(p?.completedLessonIds)
+      ? p.completedLessonIds.length
+      : Number(p?.completedLessons) || 0;
 
-const computedPercent = Math.round((completed / total) * 100);
+    // 🔵 4. Remove completed IDs that no longer exist (deleted lessons)
+    const validCompleted = Array.isArray(p?.completedLessonIds)
+      ? p.completedLessonIds.filter((id) =>
+          course.sections.some((sec) =>
+            (sec.lessons || []).some(
+              (l) => String(l._id) === String(id)
+            )
+          )
+        ).length
+      : backendCompleted;
 
-      setCourseProgress({
-        percent: computedPercent,
-        completedLessonIds: p.completedLessonIds || [],
-      });
+    // 🔵 5. Final total must not be 0
+    const finalTotal = Math.max(uiTotalLessons, 1);
 
-      console.log(
-        `[Progress] ${completed}/${total} lessons → ${computedPercent}%`
-      );
-    }
+    // 🔵 6. Safe percent (0–100)
+    let finalPercent = Math.round((validCompleted / finalTotal) * 100);
+    finalPercent = Math.min(100, Math.max(0, finalPercent));
+
+    // 🔵 7. Update UI
+    setCourseProgress({
+      percent: finalPercent,
+      completedLessonIds: p.completedLessonIds || [],
+    });
+
+    console.log(
+      `[Progress Sidebar] ${validCompleted}/${finalTotal} → ${finalPercent}%`
+    );
   } catch (err) {
-    console.error("[Progress] refreshCourseProgress error:", err);
+    console.error("[Progress Sidebar] refreshCourseProgress error:", err);
   }
 }, [course?.slug, course?.sections]);
+
 
 
 
@@ -1541,11 +1580,17 @@ const computedPercent = Math.round((completed / total) * 100);
           {/* player */}
           <div className="card p-3 p-md-2 p-lg-3">
             <div ref={wrapRef} className="lesson-overlay-wrap" style={{ position: "relative" }} tabIndex={-1}>
-              {lessonForRender.__noMedia ? (
-                <div className="text-danger fw-semibold">
-                  No playable URL for this lesson. Set <code>videoUrl</code> (or <code>fileUrl/url</code>), or provide <code>videoKey</code>/<code>fileKey</code>.
-                </div>
-              ) : lc(lessonForRender.type) === "live" ? (
+             {lc(lessonForRender.type) === "quiz" ? (
+    <LessonRenderer 
+      lesson={lessonForRender} 
+      course={course} 
+    />
+) : lessonForRender.__noMedia ? (
+    <div className="text-danger fw-semibold">
+      No playable URL for this lesson...
+    </div>
+) : lc(lessonForRender.type) === "live" ? (
+
                 <div className="d-flex justify-content-center align-items-center" style={{ height: 420 }}>
                   <button
                     className="btn btn-primary btn-lg"

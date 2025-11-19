@@ -180,6 +180,14 @@ const SectionBuilder = () => {
 
   return (
     <div className="container py-4">
+        {/* 🔙 Back Button */}
+      <button
+        className="btn btn-outline-secondary mb-3"
+        onClick={() => navigate(-1)}
+      >
+        ← Back
+      </button>
+
       <div className="d-flex justify-content-between align-items-center mb-3">
         <h4 className="m-0">📚 Section Builder</h4>
         <Link to={`/course/settings/${courseId}`}>
