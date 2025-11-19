@@ -3,11 +3,15 @@ import axios from "axios";
 
 /* --------- small helper: load Razorpay checkout JS once ---------- */
 async function loadRazorpay() {
+
   // ✅ Guard for SSR / non-browser environments
   if (typeof window === "undefined" || typeof document === "undefined") {
     console.error("[PayNowButton] Razorpay can only load in a browser environment.");
     return false;
   }
+
+  if (window.Razorpay) return true;
+
 
   if (window.Razorpay) return true;
 
@@ -52,6 +56,7 @@ export default function PayNowButton({
       alert("User not found. Please log in.");
       return;
     }
+
 
     // ✅ Extra guard: only run in browser
     if (typeof window === "undefined" || typeof document === "undefined") {
