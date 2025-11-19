@@ -1,12 +1,3 @@
-
-
-
-
-
-
-
-
-
 // backend/models/Lesson.js (DynamoDB only)
 const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
 const {
@@ -44,11 +35,23 @@ const PK = process.env.DDB_PK_ATTR || "pk";
 const SK = process.env.DDB_SK_ATTR || "sk";
 
 const ALLOWED_TYPES = new Set([
-  "video", "pdf", "doc", "ppt", "audio", "slides", "assignment", "scorm/tincan",
-  "article", "live", "external link", "section quiz",
+  "video",
+  "pdf",
+  "doc",
+  "ppt",
+  "audio",
+  "slides",
+  "assignment",
+  "scorm/tincan",
+  "article",
+  "live",
+  "external link",
+  "quiz",
 ]);
 const normalizeType = (t) => {
-  const v = String(t || "video").toLowerCase();
+  const v = String(t || "").toLowerCase();
+
+  if (v.includes("quiz")) return "quiz"; // ← FORCE QUIZ
   return ALLOWED_TYPES.has(v) ? v : "video";
 };
 
@@ -62,8 +65,17 @@ class Lesson {
     if (!obj.title) throw new Error("title required");
 
     const type = normalizeType(obj.type);
-    if (type === "video" && !(obj.videoKey || obj.videoUrl || obj.fileUrl)) {
-      throw new Error("Video lessons must have a videoKey, videoUrl, or fileUrl.");
+
+    // Skip validation for quiz lessons
+    if (type === "quiz") {
+      // quiz save allowed without video or file
+    } else if (
+      type === "video" &&
+      !(obj.videoKey || obj.videoUrl || obj.fileUrl)
+    ) {
+      throw new Error(
+        "Video lessons must have a videoKey, videoUrl, or fileUrl."
+      );
     }
 
     const now = new Date().toISOString();
@@ -78,6 +90,11 @@ class Lesson {
       title: String(obj.title).trim(),
       type,
 
+      // ⭐ FOR QUIZ
+      questions: obj.questions || [],
+      explanation: obj.explanation || "",
+
+      // ⭐ For other lessons
       videoKey: obj.videoKey || "",
       fileKey: obj.fileKey || "",
       fileUrl: obj.fileUrl || "",
@@ -92,7 +109,15 @@ class Lesson {
       updatedAt: now,
     };
 
-    console.log("[Lesson#create] put", { TABLE, PK, SK, _id: item._id, pk: item[PK], sk: item[SK], type: item.type });
+    console.log("[Lesson#create] put", {
+      TABLE,
+      PK,
+      SK,
+      _id: item._id,
+      pk: item[PK],
+      sk: item[SK],
+      type: item.type,
+    });
     await ddb.send(new PutCommand({ TableName: TABLE, Item: item }));
     return item;
   }
@@ -105,7 +130,13 @@ class Lesson {
     async function scanUntilMatch(params, predicate) {
       let LastEvaluatedKey;
       do {
-        const out = await ddb.send(new ScanCommand({ ...params, ExclusiveStartKey: LastEvaluatedKey, ConsistentRead: true }));
+        const out = await ddb.send(
+          new ScanCommand({
+            ...params,
+            ExclusiveStartKey: LastEvaluatedKey,
+            ConsistentRead: true,
+          })
+        );
         const items = out.Items || [];
         const hit = items.find(predicate);
         if (hit) return hit;
@@ -138,8 +169,13 @@ class Lesson {
       const bySk = await scanUntilMatch(
         {
           TableName: TABLE,
-          FilterExpression: "#e = :e AND (attribute_exists(#sk) OR attribute_exists(#SK))",
-          ExpressionAttributeNames: { "#e": "entity", "#sk": "sk", "#SK": "SK" },
+          FilterExpression:
+            "#e = :e AND (attribute_exists(#sk) OR attribute_exists(#SK))",
+          ExpressionAttributeNames: {
+            "#e": "entity",
+            "#sk": "sk",
+            "#SK": "SK",
+          },
           ExpressionAttributeValues: { ":e": "lesson" },
         },
         (x) => String(x.sk || x.SK) === `LESSON#${id}`
@@ -156,53 +192,72 @@ class Lesson {
     return null;
   }
 
-
   static async find(query = {}) {
     if (query.courseId) {
       try {
-        console.log("[Lesson#find] query by partition", { TABLE, PK, SK, courseId: query.courseId, sectionId: query.sectionId });
-        const out = await ddb.send(new QueryCommand({
-          TableName: TABLE,
-          KeyConditionExpression: "#pk = :pk AND begins_with(#sk, :ls)",
-          ExpressionAttributeNames: { "#pk": PK, "#sk": SK },
-          ExpressionAttributeValues: {
-            ":pk": `COURSE#${query.courseId}`,
-            ":ls": "LESSON#",
-          },
-        }));
+        console.log("[Lesson#find] query by partition", {
+          TABLE,
+          PK,
+          SK,
+          courseId: query.courseId,
+          sectionId: query.sectionId,
+        });
+        const out = await ddb.send(
+          new QueryCommand({
+            TableName: TABLE,
+            KeyConditionExpression: "#pk = :pk AND begins_with(#sk, :ls)",
+            ExpressionAttributeNames: { "#pk": PK, "#sk": SK },
+            ExpressionAttributeValues: {
+              ":pk": `COURSE#${query.courseId}`,
+              ":ls": "LESSON#",
+            },
+          })
+        );
         let items = out.Items || [];
         if (query.sectionId) {
           const sid = String(query.sectionId);
-          items = items.filter(x => String(x.sectionId) === sid);
+          items = items.filter((x) => String(x.sectionId) === sid);
         }
         items.lean = () => items;
         console.log("[Lesson#find] query result", { count: items.length });
         return items;
       } catch (e) {
-        console.warn("[Lesson#find] partition query failed; scanning fallback", e?.message);
-        const out = await ddb.send(new ScanCommand({
-          TableName: TABLE,
-          FilterExpression: "#e = :e AND #cid = :cid",
-          ExpressionAttributeNames: { "#e": "entity", "#cid": "courseId" },
-          ExpressionAttributeValues: { ":e": "lesson", ":cid": String(query.courseId) },
-        }));
+        console.warn(
+          "[Lesson#find] partition query failed; scanning fallback",
+          e?.message
+        );
+        const out = await ddb.send(
+          new ScanCommand({
+            TableName: TABLE,
+            FilterExpression: "#e = :e AND #cid = :cid",
+            ExpressionAttributeNames: { "#e": "entity", "#cid": "courseId" },
+            ExpressionAttributeValues: {
+              ":e": "lesson",
+              ":cid": String(query.courseId),
+            },
+          })
+        );
         let items = out.Items || [];
         if (query.sectionId) {
           const sid = String(query.sectionId);
-          items = items.filter(x => String(x.sectionId) === sid);
+          items = items.filter((x) => String(x.sectionId) === sid);
         }
         items.lean = () => items;
-        console.log("[Lesson#find] scan fallback result", { count: items.length });
+        console.log("[Lesson#find] scan fallback result", {
+          count: items.length,
+        });
         return items;
       }
     }
 
-    const out = await ddb.send(new ScanCommand({
-      TableName: TABLE,
-      FilterExpression: "#e = :e",
-      ExpressionAttributeNames: { "#e": "entity" },
-      ExpressionAttributeValues: { ":e": "lesson" },
-    }));
+    const out = await ddb.send(
+      new ScanCommand({
+        TableName: TABLE,
+        FilterExpression: "#e = :e",
+        ExpressionAttributeNames: { "#e": "entity" },
+        ExpressionAttributeValues: { ":e": "lesson" },
+      })
+    );
     const items = out.Items || [];
     items.lean = () => items;
     console.log("[Lesson#find] scan all lessons", { count: items.length });
@@ -229,33 +284,49 @@ class Lesson {
     }
     if (!sets.length) return found;
 
-    console.log("[Lesson#findByIdAndUpdate] update", { id, keys: Object.keys(toSet) });
-    const out = await ddb.send(new UpdateCommand({
-      TableName: TABLE,
-      Key: { [PK]: found[PK], [SK]: found[SK] },
-      UpdateExpression: "SET " + sets.join(", "),
-      ExpressionAttributeNames: names,
-      ExpressionAttributeValues: values,
-      ReturnValues: "ALL_NEW",
-    }));
+    console.log("[Lesson#findByIdAndUpdate] update", {
+      id,
+      keys: Object.keys(toSet),
+    });
+    const out = await ddb.send(
+      new UpdateCommand({
+        TableName: TABLE,
+        Key: { [PK]: found[PK], [SK]: found[SK] },
+        UpdateExpression: "SET " + sets.join(", "),
+        ExpressionAttributeNames: names,
+        ExpressionAttributeValues: values,
+        ReturnValues: "ALL_NEW",
+      })
+    );
     return out.Attributes || null;
   }
 
   static async findByIdAndDelete(id) {
     const found = await this.findById(id);
     if (!found) return null;
-    console.log("[Lesson#findByIdAndDelete] delete", { id, pk: found[PK], sk: found[SK] });
-    const out = await ddb.send(new DeleteCommand({
-      TableName: TABLE,
-      Key: { [PK]: found[PK], [SK]: found[SK] },
-      ReturnValues: "ALL_OLD",
-    }));
+    console.log("[Lesson#findByIdAndDelete] delete", {
+      id,
+      pk: found[PK],
+      sk: found[SK],
+    });
+    const out = await ddb.send(
+      new DeleteCommand({
+        TableName: TABLE,
+        Key: { [PK]: found[PK], [SK]: found[SK] },
+        ReturnValues: "ALL_OLD",
+      })
+    );
     return out.Attributes || null;
   }
 
   static async distinct(field, query = {}) {
     const docs = await this.find(query);
-    const set = new Set(docs.map(d => d[field]).filter(Boolean).map(String));
+    const set = new Set(
+      docs
+        .map((d) => d[field])
+        .filter(Boolean)
+        .map(String)
+    );
     return Array.from(set);
   }
 }

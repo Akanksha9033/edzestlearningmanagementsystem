@@ -399,7 +399,7 @@ export default function StudentDashboard() {
 
               {/* ---------------- Mock Tests (commented out) ---------------- */}
               
-              {/* <div className="col-12 col-sm-6 col-lg-4">
+              <div className="col-12 col-sm-6 col-lg-4">
                 <div className="ez-card">
                   <div className="ez-ribbon" />
                   <div className="ez-blob" />
@@ -416,8 +416,28 @@ export default function StudentDashboard() {
                     <Link to="/student/mocktests" className="ez-link" />
                   </div>
                 </div>
-              </div> */}
+              </div>
              
+{/* ----------------courses (commented out) ---------------- */}
+
+             <div className="col-12 col-sm-6 col-lg-4">
+                <div className="ez-card">
+                  <div className="ez-ribbon" />
+                  <div className="ez-blob" />
+                  <div className="ez-body">
+                    <div className="ez-icon" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="12" r="7.5" stroke="var(--brand)" strokeWidth="1.7" />
+                        <path d="M12 8v4l3 2" stroke="var(--brand)" strokeWidth="1.7" strokeLinecap="round" />
+                      </svg>
+                    </div>
+                    <h5 className="ez-title">courses</h5>
+                    <p className="ez-text">View published courses.</p>
+                    <span className="ez-cta">Start <svg className="ez-arrow" viewBox="0 0 24 24" width="18" height="18"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/></svg></span>
+                    <Link to="/student/courses" className="ez-link" />
+                  </div>
+                </div>
+              </div>
 
             </div>
           </div>

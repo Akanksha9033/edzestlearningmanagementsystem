@@ -189,6 +189,14 @@ const CourseBuilder = () => {
 
   return (
     <div className="container py-4">
+       {/* 🔙 Back Button */}
+    <button
+      className="btn btn-outline-secondary mb-3"
+      onClick={() => navigate(-1)}
+    >
+      ← Back
+    </button>
+
       <CourseHeader course={course} />
       <SectionList sections={sections} courseId={courseId} />
       <AddSectionDrawer
