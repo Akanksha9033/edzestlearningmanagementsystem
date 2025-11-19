@@ -227,9 +227,14 @@ app.use(
   pickMiddleware(require("./Route/API_Admin/AdminModule/AdminCourseRoute/LMS_Routes/courses"))
 );
 
+const AdminQuizRoute = require("./Route/API_Admin/AdminModule/AdminCourseRoute/LMS_Routes/AdminQuizRoute");
+app.use("/api", AdminQuizRoute);
+
 /** ✅ Media + Zoom + Video Progress */
 const mediaRouter = require("./Route/API_Admin/AdminModule/AdminCourseRoute/LMS_Routes/media");
 app.use("/api/media", mediaRouter);
+
+
 
 const zoomRouter = require("./Route/API_Admin/AdminModule/AdminCourseRoute/LMS_Routes/zoom");
 app.use("/api/zoom", zoomRouter);

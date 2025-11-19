@@ -13,7 +13,7 @@ import Navbar from "./Website/components/Navbar";
 import Hero from "./Website/components/Hero";
 // import Banner from "./Website/components/Banner";
 import Benefit from "./Website/components/Benefit";
-import Preparation from "./Website/components/Preparation";
+// import Preparation from "./Website/components/Preparation";
 import Whychooseus from "./Website/components/Whychooseus";
 import Testimonial from "./Website/components/Testimonial";
 import Contact from "./Website/components/Contact";
@@ -33,7 +33,7 @@ import Pmp from "./Website/components/Pmp";
 import PdfDocs from "./Website/components/PdfDocs";
 
 // ✅ Docs & Quiz
-import Docs from "./Website/components/ProjectDocs/pages/Docs";
+// import Docs from "./Website/components/ProjectDocs/pages/Docs";
 import InstructionPage from "./Website/DragAndDropQuiz/Components/InstructionPage";
 import DragAndDropQuiz1 from "./Website/DragAndDropQuiz/Set1/DragAndDropQuiz1";
 import DragAndDropQuiz2 from "./Website/DragAndDropQuiz/Set2/DragAndDropQuiz2";
@@ -164,7 +164,7 @@ const AppContent = () => {
               <Hero />
               {/* <Banner /> */}
               <Benefit />
-              <Preparation />
+              {/* <Preparation /> */}
               <Whychooseus />
               <Testimonial />
               <Contact />
@@ -208,7 +208,7 @@ const AppContent = () => {
         <Route path="/drag-and-drop/set1" element={<DragAndDropQuiz1 />} />
         <Route path="/drag-and-drop/set2" element={<DragAndDropQuiz2 />} />
         {/* <Route path="/drag-and-drop/set3" element={<DragAndDropQuiz3 />} /> */}
-        <Route path="/docs/*" element={<Docs />} />
+        {/* <Route path="/docs/*" element={<Docs />} /> */}
 
 
         {/* Student Routes */}

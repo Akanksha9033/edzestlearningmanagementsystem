@@ -125,7 +125,11 @@ const StudentCourseDetailPage = () => {
   try {
     if (!course?.slug) return;
 
-    const p = await getCourseProgress(course.slug);
+   // small wait so backend returns updated progress
+await new Promise(res => setTimeout(res, 300));
+
+const p = await getCourseProgress(course.slug);
+
 
     // UI total from sections
     const uiTotal = Array.isArray(course?.sections)
@@ -135,26 +139,47 @@ const StudentCourseDetailPage = () => {
         )
       : 0;
 
-    if (p) {
-      const completed =
-        Number(p?.completedLessons) ||
-        (Array.isArray(p?.completedLessonIds) ? p.completedLessonIds.length : 0);
+   if (p) {
+  // UI total lessons (fresh count)
+  const uiTotalLessons = Array.isArray(course?.sections)
+    ? course.sections.reduce(
+        (sum, sec) =>
+          sum + (Array.isArray(sec.lessons) ? sec.lessons.length : 0),
+        0
+      )
+    : 0;
 
-      const total = Math.max(
-        Number(uiTotal) || 0,          // ✅ UI का सही total
-        Number(p?.totalLessons) || 0,  // ✅ backend वाला (अगर मिला)
-        1
-      );
+  // Backend completed lessons
+  const backendCompleted = Array.isArray(p?.completedLessonIds)
+    ? p.completedLessonIds.length
+    : Number(p?.completedLessons) || 0;
 
-      const computedPercent = Math.round((completed / total) * 100);
+  // Remove completed IDs that no longer exist (deleted lessons)
+  const validCompleted = Array.isArray(p?.completedLessonIds)
+    ? p.completedLessonIds.filter((id) =>
+        course.sections.some((sec) =>
+          (sec.lessons || []).some(
+            (l) => String(l._id) === String(id)
+          )
+        )
+      ).length
+    : backendCompleted;
 
-      setProgress({
-        percent: computedPercent,
-        completedLessonIds: p.completedLessonIds || [],
-      });
+  // Final total (avoid divide-by-zero)
+  const finalTotal = Math.max(uiTotalLessons, 1);
 
-      console.log(`[Progress] ${completed}/${total} lessons → ${computedPercent}%`);
-    }
+  // Final percentage (0–100 safe)
+  let finalPercent = Math.round((validCompleted / finalTotal) * 100);
+  finalPercent = Math.min(100, Math.max(0, finalPercent));
+
+  setProgress({
+    percent: finalPercent,
+    completedLessonIds: p.completedLessonIds || [],
+  });
+
+  console.log(`[Progress] ${validCompleted}/${finalTotal} → ${finalPercent}%`);
+}
+
   } catch (e) {
     console.warn("progress fetch failed:", e?.response?.data || e.message);
   }
@@ -163,6 +188,17 @@ const StudentCourseDetailPage = () => {
   useEffect(() => {
     refreshCourseProgress();
   }, [refreshCourseProgress]);
+// 🔥 Listen for global progress update (PDF, Quiz, Video)
+useEffect(() => {
+  const handler = () => {
+    console.log("🔄 Progress changed → refreshing…");
+    refreshCourseProgress();   // ⭐ Instant update
+  };
+
+  window.addEventListener("lesson-progress-updated", handler);
+
+  return () => window.removeEventListener("lesson-progress-updated", handler);
+}, [refreshCourseProgress]);
 
   const toggleSection = (sid) => setExpandedSectionId((p) => (p === sid ? null : sid));
 

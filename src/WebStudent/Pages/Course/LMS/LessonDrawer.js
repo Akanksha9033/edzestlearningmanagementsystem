@@ -67,33 +67,46 @@ const LessonDrawer = ({
   };
 
   const handleLessonTypeClick = (type) => {
-    if (!lessonTitle.trim()) {
-      alert("Please enter a Lesson Title before selecting type.");
-      return;
-    }
+  if (!lessonTitle.trim()) {
+    alert("Please enter a Lesson Title before selecting type.");
+    return;
+  }
 
-    if (type === "Section Quiz") {
-      if (["Admin", "Teacher"].includes(user?.role)) {
-        navigate("/create-mock-test", {
-          state: {
-            fromLMS: true,
-            courseId,
-            sectionId: selectedSectionId,
-            title: lessonTitle,
-          },
-        });
-      } else {
-        alert("Unauthorized access for Section Quiz.");
-      }
-      return;
+  // ✅ For "Section Quiz" (old flow)
+  if (type === "Section Quiz") {
+    if (["Admin", "Teacher"].includes(user?.role)) {
+      navigate("/create-mock-test", {
+        state: {
+          fromLMS: true,
+          courseId,
+          sectionId: selectedSectionId,
+          title: lessonTitle,
+        },
+      });
+    } else {
+      alert("Unauthorized access for Section Quiz.");
     }
+    return;
+  }
 
+  // ✅ NEW: For "Quiz" (redirect to QLesson builder/editor)
+  if (type === "Quiz") {
     navigate(
-      `/course/${courseId}/section/${selectedSectionId}/lesson/new?type=${type}&title=${encodeURIComponent(
+      `/course/${courseId}/section/${selectedSectionId}/lesson/new?type=Quiz&title=${encodeURIComponent(
         lessonTitle
       )}`
     );
-  };
+    return;
+  }
+
+  // ✅ Default flow (Video, PDF, etc.)
+  navigate(
+    `/course/${courseId}/section/${selectedSectionId}/lesson/new?type=${type}&title=${encodeURIComponent(
+      lessonTitle
+    )}`
+  );
+};
+
 
   const handleLessonSave = async () => {
     if (!lessonTitle || !lessonType || !selectedSectionId) {
@@ -150,15 +163,16 @@ const LessonDrawer = ({
         <div className="row g-2 mb-3">
           {[
             "Video",
-            "Audio",
+           
             "PDF",
             "Slides",
             "Live",
             "Article",
-            "Scorm/Tincan",
-            "Section Quiz",
-            "Assignment",
+         
+           
+           
             "External Link",
+               "Quiz",
           ].map((type) => (
             <div className="col-4" key={type}>
               <div

@@ -149,6 +149,14 @@ const CoursesPage = () => {
   return (
     <div className="container py-4">
       <div className="d-flex justify-content-between align-items-center mb-4">
+        
+  {/* 🔙 Back Button */}
+  <button
+    className="btn btn-outline-secondary me-3"
+    onClick={() => navigate(-1)}
+  >
+    ← Back
+  </button>
         <h3 className="mb-0">Available Courses</h3>
 
         {isStaff && (
