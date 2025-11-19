@@ -1,7 +1,3 @@
-
-
-// src/pages/Admin/QBank/AdminQBankEdit.js
-
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import API from "../../../LoginSystem/axios";
@@ -39,9 +35,6 @@ export default function AdminQBankEdit() {
   const forceSaveOnLeaveRef = useRef(false);
   const lastSavedSnapshotRef = useRef({});
 
-
-  
-
   // ⭐ Q-ID / Question # search input
   const [searchInput, setSearchInput] = useState("");
   // Snack for errors / saved
@@ -54,9 +47,6 @@ export default function AdminQBankEdit() {
   // ⭐⭐⭐ NEW SEARCH STATES
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
-
-
-  
 
   // ⭐⭐⭐ SEARCH HANDLER
   const handleSearch = (value) => {
@@ -174,7 +164,6 @@ export default function AdminQBankEdit() {
     },
     [bankId]
   );
-
   const saveCurrentIfDirty = useCallback(async () => {
     const current = questions[currentIndex];
     if (!current) return;
@@ -216,20 +205,11 @@ export default function AdminQBankEdit() {
       qx.options = opts;
       updated[currentIndex] = qx;
 
-
       markDirty(qx);
       scheduleAutosave();
       return updated;
     });
   };
-
-
-      markDirty(qx);
-      scheduleAutosave();
-      return updated;
-    });
-  };
-
 
   const handleCorrectAnswerChange = (newVal) => {
     setQuestions((prev) => {
@@ -243,9 +223,6 @@ export default function AdminQBankEdit() {
   };
 
   // ===================== MANUAL SAVE =====================
-
-  // ===================== Manual Save (kept, but rarely needed) =====================
-
   const handleSave = async () => {
     try {
       await saveCurrentIfDirty();
@@ -286,10 +263,6 @@ export default function AdminQBankEdit() {
     await guardedGo(() => navigate("/admin/qbank/list", { replace: true }));
   };
 
-
-  // ===================== before unload =====================
-
-
   // ===================== JUMP TO QUESTION (By Number or Q-ID) =====================
   const jumpToQuestion = useCallback(
     (rawValue) => {
@@ -325,6 +298,7 @@ export default function AdminQBankEdit() {
     },
     [questions]
   );
+
   useEffect(() => {
     const handler = (e) => {
       if (forceSaveOnLeaveRef.current || pendingSaveRef.current) {
@@ -402,7 +376,6 @@ export default function AdminQBankEdit() {
         : "Idle"}
     </Typography>
   );
-
   // ==========================================================
   //                     RETURN JSX START
   // ==========================================================
@@ -543,7 +516,10 @@ export default function AdminQBankEdit() {
         </TextField>
       </Box>
 
-              {/* ⭐ Q-ID / Question # Search */}
+      {/* ================= RIGHT CONTENT ================= */}
+      <Box sx={{ flexGrow: 1, pl: 3 }}>
+
+        {/* ⭐ FIXED SEARCH BAR BLOCK — moved inside RIGHT CONTENT */}
         <Box sx={{ mb: 2 }}>
           <TextField
             fullWidth
@@ -559,13 +535,7 @@ export default function AdminQBankEdit() {
           />
         </Box>
 
-        {/* Header Row */}
-
-
-      {/* ================= RIGHT CONTENT ================= */}
-      <Box sx={{ flexGrow: 1, pl: 3 }}>
-
-        {/* ⭐⭐⭐ SEARCH BAR ADDED HERE ⭐⭐⭐ */}
+        {/* ⭐⭐⭐ SEARCH BAR (keyword search) ⭐⭐⭐ */}
         <Box sx={{ mb: 2 }}>
           <TextField
             fullWidth
@@ -648,7 +618,6 @@ export default function AdminQBankEdit() {
             Settings
           </Button>
         </Box>
-
         {/* QUESTION EDITOR */}
         <Card sx={{ mb: 3 }}>
           <CardContent>
@@ -707,9 +676,7 @@ export default function AdminQBankEdit() {
                       multiline
                       minRows={1}
                       value={opt}
-                      onChange={(e) =>
-                        handleOptionChange(i, e.target.value)
-                      }
+                      onChange={(e) => handleOptionChange(i, e.target.value)}
                       onBlur={() => scheduleAutosave()}
                       InputProps={{ sx: { pl: 7 } }}
                     />
@@ -742,9 +709,7 @@ export default function AdminQBankEdit() {
                         multiline
                         minRows={1}
                         value={opt}
-                        onChange={(e) =>
-                          handleOptionChange(i, e.target.value)
-                        }
+                        onChange={(e) => handleOptionChange(i, e.target.value)}
                         onBlur={() => scheduleAutosave()}
                         InputProps={{ sx: { pl: 7 } }}
                       />
@@ -816,3 +781,4 @@ export default function AdminQBankEdit() {
     </Box>
   );
 }
+      
