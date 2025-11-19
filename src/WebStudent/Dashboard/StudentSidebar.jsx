@@ -13,9 +13,9 @@ import { useNavigate, useLocation } from "react-router-dom";
 ====================================================== */
 const menuItems = [
   { id: "dashboard", icon: <FaTachometerAlt />, label: "Dashboard", path: "/student/dashboard" },
-  // { id: "mocktest",   icon: <FaBookOpen />,      label: "MockTest", path: "/student/mocktests" },
+  { id: "mocktest",   icon: <FaBookOpen />,      label: "MockTest", path: "/student/mocktests" },
   { id: "q-bank",   icon: <FaUserCircle />,    label: "Q-Bank",    path: "/student/qbank" },
-  // { id: "course",   icon: <FaUserCircle />,    label: "Course",    path: "/student/courses" },
+  { id: "course",   icon: <FaUserCircle />,    label: "Course",    path: "/student/courses" },
   // { id: "e-book",   icon: <FaUserCircle />,    label: "E-Book",    path: "/ebooks" },
 ];
 

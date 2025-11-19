@@ -61,12 +61,15 @@ export default function AdminQBankSettings() {
         ]);
         const data = res.data || {};
         setBank({
-          name: data.name || data.title || "",
-          status: data.status || "UNPUBLISHED",
-          description: data.description ?? "",
-          thumbnailUrl: data.thumbnailUrl || data.imageUrl || "",
-          slug: data.slug || "",
-        });
+  name: data.name || data.title || "",
+  status: data.status || "UNPUBLISHED",
+  description: data.description ?? "",
+  thumbnailUrl: data.thumbnailUrl || data.imageUrl || "",
+  slug: data.slug || "",
+  isPaid: !!data.isPaid,
+  pricePaise: Number(data.pricePaise) || 0,
+});
+
         setImagePreview(resolveImageUrl(data.thumbnailUrl || data.imageUrl || ""));
       } catch (err) {
         console.warn("QBank settings fetch failed:", err?.message);
@@ -120,9 +123,15 @@ export default function AdminQBankSettings() {
       return method === "put" ? API.put(url, form) : API.patch(url, form);
     };
     const doJson = (url, method = "patch") => {
-      const payload = { name: bank.name ?? "", description: bank.description ?? "" };
-      return method === "put" ? API.put(url, payload) : API.patch(url, payload);
-    };
+  const payload = {
+    name: bank.name ?? "",
+    description: bank.description ?? "",
+    isPaid: !!bank.isPaid,
+    pricePaise: Number(bank.pricePaise) || 0,
+  };
+  return method === "put" ? API.put(url, payload) : API.patch(url, payload);
+};
+
 
     // Only attempt meta update if title/desc/thumbnail changed meaningfully.
     const wantMetaUpdate = (bank.name?.trim()?.length || 0) > 0
@@ -231,6 +240,33 @@ export default function AdminQBankSettings() {
                 value={bank.description}
                 onChange={(e) => setBank({ ...bank, description: e.target.value })}
               />
+
+              {/* Payment Settings */}
+<Typography sx={{ fontWeight: 600, mt: 2, mb: 1 }}>Payment Options</Typography>
+<FormControlLabel
+  control={
+    <Switch
+      checked={!!bank.isPaid}
+      onChange={(e) => setBank({ ...bank, isPaid: e.target.checked })}
+    />
+  }
+  label={bank.isPaid ? "Paid Bank" : "Free Bank"}
+/>
+
+{bank.isPaid && (
+  <TextField
+    fullWidth
+    type="number"
+    label="Price (₹)"
+    sx={{ mt: 1 }}
+    value={(bank.pricePaise / 100).toString()}
+    onChange={(e) => {
+      const rupees = parseFloat(e.target.value || "0");
+      setBank({ ...bank, pricePaise: Math.round(rupees * 100) });
+    }}
+  />
+)}
+
             </Box>
 
             {/* Right column: thumbnail */}

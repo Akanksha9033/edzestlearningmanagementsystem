@@ -27,9 +27,9 @@ const calcPercent = (watchedSeconds, duration) => {
 router.put("/:lessonId", authAccess, async (req, res) => {
   const { lessonId } = req.params;
   const userId = req.user?.id || req.userId || req.body.userId;
-  let { courseSlug, watchedSeconds, duration, percent, completed } = req.body || {};
+  let { courseSlug, watchedSeconds, duration, percent, completed, type } = req.body || {};
 
-  console.log("🟣 [VideoProgress PUT] Incoming:", {
+  console.log("🟣 [Progress PUT] Incoming:", {
     lessonId,
     userId,
     courseSlug,
@@ -37,6 +37,7 @@ router.put("/:lessonId", authAccess, async (req, res) => {
     duration,
     percent,
     completed,
+    type, // new
   });
 
   if (!userId || !lessonId) {
@@ -44,34 +45,19 @@ router.put("/:lessonId", authAccess, async (req, res) => {
   }
 
   try {
-    // ✅ Normalize watchedSeconds, duration, percent properly
     watchedSeconds = safeInt(watchedSeconds);
     duration = safeInt(duration);
 
-    // Fallback: if frontend sends duration=0 but we have watchedSeconds
-    if (!duration || duration <= 0) {
-      duration = safeInt(req.body?.videoDuration || watchedSeconds || 0);
-    }
-   
-    // Recalculate percent only if not given or invalid
-    if (!Number.isFinite(percent) || percent <= 0) {
+    if (!duration || duration <= 0) duration = watchedSeconds || 0;
+
+    if (!Number.isFinite(percent) || percent <= 0)
       percent = calcPercent(watchedSeconds, duration);
-    }
 
     percent = clamp(percent);
     completed = completed === true || percent >= 95;
 
-    // 🟢 Debug print
-    console.log("🎯 Normalized progress values:", {
-      watchedSeconds,
-      duration,
-      percent,
-      completed,
-    });
-
     const studentprogressid = `${userId}#${lessonId}`;
 
-    // ✅ Perform DynamoDB update
     const result = await ddb
       .update({
         TableName: TABLE,
@@ -84,9 +70,14 @@ router.put("/:lessonId", authAccess, async (req, res) => {
               #dur = :dur,
               #p = :p,
               completed = :c,
+              #t = :t,
               updatedAt = :now
         `,
-        ExpressionAttributeNames: { "#dur": "duration", "#p": "percent" },
+        ExpressionAttributeNames: {
+          "#dur": "duration",
+          "#p": "percent",
+          "#t": "type",
+        },
         ExpressionAttributeValues: {
           ":u": userId,
           ":l": lessonId,
@@ -95,13 +86,14 @@ router.put("/:lessonId", authAccess, async (req, res) => {
           ":dur": duration,
           ":p": percent,
           ":c": !!completed,
+          ":t": type || "video", // 🆕 detect lesson type
           ":now": Date.now(),
         },
         ReturnValues: "ALL_NEW",
       })
       .promise();
 
-    console.log("✅ [VideoProgress] Updated:", result.Attributes);
+    console.log("✅ [Progress] Updated:", result.Attributes);
 
     return res.json({
       ok: true,
@@ -109,15 +101,16 @@ router.put("/:lessonId", authAccess, async (req, res) => {
       userId,
       lessonId,
       courseSlug,
-      watchedSeconds, // ✅ include this in response
-      duration,       // ✅ include this in response
+      watchedSeconds,
+      duration,
       percent,
       completed,
+      type: type || "video",
     });
   } catch (err) {
-    console.error("🔥 [VideoProgress][PUT ERROR]", err);
+    console.error("🔥 [Progress][PUT ERROR]", err);
     return res.status(500).json({
-      message: "Failed to update video progress",
+      message: "Failed to update lesson progress",
       error: err.message,
     });
   }

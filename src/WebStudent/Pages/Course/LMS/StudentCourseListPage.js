@@ -195,6 +195,14 @@ export default function StudentCourseListPage() {
 
   return (
     <div className="container mt-5">
+       {/* 🔙 Back Button */}
+  <button
+    className="btn btn-outline-secondary mb-3"
+    onClick={() => window.history.back()}
+  >
+    ← Back
+  </button>
+
       <h2 className="mb-4 fw-bold">Available Courses</h2>
 
       {loading && <p>Loading courses…</p>}
