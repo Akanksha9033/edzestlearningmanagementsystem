@@ -1151,13 +1151,12 @@ export default function StudentQBankSession() {
             sx={{
               minWidth: 0,
               py: 1,
-              ...(answers[q.questionId]
-                ? {
-                    bgcolor: "#4748ac",
-                    color: "white",
-                    ":hover": { bgcolor: "#3e40a5" },
-                  }
-                : {}),
+              ? {
+      bgcolor: "#4748ac",
+      color: "white",
+      ":hover": { bgcolor: "#3e40a5" },
+    }
+  : {}),
             }}
           >
             {idx + 1}
