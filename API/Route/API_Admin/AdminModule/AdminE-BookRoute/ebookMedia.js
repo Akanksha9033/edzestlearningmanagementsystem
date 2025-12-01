@@ -1,26 +1,37 @@
 // backend/routes/ebookMedia.js
+
+// ⭐ Express router for handling e-book related image uploads
 const express = require("express");
-const multer = require("multer");
-const path = require("path");
-const { v4: uuidv4 } = require("uuid");
-const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
+const multer = require("multer");              // handles file uploads (memory storage)
+const path = require("path");                  // helps in extracting file extensions
+const { v4: uuidv4 } = require("uuid");        // generates a random unique id for file naming
+const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3"); // AWS SDK v3 for S3 upload
 
 const router = express.Router();
 
-/* ---- ENV ---- */
-const REGION = process.env.AWS_REGION || "ap-south-1";
-const BUCKET = process.env.S3_BUCKET;
-const ACCESS_KEY = process.env.AWS_ACCESS_KEY_ID;
-const SECRET_KEY = process.env.AWS_SECRET_ACCESS_KEY;
+/* ------------------------------------------------------------------
+   🔧 ENVIRONMENT VARIABLES
+   These come from your Lambda or local .env file
+------------------------------------------------------------------- */
+const REGION = process.env.AWS_REGION || "ap-south-1";  // AWS region
+const BUCKET = process.env.S3_BUCKET;                   // S3 bucket name
+const ACCESS_KEY = process.env.AWS_ACCESS_KEY_ID;       // Local Dev AWS access key
+const SECRET_KEY = process.env.AWS_SECRET_ACCESS_KEY;   // Local Dev AWS secret key
 
-// Optional: if you later put CloudFront in front of S3, set this to your dist domain (e.g. dxxx.cloudfront.net)
+// Optional CloudFront CDN domain — used when you want image URLs to load faster
 const CDN_DOMAIN = process.env.CDN_DOMAIN || "";
 
-/* ---- Checks ---- */
+/* ------------------------------------------------------------------
+   ⚠️ RUN-TIME CHECKS (Just warnings, NOT errors)
+------------------------------------------------------------------- */
 if (!BUCKET) console.warn("[ebookMedia] Missing S3_BUCKET");
 if (!ACCESS_KEY || !SECRET_KEY) console.warn("[ebookMedia] Missing AWS creds");
 
-/* ---- S3 Client ---- */
+/* ------------------------------------------------------------------
+   📦 CREATE S3 CLIENT (AWS SDK v3)
+   - In local environment: uses ACCESS + SECRET
+   - In Lambda: Always prefer IAM Role (but here we are using ACCESS_KEY)
+------------------------------------------------------------------- */
 const s3 = new S3Client({
   region: REGION,
   credentials: {
@@ -29,10 +40,15 @@ const s3 = new S3Client({
   },
 });
 
-/* ---- Multer: memory storage ---- */
+/* ------------------------------------------------------------------
+   📁 Multer memory storage
+   - File uploaded is stored in RAM, not saved on disk
+   - File limit 10MB
+   - Only allow images: png, jpg, jpeg, gif, webp
+------------------------------------------------------------------- */
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB max
   fileFilter: (_req, file, cb) => {
     const allowed = ["image/png", "image/jpeg", "image/jpg", "image/gif", "image/webp"];
     if (!allowed.includes(file.mimetype)) {
@@ -42,7 +58,13 @@ const upload = multer({
   },
 });
 
-/* ---- Health check ---- */
+/* ------------------------------------------------------------------
+   ❤️ Health Check Endpoint
+   Helps you verify if:
+     - Server is running
+     - Region is correct
+     - Bucket name is passing correctly
+------------------------------------------------------------------- */
 router.get("/health", (_req, res) => {
   res.json({
     ok: true,
@@ -51,9 +73,16 @@ router.get("/health", (_req, res) => {
   });
 });
 
-/* ---- Upload image ---- */
+/* ------------------------------------------------------------------
+   📤 UPLOAD IMAGE ENDPOINT
+   POST /upload-image
+   - Receives a file in "file" field
+   - Saves it in S3 bucket inside "ebooks/" folder
+   - Returns public URL of uploaded file
+------------------------------------------------------------------- */
 router.post("/upload-image", upload.single("file"), async (req, res) => {
   try {
+    // Validate environment and file presence
     if (!BUCKET) {
       return res.status(500).json({ error: "S3_BUCKET env var not set on server" });
     }
@@ -61,27 +90,34 @@ router.post("/upload-image", upload.single("file"), async (req, res) => {
       return res.status(400).json({ error: "No file uploaded" });
     }
 
+    // Extract file extension
     const ext = (path.extname(req.file.originalname || "") || ".jpg").toLowerCase();
+
+    // Create a unique filename in S3 -> ebooks/<unique-id>.ext
     const key = `ebooks/${uuidv4()}${ext}`;
 
-    // IMPORTANT: do NOT set ACL when bucket has ACLs disabled
+    // ⭐ Upload to S3 using AWS SDK v3
+    // NOTE: We do NOT set ACL because ACLs are disabled by default in S3
     await s3.send(
       new PutObjectCommand({
         Bucket: BUCKET,
         Key: key,
         Body: req.file.buffer,
         ContentType: req.file.mimetype || "application/octet-stream",
-        // ACL: "public-read"  // ❌ remove this (causes AccessControlListNotSupported)
+        // ACL: "public-read"  // ❌ Do not enable ACL
       })
     );
 
-    // If you’ve set a public-read bucket policy, this S3 URL will be publicly readable:
+    // ⭐ Build public URL — if CDN domain exists use that, else S3 URL
     const s3Url = `https://${BUCKET}.s3.${REGION}.amazonaws.com/${key}`;
     const url = CDN_DOMAIN ? `https://${CDN_DOMAIN}/${key}` : s3Url;
 
+    // Return success response
     res.json({ url, key, bucket: BUCKET, region: REGION });
+
   } catch (err) {
     console.error("[ebookMedia] upload error:", err);
+
     res.status(500).json({
       error: "Failed to upload image",
       details: err.message || String(err),
@@ -90,4 +126,5 @@ router.post("/upload-image", upload.single("file"), async (req, res) => {
   }
 });
 
+// Export router
 module.exports = router;

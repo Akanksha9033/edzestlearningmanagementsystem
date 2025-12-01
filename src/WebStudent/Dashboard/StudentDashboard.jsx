@@ -356,7 +356,7 @@ export default function StudentDashboard() {
             <div className="row ez-grid">
               
               {/* ---------------- E-Books (commented out) ---------------- */}
-              {/*
+            
               <div className="col-12 col-sm-6 col-lg-4">
                 <div className="ez-card">
                   <div className="ez-ribbon" />
@@ -375,7 +375,7 @@ export default function StudentDashboard() {
                   </div>
                 </div>
               </div>
-              */}
+              
 
               {/* Q-Bank (kept active) */}
               <div className="col-12 col-sm-6 col-lg-4">

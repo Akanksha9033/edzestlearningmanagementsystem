@@ -57,7 +57,7 @@ export default function AdminDashboard() {
                     { label: "Question Bank", to: "/admin/qbank/upload" },
                     { label: "MockTest", to: "/admin/mocktests" },
                     { label: "Course", to: "/create-course" },
-                    // { label: "E-Book", to: "/admin/ebooks/create/title" },
+                    { label: "E-Book", to: "/admin/ebooks/create/title" },
                   ]}
                 />
               </div>

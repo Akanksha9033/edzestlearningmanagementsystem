@@ -1,7 +1,7 @@
-
-
 /** minutes → seconds (safe) */
 function minsToSecs(m) {
+  // Convert minutes → seconds safely.
+  // Number(m || 0) ensures blank/null becomes 0.
   return Math.max(0, Math.floor(Number(m || 0) * 60));
 }
 
@@ -10,22 +10,28 @@ function minsToSecs(m) {
  * Handles cases where admin minutes leaked into durationSec.
  */
 function computeSeedSeconds(meta) {
-  const adminMin  = Number(meta?.duration || 0);     // minutes (admin)
-  const rawDurSec = Number(meta?.durationSec || 0);  // could be seconds OR minutes
+  // Admin-assigned duration in MINUTES (always minutes)
+  const adminMin  = Number(meta?.duration || 0);
+
+  // Raw durationSec field: could be minutes OR seconds depending on older data
+  const rawDurSec = Number(meta?.durationSec || 0);
 
   if (rawDurSec > 0) {
-    // durationSec equals minutes value (e.g., 230) -> convert to seconds
+    // Case 1: durationSec accidentally equals adminMin (e.g., 230)
+    // → Treat rawDurSec as minutes
     if (adminMin > 0 && Math.abs(rawDurSec - adminMin) <= 2) {
-      return adminMin * 60;
+      return adminMin * 60; // minutes → seconds
     }
-    // Small raw duration (e.g., < 3600) very likely still minutes
+
+    // Case 2: rawDurSec is small (< 3600)
+    // → very likely minutes (e.g., 120 → 2 hours)
     if (rawDurSec < 3600) return rawDurSec * 60;
 
-    // Looks like proper seconds already
+    // Case 3: Already proper seconds (large values like 7200, 10800)
     return Math.floor(rawDurSec);
   }
 
-  // No durationSec; use admin minutes directly
+  // Case 4: No durationSec present → directly use admin minutes
   return minsToSecs(adminMin);
 }
 
@@ -34,26 +40,33 @@ function computeSeedSeconds(meta) {
  * for the provided mockTestId. Avoid relying on GSI projections.
  */
 async function findExistingInProgressAttempt({ dynamo, table, gsiName, instUser, mockTestId, scanLimit = 25 }) {
+  // Step 1: Query GSI using partition key instUser. Get recent attempts.
   const q1 = await dynamo.query({
     TableName: table,
     IndexName: gsiName,
     KeyConditionExpression: "instUser = :iu",
     ExpressionAttributeValues: { ":iu": instUser },
-    ScanIndexForward: false,
-    Limit: scanLimit,
+    ScanIndexForward: false,  // get newest first
+    Limit: scanLimit,         // bounded read for performance
   }).promise();
 
+  // Extract attempt keys from index results
   const attemptKeys = (q1.Items || [])
     .map(it => ({ attemptId: it?.attemptId, entity: "attempt" }))
-    .filter(k => !!k.attemptId);
+    .filter(k => !!k.attemptId);  // ignore blanks
 
+  // Step 2: Fetch FULL records from main table to check status
   for (const k of attemptKeys) {
     const g = await dynamo.get({ TableName: table, Key: k }).promise();
     const item = g.Item;
+
+    // Found IN_PROGRESS attempt for same mock test
     if (item && item.mockTestId === mockTestId && item.status === "IN_PROGRESS") {
       return item;
     }
   }
+
+  // No matching in-progress attempt found
   return null;
 }
 
@@ -62,17 +75,28 @@ async function findExistingInProgressAttempt({ dynamo, table, gsiName, instUser,
  * (e.g., initial seed was minute-shaped and client is correcting to legit seconds).
  */
 function shouldAllowOneTimeIncrease(A, clientSec, currentServerTimeLeft) {
-  const durationMin = Number(A?.durationMin);
-  const durationSec = Number(A?.durationSec);
+  const durationMin = Number(A?.durationMin); // admin minutes
+  const durationSec = Number(A?.durationSec); // stored raw seconds/minutes
 
   return (
+    // clientSec must be a valid number
     Number.isFinite(clientSec) &&
+
+    // Admin minutes and durationSec must both exist
     durationMin > 0 &&
     durationSec > 0 &&
-    durationSec < 3600 &&                         // minute-shaped seed like 230
-    Math.abs(durationSec - durationMin) <= 2 &&   // matches admin minutes
-    clientSec <= durationMin * 60 &&              // not exceeding legit ceiling
-    clientSec >= currentServerTimeLeft            // it is an increase, not a reduction
+
+    // durationSec < 3600 → probably minutes, not seconds
+    durationSec < 3600 &&
+
+    // durationSec matches admin minutes +- 2 tolerance
+    Math.abs(durationSec - durationMin) <= 2 &&
+
+    // clientSec is not exceeding real max allowed seconds
+    clientSec <= durationMin * 60 &&
+
+    // And client is increasing the time (not reducing)
+    clientSec >= currentServerTimeLeft
   );
 }
 
