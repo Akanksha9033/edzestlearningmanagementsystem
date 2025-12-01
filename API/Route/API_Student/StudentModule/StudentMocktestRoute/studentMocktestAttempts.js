@@ -133,6 +133,7 @@ router.get("/attempts/list", async (req, res) => {
       out.push({
         attemptId: A.attemptId,
         mockTestId: A.mockTestId,
+        userId: A.userId, 
         title: A.title,
         status: A.status,
         createdAtEpoch: A.createdAtEpoch,
