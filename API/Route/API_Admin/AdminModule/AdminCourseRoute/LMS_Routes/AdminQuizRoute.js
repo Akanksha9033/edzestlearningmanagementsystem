@@ -1,11 +1,18 @@
 const express = require("express");
 const router = express.Router();
 
-const AWS = require("aws-sdk");
+const { S3Client } = require("@aws-sdk/client-s3");
 const { v4: uuidv4 } = require("uuid");
 
-AWS.config.update({ region: process.env.AWS_REGION || "ap-south-1" });
-const ddb = new AWS.DynamoDB.DocumentClient();
+const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
+const { DynamoDBDocumentClient } = require("@aws-sdk/lib-dynamodb");
+
+const ddbClient = new DynamoDBClient({
+  region: process.env.AWS_REGION || "ap-south-1",
+});
+
+const ddb = DynamoDBDocumentClient.from(ddbClient);
+
 
 const TABLE_NAME = process.env.DDB_LESSONS_TABLE || "edzest_lms";
 
@@ -62,12 +69,14 @@ router.post("/quiz", async (req, res) => {
     // -----------------------------------
     // Save/Update to DynamoDB
     // -----------------------------------
-    await ddb
-      .put({
-        TableName: TABLE_NAME,
-        Item: item,
-      })
-      .promise();
+   const { PutCommand } = require("@aws-sdk/lib-dynamodb");
+
+await ddb.send(
+  new PutCommand({
+    TableName: TABLE_NAME,
+    Item: item,
+  })
+);
 
     // -----------------------------------
     // Final Response
@@ -115,10 +124,13 @@ router.put("/quiz/:lessonId", async (req, res) => {
 
     console.log("📝 Updating Quiz:", item);
 
-    await ddb.put({
-      TableName: TABLE_NAME,
-      Item: item,
-    }).promise();
+    await ddb.send(
+  new PutCommand({
+    TableName: TABLE_NAME,
+    Item: item,
+  })
+);
+
 
     return res.json({
       ok: true,
@@ -150,12 +162,15 @@ router.get("/quiz/:courseId/:lessonId", async (req, res) => {
       sk: `LESSON#${lessonId}`,
     };
 
-    const result = await ddb
-      .get({
-        TableName: TABLE_NAME,
-        Key: key,
-      })
-      .promise();
+   const { GetCommand } = require("@aws-sdk/lib-dynamodb");
+
+const result = await ddb.send(
+  new GetCommand({
+    TableName: TABLE_NAME,
+    Key: key,
+  })
+);
+
 
     if (!result || !result.Item) {
       return res.status(404).json({ message: "Quiz lesson not found" });

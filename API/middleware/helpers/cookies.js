@@ -1,48 +1,5 @@
 
 
-// // backend/helpers/cookies.js
-// function computeCookieOptions(req) {
-//   const host = (req.headers.host || "").split(":")[0].toLowerCase();
-//   const forwardedProto = String(req.headers["x-forwarded-proto"] || "").toLowerCase();
-
-//   // Treat execute-api / edzest.org hosts as HTTPS too (defensive)
-//   const probablyHttps =
-//     forwardedProto === "https" ||
-//     req.secure === true ||
-//     host.endsWith(".amazonaws.com") ||
-//     host.endsWith(".edzest.org");
-
-//   const COOKIE_DOMAIN = process.env.COOKIE_DOMAIN || undefined;
-//   const bare = COOKIE_DOMAIN ? COOKIE_DOMAIN.replace(/^\./, "").toLowerCase() : undefined;
-
-//   // Only set Domain if current host matches your site domain
-//   const canUseDomain =
-//     !!COOKIE_DOMAIN &&
-//     !!host &&
-//     (host === bare || (bare && host.endsWith("." + bare)));
-
-//   return {
-//     httpOnly: true,
-//     secure: !!probablyHttps,                // required with SameSite=None
-//     sameSite: probablyHttps ? "none" : "lax",
-//     domain: canUseDomain ? COOKIE_DOMAIN : undefined,
-//     path: "/",                              // <- key so cookie is sent back on your APIGW path
-//     maxAge: 30 * 24 * 60 * 60 * 1000,       // 30d
-//   };
-// }
-
-// function setRefreshCookie(req, res, refreshToken) {
-//   const opts = computeCookieOptions(req);
-//   res.cookie("refreshToken", refreshToken, opts);
-// }
-
-// function clearRefreshCookie(req, res) {
-//   const opts = computeCookieOptions(req);
-//   res.clearCookie("refreshToken", { ...opts, expires: new Date(0) });
-// }
-
-// module.exports = { setRefreshCookie, clearRefreshCookie };
-
 
 // API/middleware/helpers/cookies.js
 

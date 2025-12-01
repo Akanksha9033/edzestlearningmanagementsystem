@@ -529,10 +529,7 @@ const { authAccess, requireRoles } = authMod;
 /* ---------------- AWS S3 ---------------- */
 const s3 = new S3Client({
   region: process.env.AWS_REGION,
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-  },
+  
 });
 const BUCKET = process.env.S3_BUCKET;
 
@@ -542,21 +539,18 @@ const isHex24 = (s) => /^[0-9a-fA-F]{24}$/.test(String(s || ""));
 async function loadCourseByIdOrKey(val) {
   if (!val) return null;
 
-  // 1) try by id
-  try {
-    const byId = await Courses.findById(String(val));
-    if (byId) return byId;
-  } catch (_) {}
+  // Try by ID
+  const byId = await Courses.findById(String(val));
+  if (byId) return byId;
 
-  // 2) try slug
+  // Try by slug (uses DynamoDB GSI)
   const slug = String(val).trim().toLowerCase();
-  try {
-    const bySlug = await Courses.findOne({ slug });
-    if (bySlug) return bySlug;
-  } catch (_) {}
+  const bySlug = await Courses.findOne({ slug });
+  if (bySlug) return bySlug;
 
   return null;
 }
+
 
 async function uploadToS3(base64, contentType, filename) {
   const base64Data = Buffer.from(
@@ -726,31 +720,48 @@ router.post(
         imageFilename,
       } = req.body;
 
-      if (!title) return res.status(400).json({ message: "Title is required" });
+      if (!title)
+        return res.status(400).json({ message: "Title is required" });
+
       if (price && Number(price) < 0)
         return res.status(400).json({ message: "Price cannot be negative" });
 
-      const slugify = (str) =>
-        String(str).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)+/g, "");
+      // Generate slug
+      const slugify = (text) =>
+        String(text)
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/(^-|-$)+/g, "");
+
       const slug = slugify(title);
 
+      // ❗ DynamoDB version of findOne still works same
       const existing = await Courses.findOne({ slug });
       if (existing) {
-        return res
-          .status(400)
-          .json({ message: `Course "${title}" already exists.` });
+        return res.status(400).json({
+          message: `Course "${title}" already exists.`,
+        });
       }
 
+      // Upload S3 image (if given)
       let imageUrl = null;
       if (imageBase64) {
-        imageUrl = await uploadToS3(imageBase64, imageContentType, imageFilename);
+        imageUrl = await uploadToS3(
+          imageBase64,
+          imageContentType,
+          imageFilename
+        );
       }
 
+      // Course payload for DynamoDB
       const coursePayload = {
         title: title.trim(),
         slug,
-        price: String(isFree) === "true" || isFree === true ? 0 : Number(price || 0),
-        isFree: String(isFree) === "true" || isFree === true,
+        price:
+          isFree === true || String(isFree) === "true"
+            ? 0
+            : Number(price || 0),
+        isFree: isFree === true || String(isFree) === "true",
         status: status || "unpublished",
         createdBy: req.user.id,
         instituteId: instituteId || null,
@@ -758,16 +769,21 @@ router.post(
         sections: [],
       };
 
+      // ⭐ SAVE TO DYNAMODB (via Courses class)
       const course = new Courses(coursePayload);
       await course.save();
 
-      res.status(201).json({ message: "Course created successfully", course });
+      return res.status(201).json({
+        message: "Course created successfully",
+        course,
+      });
     } catch (err) {
       console.error("❌ Course creation error:", err);
-      res.status(500).json({ message: "Server error" });
+      return res.status(500).json({ message: "Server error" });
     }
   }
 );
+
 
 /* Full course (hydrate lessons) */
 router.get("/:courseId/full", authAccess, async (req, res) => {
@@ -788,16 +804,27 @@ router.get("/:courseId/full", authAccess, async (req, res) => {
 /* Fetch by id or slug (hydrate lessons) */
 router.get("/:courseId", authAccess, async (req, res) => {
   try {
-    const cdoc = await loadCourseByIdOrKey(req.params.courseId);
-    if (!cdoc) return res.status(404).json({ message: "Course not found" });
+    const val = req.params.courseId;
 
-    const course = await hydrateLessonsIntoSections(String(cdoc._id), cdoc);
-    res.json({ course });
+    // ⭐ Fetch course by ID or slug (DynamoDB version)
+    const cdoc = await loadCourseByIdOrKey(val);
+    if (!cdoc) {
+      return res.status(404).json({ message: "Course not found" });
+    }
+
+    // ⭐ In DynamoDB model, _id is already stored in the item
+    const courseId = String(cdoc._id);
+
+    // ⭐ Attach lessons → sections
+    const course = await hydrateLessonsIntoSections(courseId, cdoc);
+
+    return res.json({ course });
   } catch (err) {
     console.error("❌ Course fetch error:", err);
-    res.status(500).json({ message: "Server error" });
+    return res.status(500).json({ message: "Server error" });
   }
 });
+
 
 /* Explicit fallback (hydrate lessons) */
 router.get("/fetchCourse/by/:courseId", authAccess, async (req, res) => {

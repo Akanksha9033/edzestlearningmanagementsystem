@@ -17,29 +17,33 @@ console.log("✅ Payments route file loaded");
 
 const router = express.Router();
 
-// DynamoDB connection
-const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}));
+/* -------------------------------------------------------------------------- */
+/*  ✅ FIX: DynamoDB Client for Lambda (region added, no credentials needed)  */
+/* -------------------------------------------------------------------------- */
+const client = new DynamoDBClient({
+  region: process.env.AWS_REGION || "ap-south-1",
+  // ❗ IMPORTANT: no credentials block here
+});
 
-// Table names from .env
+const ddb = DynamoDBDocumentClient.from(client);
+
+/* -------------------------------------------------------------------------- */
+/*  Table Names                                                              */
+/* -------------------------------------------------------------------------- */
 const PAYMENTS = process.env.PAYMENTS_TABLE || "Payments";
 const QBANK = process.env.QBANK_TABLE || "QBank";
-const BANKS = process.env.DDB_BANKS || "QuestionBanks"; // ✅ existing QBank price lookup
+const BANKS = process.env.DDB_BANKS || "QuestionBanks"; // existing QBank price lookup
 
-// ✅ NEW: MockTest access table + fixed price (Option A)
+// NEW: MockTest access table + fixed price
 const MOCK_ACCESS = process.env.MOCK_ACCESS_TABLE || "MockAccessV2";
-const MOCKTEST_PRICE_PAISE = Number(process.env.MOCKTEST_PRICE_PAISE || "100"); // default ₹1 if missing
+const MOCKTEST_PRICE_PAISE = Number(process.env.MOCKTEST_PRICE_PAISE || "100");
 
-// (Optional future) course table – not used yet, but kept for later
+// Optional future course table
 const COURSES = process.env.COURSES_TABLE || "CourseAccess";
 
-/**
- * ✅ Decide which access table to use.
- * - If caller sends productType = "mocktest" → use MOCK_ACCESS_TABLE
- * - If productType = "course"             → COURSES_TABLE (future)
- * - Else                                 → legacy QBank table
- *
- * This keeps old QBank behaviour intact.
- */
+/* -------------------------------------------------------------------------- */
+/*  Product Type Resolver                                                    */
+/* -------------------------------------------------------------------------- */
 function resolveProductTable(productId, productType) {
   const type = String(productType || "").trim().toUpperCase();
 
@@ -50,48 +54,47 @@ function resolveProductTable(productId, productType) {
     return { type: "COURSE", table: COURSES };
   }
 
-  // default: legacy QBank flow
   return { type: "QBANK", table: QBANK };
 }
 
-// Razorpay credentials (must be in .env)
+/* -------------------------------------------------------------------------- */
+/*  Razorpay keys                                                            */
+/* -------------------------------------------------------------------------- */
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 
-// Small helper
 const now = () => new Date().toISOString();
 
 /* -------------------------------------------------------------------------- */
-/* 🟢 TEST ROUTE - to verify router mount                                    */
+/*  🟢 TEST                                                                  */
 /* -------------------------------------------------------------------------- */
 router.get("/test", (req, res) => {
   res.json({ message: "✅ Payments route working fine!" });
 });
 
 /* -------------------------------------------------------------------------- */
-/* 🟠 Create Order (POST /api/payments/create-order)                          */
+/*  🟠 Create Order                                                          */
 /* -------------------------------------------------------------------------- */
 router.post("/create-order", async (req, res) => {
   try {
     const { productId, amountPaise, productType } = req.body || {};
-    let amount = 100; // ✅ default ₹1
+    let amount = 100; // default ₹1
 
-    // find which product family this is
     const { type: resolvedType } = resolveProductTable(productId, productType);
 
-    // ✅ Prefer client-sent amount first
+    // client-sent amount
     if (Number(amountPaise) > 0) {
       amount = Number(amountPaise);
     } else if (resolvedType === "MOCKTEST") {
-      // ⭐ MockTest: use global env price
+      // use env price if available
       if (MOCKTEST_PRICE_PAISE > 0) {
         amount = MOCKTEST_PRICE_PAISE;
         console.log(`💰 Using MOCKTEST_PRICE_PAISE: ${amount} paise`);
       }
     } else if (productId && resolvedType === "QBANK") {
-      // ⭐ QBank: keep your existing price lookup from QuestionBanks table
+      // QBank price lookup
       try {
         const result = await ddb.send(
           new GetCommand({
@@ -111,7 +114,6 @@ router.post("/create-order", async (req, res) => {
         );
       }
     }
-    // (COURSE / others will just use default or client-sent amount)
 
     const receipt = `order_${Date.now()}`;
     const order = await razorpay.orders.create({
@@ -120,7 +122,6 @@ router.post("/create-order", async (req, res) => {
       receipt,
     });
 
-    // save pending record (same as before)
     await ddb.send(
       new PutCommand({
         TableName: PAYMENTS,
@@ -149,11 +150,10 @@ router.post("/create-order", async (req, res) => {
 });
 
 /* -------------------------------------------------------------------------- */
-/* 🔵 Verify Payment (POST /api/payments/verify-payment)                      */
+/*  🔵 Verify Payment                                                        */
 /* -------------------------------------------------------------------------- */
 router.post("/verify-payment", async (req, res) => {
   try {
-    // ✅ Accept both frontend naming styles
     const {
       order_id,
       payment_id,
@@ -163,10 +163,9 @@ router.post("/verify-payment", async (req, res) => {
       razorpay_signature,
       userId,
       productId,
-      productType, // ← NEW, optional for mocktest
+      productType,
     } = req.body;
 
-    // ✅ Normalize field names (handle both types)
     const finalOrderId = order_id || razorpay_order_id;
     const finalPaymentId = payment_id || razorpay_payment_id;
     const finalSignature = signature || razorpay_signature;
@@ -181,7 +180,6 @@ router.post("/verify-payment", async (req, res) => {
       return res.status(400).json({ error: "Missing payment details" });
     }
 
-    // ✅ Validate signature
     const hmac = crypto.createHmac(
       "sha256",
       process.env.RAZORPAY_KEY_SECRET
@@ -193,13 +191,12 @@ router.post("/verify-payment", async (req, res) => {
       return res.status(400).json({ error: "Invalid signature" });
     }
 
-    // ✅ decide which access table to use for this product (QBank / MockTest / Course)
     const { table: accessTable, type: resolvedType } = resolveProductTable(
       productId,
       productType
     );
 
-    // ✅ Store successful payment (same Payments table for ALL products)
+    // Save success
     await ddb.send(
       new PutCommand({
         TableName: PAYMENTS,
@@ -208,7 +205,7 @@ router.post("/verify-payment", async (req, res) => {
           orderId: finalOrderId,
           userId,
           productId,
-          amountPaise: 100, // 🔁 keep existing behaviour
+          amountPaise: 100,
           currency: "INR",
           status: "SUCCESS",
           signatureVerified: true,
@@ -218,13 +215,13 @@ router.post("/verify-payment", async (req, res) => {
       })
     );
 
-    // ✅ Grant 30-day access for this specific product
+    // Access grant
     const accessFrom = new Date();
     const accessTill = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
 
     await ddb.send(
       new PutCommand({
-        TableName: accessTable, // QBANK for qbank, MOCK_ACCESS for mocktest, etc.
+        TableName: accessTable,
         Item: {
           userId,
           productId,
@@ -245,7 +242,7 @@ router.post("/verify-payment", async (req, res) => {
 });
 
 /* -------------------------------------------------------------------------- */
-/* 🟣 Check Access (GET /api/payments/has-access)                             */
+/*  🟣 Check Access                                                          */
 /* -------------------------------------------------------------------------- */
 router.get("/has-access", async (req, res) => {
   try {
@@ -255,10 +252,8 @@ router.get("/has-access", async (req, res) => {
         .status(400)
         .json({ allowed: false, message: "Missing userId or productId" });
 
-    // productType can come from query as `productType` or `type`
     const effectiveType = productType || type;
 
-    // ✅ decide which access table to check
     const { table: accessTable } = resolveProductTable(
       productId,
       effectiveType

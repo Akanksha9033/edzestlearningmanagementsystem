@@ -2,9 +2,21 @@
 const express = require("express");
 const router = express.Router();
 // ✅ Build a v2 DocumentClient here (no external client module needed)
-const AWS = require("aws-sdk");
-AWS.config.update({ region: process.env.AWS_REGION || "ap-south-1" });
-const ddb = new AWS.DynamoDB.DocumentClient();
+// v3 AWS SDK
+const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
+const {
+  DynamoDBDocumentClient,
+  UpdateCommand,
+  GetCommand,
+  ScanCommand,
+} = require("@aws-sdk/lib-dynamodb");
+
+const client = new DynamoDBClient({
+  region: process.env.AWS_REGION || "ap-south-1",
+});
+
+const ddb = DynamoDBDocumentClient.from(client);
+
 // ✅ Correct path to your middleware from LMS_Routes/*
 const { authAccess } = require("../../../../../middleware/auth.js");
 const TABLE = process.env.DDB_VIDEO_PROGRESS || "studentprogress";
@@ -58,40 +70,41 @@ router.put("/:lessonId", authAccess, async (req, res) => {
 
     const studentprogressid = `${userId}#${lessonId}`;
 
-    const result = await ddb
-      .update({
-        TableName: TABLE,
-        Key: { studentprogressid },
-        UpdateExpression: `
-          SET userId = :u,
-              lessonId = :l,
-              courseSlug = :cs,
-              watchedSeconds = :ws,
-              #dur = :dur,
-              #p = :p,
-              completed = :c,
-              #t = :t,
-              updatedAt = :now
-        `,
-        ExpressionAttributeNames: {
-          "#dur": "duration",
-          "#p": "percent",
-          "#t": "type",
-        },
-        ExpressionAttributeValues: {
-          ":u": userId,
-          ":l": lessonId,
-          ":cs": courseSlug || null,
-          ":ws": watchedSeconds,
-          ":dur": duration,
-          ":p": percent,
-          ":c": !!completed,
-          ":t": type || "video", // 🆕 detect lesson type
-          ":now": Date.now(),
-        },
-        ReturnValues: "ALL_NEW",
-      })
-      .promise();
+    const cmd = new UpdateCommand({
+  TableName: TABLE,
+  Key: { studentprogressid },
+  UpdateExpression: `
+    SET userId = :u,
+        lessonId = :l,
+        courseSlug = :cs,
+        watchedSeconds = :ws,
+        #dur = :dur,
+        #p = :p,
+        completed = :c,
+        #t = :t,
+        updatedAt = :now
+  `,
+  ExpressionAttributeNames: {
+    "#dur": "duration",
+    "#p": "percent",
+    "#t": "type",
+  },
+  ExpressionAttributeValues: {
+    ":u": userId,
+    ":l": lessonId,
+    ":cs": courseSlug || null,
+    ":ws": watchedSeconds,
+    ":dur": duration,
+    ":p": percent,
+    ":c": !!completed,
+    ":t": type || "video",
+    ":now": Date.now(),
+  },
+  ReturnValues: "ALL_NEW",
+});
+
+const result = await ddb.send(cmd);
+
 
     console.log("✅ [Progress] Updated:", result.Attributes);
 
@@ -133,12 +146,12 @@ router.get("/", authAccess, async (req, res) => {
 
   try {
     const studentprogressid = `${userId}#${lessonId}`;
-    const result = await ddb
-      .get({
-        TableName: TABLE,
-        Key: { studentprogressid },
-      })
-      .promise();
+  const cmd = new GetCommand({
+  TableName: TABLE,
+  Key: { studentprogressid },
+});
+
+const result = await ddb.send(cmd);
 
     const item = result.Item || {};
 
@@ -184,13 +197,17 @@ router.get("/course/:courseSlug", authAccess, async (req, res) => {
 
   try {
     // 1️⃣ Fetch user’s watched/completed items
-    const scanRes = await ddb
-      .scan({
-        TableName: TABLE,
-        FilterExpression: "userId = :u AND courseSlug = :c",
-        ExpressionAttributeValues: { ":u": userId, ":c": courseSlug },
-      })
-      .promise();
+   const cmd = new ScanCommand({
+  TableName: TABLE,
+  FilterExpression: "userId = :u AND courseSlug = :c",
+  ExpressionAttributeValues: {
+    ":u": userId,
+    ":c": courseSlug,
+  },
+});
+
+const scanRes = await ddb.send(cmd);
+
 
     const items = scanRes.Items || [];
     const completedLessonIds = items.filter((i) => i.completed === true).map((i) => i.lessonId);
@@ -199,9 +216,13 @@ router.get("/course/:courseSlug", authAccess, async (req, res) => {
     // 2️⃣ Fetch actual total lessons from Course table
     let totalLessons = 0;
     try {
-      const courseRes = await ddb
-        .get({ TableName: COURSES_TABLE, Key: { slug: courseSlug } })
-        .promise();
+      const getCourseCmd = new GetCommand({
+  TableName: COURSES_TABLE,
+  Key: { slug: courseSlug },
+});
+
+const courseRes = await ddb.send(getCourseCmd);
+
       const course = courseRes.Item;
       if (course && Array.isArray(course.sections)) {
         totalLessons = course.sections.reduce(

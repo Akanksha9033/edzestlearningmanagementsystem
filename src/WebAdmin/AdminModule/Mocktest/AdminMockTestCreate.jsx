@@ -16,7 +16,7 @@ import {
 
 export default function AdminMockTestCreate() {
   const navigate = useNavigate();
-  const { user } = useAuth(); // ✅ Cognito user (includes role, email, instituteId)
+  const { user } = useAuth(); // Cognito user
 
   // ---------------- State ----------------
   const [title, setTitle] = useState("");
@@ -43,19 +43,18 @@ export default function AdminMockTestCreate() {
   // ---------------- Check Slug Availability ----------------
   useEffect(() => {
     if (!slug) return;
+
     const delay = setTimeout(async () => {
       try {
-        const res = await API.get(
-          `/api/admin/mocktests/create-mock/check-slug`,
-          {
-            params: { slug },
-          }
-        );
+        const res = await API.get(`/api/admin/mocktests/create-mock/check-slug`, {
+          params: { slug },
+        });
         setSlugAvailable(res.data.available);
       } catch (err) {
         console.error("Slug check failed:", err);
       }
     }, 500);
+
     return () => clearTimeout(delay);
   }, [slug]);
 
@@ -82,13 +81,11 @@ export default function AdminMockTestCreate() {
       if (image) formData.append("image", image);
       formData.append("file", file);
 
-      // ✅ POST to /api/admin/mocktests/create-mock (backend route)
       await API.post("/api/admin/mocktests/create-mock", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
       alert("✅ MockTest created successfully (Draft)");
-      // ⭐ Navigate to the LIST page (not the editor)
       navigate("/admin/mocktests");
     } catch (err) {
       console.error("Create error:", err);
@@ -103,11 +100,20 @@ export default function AdminMockTestCreate() {
     <Box sx={{ maxWidth: 600, mx: "auto", mt: 4 }}>
       <Card>
         <CardContent>
+
+          {/* ⭐ Added Back Button */}
+          <Button
+            variant="text"
+            onClick={() => navigate("/admin/mocktests")}
+            sx={{ mb: 2, fontWeight: 600, textTransform: "none" }}
+          >
+            ← Back to Mock Tests
+          </Button>
+
           <Typography variant="h5" mb={2} fontWeight="bold">
             🧠 Create New Mock Test
           </Typography>
 
-          {/* Title Input */}
           <TextField
             fullWidth
             label="Title"
@@ -116,7 +122,6 @@ export default function AdminMockTestCreate() {
             sx={{ mb: 2 }}
           />
 
-          {/* Slug Input */}
           <TextField
             fullWidth
             label="Slug"
@@ -133,7 +138,6 @@ export default function AdminMockTestCreate() {
             error={!!slug && !slugAvailable}
           />
 
-          {/* Duration */}
           <TextField
             fullWidth
             label="Duration (minutes)"
@@ -143,7 +147,6 @@ export default function AdminMockTestCreate() {
             sx={{ mb: 2 }}
           />
 
-          {/* Free/Paid Checkbox */}
           <FormControlLabel
             control={
               <Checkbox
@@ -154,7 +157,6 @@ export default function AdminMockTestCreate() {
             label="This is a Free Mock Test"
           />
 
-          {/* Price field (if Paid) */}
           {!isFree && (
             <TextField
               fullWidth
@@ -166,7 +168,6 @@ export default function AdminMockTestCreate() {
             />
           )}
 
-          {/* Image Upload */}
           <Box sx={{ mb: 2 }}>
             <Typography fontWeight="500" mb={1}>
               Upload Cover Image
@@ -178,7 +179,6 @@ export default function AdminMockTestCreate() {
             />
           </Box>
 
-          {/* Excel Upload */}
           <Box sx={{ mb: 2 }}>
             <Typography fontWeight="500" mb={1}>
               Upload Excel (.xlsx)
@@ -190,7 +190,6 @@ export default function AdminMockTestCreate() {
             />
           </Box>
 
-          {/* Submit Button */}
           <Button
             variant="contained"
             color="primary"
@@ -204,6 +203,7 @@ export default function AdminMockTestCreate() {
               "Create Mock Test"
             )}
           </Button>
+
         </CardContent>
       </Card>
     </Box>

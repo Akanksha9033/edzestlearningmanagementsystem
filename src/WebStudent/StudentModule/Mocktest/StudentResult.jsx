@@ -7,6 +7,8 @@ import {
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import VisibilityIcon from "@mui/icons-material/Visibility";
+// import { useNavigate } from "react-router-dom";
+
 
 function safeAgg(result) {
   const all = result?.sectionAgg?.all || {};
@@ -68,21 +70,32 @@ export default function StudentResult() {
   }
 
   if (ready && !user) {
-    return (
-      <Box p={4} textAlign="center">
-        <Typography variant="h6" sx={{ mb: 1 }}>Sign in required</Typography>
-        <Typography color="text.secondary" sx={{ mb: 2 }}>
-          Please log in to view your test result.
-        </Typography>
-        <Button variant="contained" onClick={() => nav("/login")} sx={{ mr: 1 }}>
-          Go to Login
-        </Button>
-        <Button variant="text" onClick={() => nav(-1)} startIcon={<ArrowBackIcon />}>
-          Back
-        </Button>
-      </Box>
-    );
-  }
+  return (
+    <Box p={4} textAlign="center">
+      <Typography variant="h6" sx={{ mb: 1 }}>Sign in required</Typography>
+      <Typography color="text.secondary" sx={{ mb: 2 }}>
+        Please log in to view your test result.
+      </Typography>
+
+      <Button 
+        variant="contained" 
+        onClick={() => nav("/login")} 
+        sx={{ mr: 1 }}
+      >
+        Go to Login
+      </Button>
+
+      <Button 
+        variant="text" 
+        onClick={() => nav("/student/mocktests")} 
+        startIcon={<ArrowBackIcon />}
+      >
+        Back
+      </Button>
+
+    </Box>
+  );
+}
 
   if (authErr) {
     return (

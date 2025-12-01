@@ -41,8 +41,8 @@ function QuestionViewInner(
   const [highlights, setHighlights] = useState([]);
   const [timeSpent, setTimeSpent] = useState(0);
 
-  const rootRef = useRef(null); // selectable content root
-  const lastRangeRef = useRef(null); // last valid selection range within root
+  const rootRef = useRef(null);
+  const lastRangeRef = useRef(null);
   const tickRef = useRef(null);
   const saveTimer = useRef(null);
 
@@ -87,7 +87,6 @@ function QuestionViewInner(
     debouncedSave({ flagged: next });
   };
 
-  // --- Track / validate selection inside root
   const captureSelectionIfInside = useCallback(() => {
     const root = rootRef.current;
     const sel = window.getSelection?.();
@@ -97,13 +96,11 @@ function QuestionViewInner(
       b = range.endContainer;
     const text = String(sel.toString() || "").trim();
     if (text && root.contains(a) && root.contains(b)) {
-      // store a clone so later clicks (that clear selection) still have a range
       lastRangeRef.current = range.cloneRange();
     }
   }, []);
 
   useEffect(() => {
-    // Keep last selection up-to-date
     const root = rootRef.current;
     if (!root) return;
 
@@ -122,6 +119,7 @@ function QuestionViewInner(
     };
   }, [captureSelectionIfInside]);
 
+
   const getValidRange = () => {
     const root = rootRef.current;
     if (!root) return null;
@@ -137,7 +135,6 @@ function QuestionViewInner(
         return r;
       }
     }
-    // fall back to stored range
     const saved = lastRangeRef.current;
     if (
       saved &&
@@ -167,7 +164,6 @@ function QuestionViewInner(
     const range = getValidRange();
     if (!range) return;
     wrapRange(range, "mark");
-    // optional lightweight persistence (no chips shown)
     const next = [...highlights, { t: Date.now() }];
     setHighlights(next);
     debouncedSave({ highlights: next });
@@ -178,12 +174,11 @@ function QuestionViewInner(
     const range = getValidRange();
     if (!range) return;
     wrapRange(range, "span", { textDecoration: "line-through" });
-    const next = [...strikes]; // metadata only; visuals already in DOM
+    const next = [...strikes];
     setStrikes(next);
     debouncedSave();
   };
 
-  // For options (MCQ) we still support double-click strike by index
   const toggleStrikeOption = (i) => {
     if (!enableStrikethrough) return;
     setStrikes((prev) => {
@@ -194,10 +189,10 @@ function QuestionViewInner(
     });
   };
 
-  // Expose methods to parent
   useImperativeHandle(ref, () => ({
     highlightSelection: applyHighlightFromSelection,
-    strikeSelection: applyStrikeFromSelection,
+  strikeSelection: applyStrikeFromSelection,
+
   }));
 
   const q = data?.question || {};
@@ -205,7 +200,6 @@ function QuestionViewInner(
 
   return (
     <Paper sx={{ p: 2 }}>
-      {/* Root: everything selectable lives here */}
       <div ref={rootRef}>
         <Stack
           direction="row"
@@ -235,7 +229,7 @@ function QuestionViewInner(
           )}
         </Stack>
 
-        {/* Answers */}
+        {/* SINGLE-CHOICE */}
         {!isMulti ? (
           <RadioGroup
             value={Number.isInteger(answer) ? answer : -1}
@@ -259,7 +253,14 @@ function QuestionViewInner(
                   label=""
                   sx={{ mr: 0 }}
                 />
+
+                {/* ADDED TEXT CLICK SUPPORT */}
                 <Box
+                  onClick={() => {
+                    if (disabled) return;
+                    setAnswer(i);
+                    debouncedSave({ answer: i });
+                  }}
                   onDoubleClick={() => toggleStrikeOption(i)}
                   sx={{
                     flex: 1,
@@ -276,6 +277,8 @@ function QuestionViewInner(
             ))}
           </RadioGroup>
         ) : (
+
+          /* MULTI-SELECT */
           <Stack spacing={1}>
             {options.map((opt, i) => {
               const checked = Array.isArray(answer) && answer.includes(i);
@@ -293,7 +296,19 @@ function QuestionViewInner(
                       debouncedSave({ answer: next });
                     }}
                   />
+
+                  {/* ADDED TEXT CLICK SUPPORT */}
                   <Box
+                    onClick={() => {
+                      if (disabled) return;
+                      const arr = Array.isArray(answer) ? [...answer] : [];
+                      const has = arr.includes(i);
+                      const next = has
+                        ? arr.filter((x) => x !== i)
+                        : [...arr, i];
+                      setAnswer(next);
+                      debouncedSave({ answer: next });
+                    }}
                     onDoubleClick={() => toggleStrikeOption(i)}
                     sx={{
                       flex: 1,
@@ -306,13 +321,14 @@ function QuestionViewInner(
                   >
                     {opt}
                   </Box>
+
                 </Stack>
               );
             })}
           </Stack>
+
         )}
 
-        {/* Removed highlight chips to stop the "long rounded boxes" */}
       </div>
     </Paper>
   );

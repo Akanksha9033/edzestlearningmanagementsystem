@@ -11,26 +11,19 @@ const {
 } = require("@aws-sdk/lib-dynamodb");
 const { v4: uuidv4 } = require("uuid");
 
-// --- Env + safety
-const REGION = process.env.AWS_REGION;
-const ACCESS = process.env.AWS_ACCESS_KEY_ID;
-const SECRET = process.env.AWS_SECRET_ACCESS_KEY;
+// --- Env + IAM safe
+const REGION = process.env.AWS_REGION || "ap-south-1";
 
-if (!REGION) throw new Error("Missing AWS_REGION env");
-if (!ACCESS) throw new Error("Missing AWS_ACCESS_KEY_ID env");
-if (!SECRET) throw new Error("Missing AWS_SECRET_ACCESS_KEY env");
-
+// ⭐ FIX: REMOVE accessKeyId/secretAccessKey (Lambda auto-provides them)
 const client = new DynamoDBClient({
   region: REGION,
-  credentials: {
-    accessKeyId: ACCESS,
-    secretAccessKey: SECRET,
-  },
+  // No credentials → Lambda IAM Role will sign requests automatically
 });
+
 const ddb = DynamoDBDocumentClient.from(client);
 
 // --- Table + key attribute names
-const TABLE = process.env.DDB_TABLE || "edzest_lms";
+const TABLE = process.env.DDD_TABLE || process.env.DDB_TABLE || "edzest_lms";
 const PK = process.env.DDB_PK_ATTR || "pk";
 const SK = process.env.DDB_SK_ATTR || "sk";
 
@@ -145,7 +138,7 @@ class Lesson {
       return null;
     }
 
-    // 1) try by `_id` (your items do have _id)
+    // 1) try by `_id`
     try {
       const byId = await scanUntilMatch(
         {

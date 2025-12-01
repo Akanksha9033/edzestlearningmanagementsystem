@@ -2,16 +2,16 @@
 const express = require("express");
 const router = express.Router();
 
-const AWS = require("aws-sdk");
-AWS.config.update({ region: process.env.AWS_REGION || "ap-south-1" });
-const ddb = new AWS.DynamoDB.DocumentClient();
+// --- AWS SDK v3 GLOBAL WRAPPER (no aws-sdk v2) ---
+const {
+  ddb,
+  GetCommand,
+  UpdateCommand
+} = require("../../../../../Services/aws/dynamo");
 
 /* ─────────── ENV / CONFIG ─────────── */
 const DDB_TABLE = process.env.DDB_COURSES || "edzest_lms";
 
-// Your table pattern from screenshot:
-//   pk = "COURSE#<id>"
-//   sk = "COURSE"
 const COURSE_PK_PREFIX = process.env.COURSE_PK_PREFIX || "COURSE#";
 const COURSE_SK_VALUE  = process.env.COURSE_SK_VALUE  || "COURSE";
 
@@ -33,29 +33,31 @@ function mapCourse(Item) {
     coverUrl: Item.coverUrl || null,
     imageUrl: Item.imageUrl || null,
     thumbnailUrl: Item.thumbnailUrl || null,
-    coverKey: Item.coverKey || null, // if you keep private S3 key
+    coverKey: Item.coverKey || null,
   };
 }
 
-/* ─────────── GET /:id ───────────
-   Return one course (used by Settings page) */
+/* ─────────── GET /:id ─────────── */
 router.get("/:id", async (req, res) => {
   try {
     const id = req.params.id;
     const Key = buildCourseKey(id);
 
-    const { Item } = await ddb.get({ TableName: DDB_TABLE, Key }).promise();
-    if (!Item) return res.status(404).json({ error: "Not found" });
+    const out = await ddb.get({
+      TableName: DDB_TABLE,
+      Key
+    }).promise();
 
-    return res.json({ course: mapCourse(Item) });
+    if (!out.Item) return res.status(404).json({ error: "Not found" });
+
+    return res.json({ course: mapCourse(out.Item) });
   } catch (e) {
     console.error("GET /:id error:", e);
     return res.status(500).json({ error: "Server error", detail: e.message });
   }
 });
 
-/* ─────────── PUT /:id/meta ───────────
-   Update basic meta (title, price, etc.). Only updates provided fields. */
+/* ─────────── PUT /:id/meta ─────────── */
 router.put("/:id/meta", async (req, res) => {
   try {
     const id = req.params.id;
@@ -76,16 +78,14 @@ router.put("/:id/meta", async (req, res) => {
       }
     }
 
-    const out = await ddb
-      .update({
-        TableName: DDB_TABLE,
-        Key,
-        UpdateExpression: `SET ${sets.join(", ")}`,
-        ExpressionAttributeNames: names,
-        ExpressionAttributeValues: values,
-        ReturnValues: "ALL_NEW",
-      })
-      .promise();
+    const out = await ddb.update({
+      TableName: DDB_TABLE,
+      Key,
+      UpdateExpression: `SET ${sets.join(", ")}`,
+      ExpressionAttributeNames: names,
+      ExpressionAttributeValues: values,
+      ReturnValues: "ALL_NEW",
+    }).promise();
 
     return res.json({ ok: true, course: mapCourse(out.Attributes) });
   } catch (e) {
@@ -94,29 +94,26 @@ router.put("/:id/meta", async (req, res) => {
   }
 });
 
-/* ─────────── PATCH /:id/publish ───────────
-   Toggle published <-> unpublished */
+/* ─────────── PATCH /:id/publish ─────────── */
 router.patch("/:id/publish", async (req, res) => {
   try {
     const id = req.params.id;
     const Key = buildCourseKey(id);
 
-    const { Item } = await ddb.get({ TableName: DDB_TABLE, Key }).promise();
-    if (!Item) return res.status(404).json({ error: "Not found" });
+    const outGet = await ddb.get({ TableName: DDB_TABLE, Key }).promise();
+    if (!outGet.Item) return res.status(404).json({ error: "Not found" });
 
-    const cur = String(Item.status || "").toLowerCase();
+    const cur = String(outGet.Item.status || "").toLowerCase();
     const next = cur === "published" || cur === "live" ? "unpublished" : "published";
 
-    const out = await ddb
-      .update({
-        TableName: DDB_TABLE,
-        Key,
-        UpdateExpression: "SET #status = :s, #updatedAt = :t",
-        ExpressionAttributeNames: { "#status": "status", "#updatedAt": "updatedAt" },
-        ExpressionAttributeValues: { ":s": next, ":t": Date.now() },
-        ReturnValues: "ALL_NEW",
-      })
-      .promise();
+    const out = await ddb.update({
+      TableName: DDB_TABLE,
+      Key,
+      UpdateExpression: "SET #status = :s, #updatedAt = :t",
+      ExpressionAttributeNames: { "#status": "status", "#updatedAt": "updatedAt" },
+      ExpressionAttributeValues: { ":s": next, ":t": Date.now() },
+      ReturnValues: "ALL_NEW",
+    }).promise();
 
     return res.json({ ok: true, course: mapCourse(out.Attributes) });
   } catch (e) {
@@ -125,8 +122,7 @@ router.patch("/:id/publish", async (req, res) => {
   }
 });
 
-/* ─────────── POST /:id/schedule ───────────
-   Save publishAt / scheduledUnpublishAt */
+/* ─────────── POST /:id/schedule ─────────── */
 router.post("/:id/schedule", async (req, res) => {
   try {
     const id = req.params.id;
@@ -144,22 +140,21 @@ router.post("/:id/schedule", async (req, res) => {
       values[":publishAt"] = publishAt;
       sets.push("#publishAt = :publishAt");
     }
+
     if (scheduledUnpublishAt !== undefined) {
       names["#scheduledUnpublishAt"] = "scheduledUnpublishAt";
       values[":scheduledUnpublishAt"] = scheduledUnpublishAt;
       sets.push("#scheduledUnpublishAt = :scheduledUnpublishAt");
     }
 
-    const out = await ddb
-      .update({
-        TableName: DDB_TABLE,
-        Key,
-        UpdateExpression: `SET ${sets.join(", ")}`,
-        ExpressionAttributeNames: names,
-        ExpressionAttributeValues: values,
-        ReturnValues: "ALL_NEW",
-      })
-      .promise();
+    const out = await ddb.update({
+      TableName: DDB_TABLE,
+      Key,
+      UpdateExpression: `SET ${sets.join(", ")}`,
+      ExpressionAttributeNames: names,
+      ExpressionAttributeValues: values,
+      ReturnValues: "ALL_NEW",
+    }).promise();
 
     return res.json({ ok: true, course: mapCourse(out.Attributes) });
   } catch (e) {
