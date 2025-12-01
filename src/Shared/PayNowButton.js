@@ -10,7 +10,9 @@ async function loadRazorpay() {
     return false;
   }
 
+
   if (window.Razorpay) return true;
+
 
 
   if (window.Razorpay) return true;
