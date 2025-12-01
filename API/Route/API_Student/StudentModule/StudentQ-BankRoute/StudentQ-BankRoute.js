@@ -429,8 +429,8 @@ router.post("/session/:id/submit", async (req, res) => {
     let score = 0;
 
     const detailedResults = questions.map((q) => {
-      const submitted = answers[q.questionId]; // student ke answers
-      const correct = q.correctAnswer; // correct answer DynamoDB me stored
+      const submitted = answers[q.questionId]; // 
+      const correct = q.correctAnswer; // 
 
       const normalize = (arr) =>
         (Array.isArray(arr) ? arr : [arr]).map((x) =>
