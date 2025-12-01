@@ -8,6 +8,7 @@ import {
   TextField, MenuItem, Stack, Chip, CircularProgress, Button, useMediaQuery
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
+import DeleteIcon from "@mui/icons-material/Delete";   // ✅ ADDED
 
 /** s3://bucket/key -> https://bucket.s3.amazonaws.com/key */
 const resolveImageUrl = (raw) => {
@@ -45,7 +46,34 @@ export default function AdminMockTestList() {
   const [search, setSearch] = useState("");
   const [selectedMockId, setSelectedMockId] = useState("");
 
-  // fetch list
+  // ⭐⭐⭐ BACK BUTTON HANDLER — ADDED
+  const handleBack = () => {
+    navigate("/admin/dashboard");
+  };
+
+  // DELETE HANDLER
+  const handleDelete = async (mockTestId) => {
+    if (!window.confirm("Are you sure you want to delete this mock test?")) {
+      return;
+    }
+
+    try {
+      const res = await API.delete(`/api/admin/mocktests/${mockTestId}`);
+
+      if (res.data.success) {
+        alert("Mock test deleted successfully");
+
+        // remove from UI
+        setMockTests((prev) => prev.filter(m => m.mockTestId !== mockTestId));
+        setFiltered((prev) => prev.filter(m => m.mockTestId !== mockTestId));
+      }
+    } catch (err) {
+      console.error("Delete error:", err);
+      alert("Failed to delete mock test");
+    }
+  };
+
+  // FETCH LIST
   useEffect(() => {
     if (!ready) return;
     if (!user) { setLoading(false); return; }
@@ -55,7 +83,7 @@ export default function AdminMockTestList() {
           params: { instituteId: user?.instituteId },
         });
         const items = Array.isArray(res.data) ? res.data : [];
-        const sorted = items.slice().sort((a, b) => getCreatedMs(b) - getCreatedMs(a)); // newest first
+        const sorted = items.slice().sort((a, b) => getCreatedMs(b) - getCreatedMs(a)); 
         setMockTests(sorted);
         setFiltered(sorted);
       } catch (err) {
@@ -67,7 +95,7 @@ export default function AdminMockTestList() {
     })();
   }, [ready, user]);
 
-  // local filters (keep newest-first)
+  // FILTER LOGIC
   useEffect(() => {
     let data = mockTests.slice();
     if (statusFilter) data = data.filter((m) => m.status === statusFilter);
@@ -79,7 +107,7 @@ export default function AdminMockTestList() {
     setFiltered(data);
   }, [statusFilter, search, mockTests]);
 
-  // keep selection valid
+  // SELECTION FIX
   useEffect(() => {
     if (filtered.length === 0) setSelectedMockId("");
     else if (!selectedMockId || !filtered.find(m => m.mockTestId === selectedMockId)) {
@@ -110,6 +138,19 @@ export default function AdminMockTestList() {
       mt={4}
       px={{ xs: 1.25, sm: 2, md: 3 }}
     >
+
+      {/* ⭐⭐⭐ BACK BUTTON UI — ADDED HERE */}
+      <Box sx={{ mb: 2 }}>
+        <Button
+          variant="outlined"
+          color="primary"
+          onClick={handleBack}
+          sx={{ textTransform: "none", fontWeight: 600 }}
+        >
+          ⬅ Back to Dashboard
+        </Button>
+      </Box>
+
       {/* Header row */}
       <Stack
         direction={{ xs: "column", md: "row" }}
@@ -217,22 +258,19 @@ export default function AdminMockTestList() {
         <Box
           sx={{
             display: "grid",
-            gap: { xs: 2, sm: 2.5, md: 3 }, // compact, responsive spacing
+            gap: { xs: 2, sm: 2.5, md: 3 },
             gridTemplateColumns: {
-              xs: "1fr",                         // phones
-              sm: "repeat(2, minmax(0, 1fr))",   // small tablets
-              md: "repeat(3, minmax(0, 1fr))",   // laptops
-              lg: "repeat(4, minmax(0, 1fr))",   // desktops
-              xl: "repeat(5, minmax(0, 1fr))",   // wide screens
+              xs: "1fr",
+              sm: "repeat(2, minmax(0, 1fr))",
+              md: "repeat(3, minmax(0, 1fr))",
+              lg: "repeat(4, minmax(0, 1fr))",
+              xl: "repeat(5, minmax(0, 1fr))",
             },
             alignItems: "stretch",
           }}
         >
           {filtered.map((m) => {
             const img = resolveImageUrl(m.imageUrl || "");
-            const statusColor =
-              m.status === "PUBLISHED" ? "success" :
-              m.status === "DRAFT" ? "warning" : "default";
 
             return (
               <Card
@@ -248,7 +286,9 @@ export default function AdminMockTestList() {
                 }}
               >
                 <CardActionArea
-                  onClick={() => navigate(`/admin/mocktests/editor/${m.mockTestId}/sections`)}
+                  onClick={() =>
+                    navigate(`/admin/mocktests/editor/${m.mockTestId}/sections`)
+                  }
                   sx={{ alignSelf: "stretch" }}
                 >
                   {img ? (
@@ -274,7 +314,7 @@ export default function AdminMockTestList() {
                     </Box>
                   )}
 
-                  <CardContent sx={{ pb: 2 }}>
+                  <CardContent sx={{ pb: 1 }}>
                     <Typography
                       variant={isSmUp ? "h6" : "subtitle1"}
                       sx={{
@@ -289,19 +329,54 @@ export default function AdminMockTestList() {
                       {m.title}
                     </Typography>
 
-                    <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
-                      <Chip
+                    {/* NEW ROW: Chips + Delete Inline */}
+                    <Stack
+                      direction="row"
+                      spacing={1}
+                      alignItems="center"
+                      justifyContent="space-between"
+                      sx={{ mt: 1 }}
+                    >
+                      {/* Chips Left */}
+                      <Stack direction="row" spacing={1}>
+                        <Chip
+                          size="small"
+                          label={m.status}
+                          color={
+                            m.status === "PUBLISHED"
+                              ? "success"
+                              : m.status === "DRAFT"
+                              ? "warning"
+                              : "default"
+                          }
+                          variant={
+                            m.status === "UNPUBLISHED" || m.status === "DELETED"
+                              ? "outlined"
+                              : "filled"
+                          }
+                        />
+
+                        <Chip
+                          size="small"
+                          label={m.isFree ? "Free" : `₹${m.price}`}
+                          color={m.isFree ? "default" : "primary"}
+                          variant={m.isFree ? "outlined" : "filled"}
+                        />
+                      </Stack>
+
+                      {/* Delete Button */}
+                      <Button
+                        variant="outlined"
+                        color="error"
                         size="small"
-                        label={m.status}
-                        color={statusColor}
-                        variant={statusColor === "default" ? "outlined" : "filled"}
-                      />
-                      <Chip
-                        size="small"
-                        label={m.isFree ? "Free" : `₹${m.price}`}
-                        color={m.isFree ? "default" : "primary"}
-                        variant={m.isFree ? "outlined" : "filled"}
-                      />
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(m.mockTestId);
+                        }}
+                        sx={{ textTransform: "none", fontWeight: 600 }}
+                      >
+                        Delete
+                      </Button>
                     </Stack>
                   </CardContent>
                 </CardActionArea>

@@ -10,23 +10,26 @@ const {
 } = require("@aws-sdk/lib-dynamodb");
 const { v4: uuidv4 } = require("uuid");
 
-/* ✅ Always provide credentials explicitly */
+/* ================================================
+   ✅ DYNAMODB CLIENT — LAMBDA-SAFE, NO CREDENTIALS
+   ------------------------------------------------
+   Lambda automatically injects temporary IAM role 
+   credentials. DO NOT manually set accessKeyId / secret.
+=================================================== */
 const client = new DynamoDBClient({
-  region: process.env.AWS_REGION,
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-  },
+  region: process.env.AWS_REGION || "ap-south-1",
 });
+
 const ddb = DynamoDBDocumentClient.from(client);
 
 const TABLE = process.env.DDB_TABLE || "edzest_lms";
 
 /* ---------------------------
-   Helpers
---------------------------- */
+   Helper to attach save()/lean()
+---------------------------- */
 function docifyCourse(item) {
   if (!item) return null;
+
   item.sections = Array.isArray(item.sections) ? item.sections : [];
 
   item.save = async function () {
@@ -46,10 +49,11 @@ function docifyCourse(item) {
 
 /* ---------------------------
    Course Class
---------------------------- */
+---------------------------- */
 class Courses {
   constructor(obj = {}) {
     Object.assign(this, obj);
+
     if (!this._id) this._id = uuidv4();
     if (!this.sections) this.sections = [];
     if (!this.createdAt) this.createdAt = new Date().toISOString();
@@ -58,12 +62,14 @@ class Courses {
 
   async save() {
     this.lastUpdatedAt = new Date().toISOString();
+
     const item = {
       pk: `COURSE#${this._id}`,
       sk: "COURSE",
       entity: "course",
       ...this,
     };
+
     await ddb.send(new PutCommand({ TableName: TABLE, Item: item }));
     return this;
   }
@@ -75,6 +81,7 @@ class Courses {
         Key: { pk: `COURSE#${id}`, sk: "COURSE" },
       })
     );
+
     return docifyCourse(out.Item || null);
   }
 
@@ -83,55 +90,54 @@ class Courses {
       const out = await ddb.send(
         new QueryCommand({
           TableName: TABLE,
-          IndexName: "GSI1-Slug", // must exist in Dynamo
+          IndexName: "GSI1-Slug",
           KeyConditionExpression: "#slug = :slug AND #sk = :sk",
           ExpressionAttributeNames: { "#slug": "slug", "#sk": "sk" },
           ExpressionAttributeValues: { ":slug": query.slug, ":sk": "COURSE" },
           Limit: 1,
         })
       );
+
       return out.Items?.length ? docifyCourse(out.Items[0]) : null;
     }
+
     return null;
   }
 
   static async find(query = {}) {
-  // base filter: only course entities
-  let FilterExpression = "#e = :e";
-  const ExpressionAttributeNames = { "#e": "entity" };
-  const ExpressionAttributeValues = { ":e": "course" };
+    let FilterExpression = "#e = :e";
+    const ExpressionAttributeNames = { "#e": "entity" };
+    const ExpressionAttributeValues = { ":e": "course" };
 
-  // add status filter only if provided (e.g. for Student view)
-  if (query.status) {
-    FilterExpression += " AND #st = :st";
-    ExpressionAttributeNames["#st"] = "status";
-    ExpressionAttributeValues[":st"] = String(query.status);
+    if (query.status) {
+      FilterExpression += " AND #st = :st";
+      ExpressionAttributeNames["#st"] = "status";
+      ExpressionAttributeValues[":st"] = String(query.status);
+    }
+
+    if (query.instituteId) {
+      FilterExpression += " AND #inst = :inst";
+      ExpressionAttributeNames["#inst"] = "instituteId";
+      ExpressionAttributeValues[":inst"] = String(query.instituteId);
+    }
+
+    const out = await ddb.send(
+      new ScanCommand({
+        TableName: TABLE,
+        FilterExpression,
+        ExpressionAttributeNames,
+        ExpressionAttributeValues,
+      })
+    );
+
+    const items = out.Items || [];
+    items.lean = () => items;
+    return items;
   }
-
-  // (optional) keep other filters the same way
-  if (query.instituteId) {
-    FilterExpression += " AND #inst = :inst";
-    ExpressionAttributeNames["#inst"] = "instituteId";
-    ExpressionAttributeValues[":inst"] = String(query.instituteId);
-  }
-
-  const out = await ddb.send(
-    new ScanCommand({
-      TableName: TABLE,
-      FilterExpression,
-      ExpressionAttributeNames,
-      ExpressionAttributeValues,
-    })
-  );
-
-  const items = out.Items || [];
-  // keep your Mongoose-like helper for callers that expect it
-  items.lean = () => items;
-  return items;
-}
 
   static async findByIdAndUpdate(id, update = {}) {
     const toSet = update.$set || update;
+
     if (!toSet || Object.keys(toSet).length === 0) {
       return await this.findById(id);
     }
@@ -139,6 +145,7 @@ class Courses {
     const names = {};
     const values = {};
     const sets = [];
+
     let i = 0;
     for (const [k, v] of Object.entries(toSet)) {
       names[`#k${i}`] = k;
@@ -157,6 +164,7 @@ class Courses {
         ReturnValues: "ALL_NEW",
       })
     );
+
     return docifyCourse(out.Attributes || null);
   }
 
@@ -168,6 +176,7 @@ class Courses {
         ReturnValues: "ALL_OLD",
       })
     );
+
     return out.Attributes ? docifyCourse(out.Attributes) : null;
   }
 }

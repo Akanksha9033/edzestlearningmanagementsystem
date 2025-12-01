@@ -18,6 +18,8 @@ import API from "../../../LoginSystem/axios";
 import useAttemptTimer from "../../hooks/useAttemptTimer";
 import QuestionView from "../Mocktest/QuestionView";
 import QuestionNavigator from "../Mocktest/QuestionNavigator";
+import { useNavigate } from "react-router-dom";
+
 
 // keepalive via Axios so it inherits auth
 async function keepalivePatchAttempt(attemptId, payload) {
@@ -45,6 +47,8 @@ export default function ExamRunner({
   onExit,
   formatHMS,
 }) {
+    const navigate = useNavigate(); // <-- ADD THIS
+
   // local meta mirror to avoid stale section window after submit-section
   const [metaState, setMetaState] = useState(meta);
   useEffect(() => { setMetaState(meta); }, [meta]);
@@ -437,21 +441,26 @@ export default function ExamRunner({
   };
 
   // final submit
-  const submit = async () => {
-    if (!window.confirm("Submit test? You cannot change answers after submit.")) return;
-    try {
-      await keepalivePatchAttempt(attemptId, {
-        timeLeftSec: Math.max(0, Math.floor(timeLeftRef.current)),
-        paused: pausedRef.current,
-      });
-      await API.patch(`/api/student/attempts/${attemptId}/submit-final`);
+const submit = async () => {
+  if (!window.confirm("Submit test? You cannot change answers after submit.")) return;
+  try {
+    await keepalivePatchAttempt(attemptId, {
+      timeLeftSec: Math.max(0, Math.floor(timeLeftRef.current)),
+      paused: pausedRef.current,
+    });
 
-      alert("Submitted!");
-      onExit?.();
-    } catch {
-      alert("Failed to submit");
-    }
-  };
+    await API.patch(`/api/student/attempts/${attemptId}/submit-final`);
+
+    alert("Submitted!");
+
+    // 🔥 Redirect to result page
+    navigate(`/student/results/${attemptId}`);
+
+  } catch {
+    alert("Failed to submit");
+  }
+};
+
 
   // submit current section
   const submitCurrentSection = async () => {
