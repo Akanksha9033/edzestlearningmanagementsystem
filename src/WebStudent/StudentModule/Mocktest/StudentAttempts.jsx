@@ -125,7 +125,13 @@ export default function StudentAttempts() {
       const url = `/api/student/attempts/list${mockTestId ? `?mockTestId=${encodeURIComponent(mockTestId)}` : ""}`;
       const r = await API.get(url);
       const items = Array.isArray(r.data?.items) ? r.data.items : [];
-      setRows(items);
+          // 🔒 Filter attempts so a student sees ONLY their own attempts
+const studentId = user?.id;   // 🔥 Always use user.id only (backend stores this)
+const mine = items.filter(a => a.userId === studentId);
+
+
+    setRows(mine);
+
     } catch (e) {
       console.error("Load attempts failed:", e);
       setRows([]);
