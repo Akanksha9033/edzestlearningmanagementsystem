@@ -423,6 +423,7 @@ const mine = items.filter(a => a.userId === studentId);
                     <PayNowButton
                       userId={user?.sub || user?.id || user?.userId}
                       productId={`MOCK_${mockTestId}`}
+                      productType="MOCKTEST"   
                       onSuccess={checkMockAccess}
                       label="Pay ₹1 to Unlock"
                     />
