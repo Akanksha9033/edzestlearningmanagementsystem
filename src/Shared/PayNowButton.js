@@ -10,10 +10,7 @@ async function loadRazorpay() {
     return false;
   }
 
-
   if (window.Razorpay) return true;
-
-
 
   if (window.Razorpay) return true;
 
@@ -38,6 +35,7 @@ const API_BASE =
  * Props:
  * - userId: string (required)
  * - productId: string (optional; useful if you sell multiple qbanks)
+ * - productType: "QBANK" | "MOCKTEST" | "COURSE"  ⭐ NEW
  * - onSuccess: function() -> void  (optional; e.g. refresh list or navigate)
  * - amountPaise: number (optional; default comes from backend env)
  * - label: string (optional; default "Pay Now")
@@ -46,21 +44,41 @@ const API_BASE =
 export default function PayNowButton({
   userId,
   productId = "Edzest_QBank_Access",
+
+  /* ⭐ NEW — default to QBANK so old calls don't break */
+  productType = "QBANK",
+
   onSuccess,
-  amountPaise, // not required; backend already uses env (e.g., 100 for ₹1)
+  amountPaise, // not required; backend already uses env
   label = "💳 Pay Now",
   variant = "plain",
 }) {
   const [loading, setLoading] = useState(false);
 
+  /* ------------------------------------------------------------------
+      ⭐ FIX: ensure userId always uses Cognito `sub` if available
+  ------------------------------------------------------------------ */
+  let safeUserId =
+    userId ||
+    window?.__authUser?.sub ||        // fallback for LIVE Cognito
+    window?.__authUser?.id ||         // fallback for old login
+    window?.__authUser?.userId ||     // fallback for legacy code
+    null;
+
+  if (!safeUserId) {
+    console.warn("⚠️ PayNowButton: No userId detected!", {
+      userIdProp: userId,
+      globalUser: window?.__authUser,
+    });
+  }
+
   const handlePay = useCallback(async () => {
-    if (!userId) {
+    if (!safeUserId) {
       alert("User not found. Please log in.");
       return;
     }
 
-
-    // ✅ Extra guard: only run in browser
+    // Extra guard: only run in browser
     if (typeof window === "undefined" || typeof document === "undefined") {
       console.error("[PayNowButton] Payment flow can only run in a browser environment.");
       alert("Payment can only be done from a browser.");
@@ -77,8 +95,12 @@ export default function PayNowButton({
 
       // 1️⃣ Ask backend to create an order
       const { data } = await axios.post(`${API_BASE}/api/payments/create-order`, {
-        userId,
+        userId: safeUserId,
         productId,
+
+        /* ⭐ NEW: tell backend which product type this is */
+        productType,
+
         amountPaise, // backend may ignore if it uses env
       });
 
@@ -93,20 +115,26 @@ export default function PayNowButton({
         amount: data.amount,
         currency: data.currency || "INR",
         name: "Edzest LMS",
-        description: `Q-Bank Access (${productId})`,
+
+        /* ⭐ NEW: show correct product type in checkout description */
+        description: `${productType} Purchase (${productId})`,
+
         order_id: data.orderId,
         theme: { color: "#4748ac" },
         handler: async (resp) => {
           try {
-            // 3️⃣ Verify payment with backend after successful payment
+            // 3️⃣ Verify payment with backend
             const verifyResponse = await axios.post(
               `${API_BASE}/api/payments/verify-payment`,
               {
                 razorpay_order_id: resp.razorpay_order_id,
                 razorpay_payment_id: resp.razorpay_payment_id,
                 razorpay_signature: resp.razorpay_signature,
-                userId,
+                userId: safeUserId,
                 productId,
+
+                /* ⭐ NEW — must send again during verification */
+                productType,
               }
             );
 
@@ -137,7 +165,7 @@ export default function PayNowButton({
     } finally {
       setLoading(false);
     }
-  }, [userId, productId, onSuccess, amountPaise]);
+  }, [safeUserId, productId, productType, onSuccess, amountPaise]);
 
   // default style button
   return (
