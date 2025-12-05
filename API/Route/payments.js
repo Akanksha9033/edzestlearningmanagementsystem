@@ -131,6 +131,7 @@ router.post("/create-order", async (req, res) => {
           amountPaise: amount,
           currency: "INR",
           status: "CREATED",
+          productType,
           createdAt: now(),
           updatedAt: now(),
         },
@@ -175,7 +176,8 @@ router.post("/verify-payment", async (req, res) => {
       !finalPaymentId ||
       !finalSignature ||
       !userId ||
-      !productId
+      !productId||
+      !productType 
     ) {
       return res.status(400).json({ error: "Missing payment details" });
     }

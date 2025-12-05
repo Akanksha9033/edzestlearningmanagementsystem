@@ -463,39 +463,40 @@ const submit = async () => {
 
 
   // submit current section
-  const submitCurrentSection = async () => {
-    try {
-      setSectionEndOpen(false);
-      await API.patch(`/api/student/attempts/${attemptId}/submit-section`, { sectionIndex: sec });
+const submitCurrentSection = async () => {
+  try {
+    setSectionEndOpen(false);
+    await API.patch(`/api/student/attempts/${attemptId}/submit-section`, { sectionIndex: sec });
 
-      // refresh attempt and update BOTH local meta and parent (if provided)
-      const r = await API.get(`/api/student/attempts/${attemptId}`);
-      const updated = r.data;
+    const r = await API.get(`/api/student/attempts/${attemptId}`);
+    const updated = r.data;
 
-      setMetaState(updated);
-      onMetaUpdate?.(updated);
-      setIndex(Number(updated.currentIndex || 0));
+    setMetaState(updated);
+    onMetaUpdate?.(updated);
+    setIndex(Number(updated.currentIndex || 0));
 
-      if (updated.currentSection !== null && updated.useSections) {
-        const mins = Number(updated.breakMinutes || 0);
-        if (mins > 0) {
-          // pause main timer and show break overlay
-          setBreakLeft(mins * 60);
-          setBreakOpen(true);
-          await keepalivePatchAttempt(attemptId, {
-            paused: true,
-            timeLeftSec: Math.floor(timeLeftRef.current),
-          });
-        }
-      } else {
-        await API.patch(`/api/student/attempts/${attemptId}/submit-final`);
-        alert("All sections submitted. Test complete.");
-        onExit?.();
+    if (updated.currentSection !== null && updated.useSections) {
+      const mins = Number(updated.breakMinutes || 0);
+      if (mins > 0) {
+        setBreakLeft(mins * 60);
+        setBreakOpen(true);
+        await keepalivePatchAttempt(attemptId, {
+          paused: true,
+          timeLeftSec: Math.floor(timeLeftRef.current),
+        });
       }
-    } catch {
-      alert("Failed to submit section");
+    } else {
+      await API.patch(`/api/student/attempts/${attemptId}/submit-final`);
+      alert("All sections submitted. Test complete.");
+
+      // ⭐ Redirect after completion
+      navigate(`/student/results/${attemptId}`);
     }
-  };
+  } catch {
+    alert("Failed to submit section");
+  }
+};
+
 
   // break countdown (section timer)
   useEffect(() => {

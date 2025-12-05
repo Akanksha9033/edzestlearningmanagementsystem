@@ -789,6 +789,7 @@ export default function StudentMockTestList() {
                   <PayNowButton
                     userId={user?.sub || user?.id || user?.userId}
                     productId={`MOCK_${m.mockTestId}`}
+                    productType="MOCKTEST"   
                     amountPaise={(m.price || 0) * 100}
                     label={`Pay ₹${m.price} to Unlock`}
                     onSuccess={checkAccessForAll}
