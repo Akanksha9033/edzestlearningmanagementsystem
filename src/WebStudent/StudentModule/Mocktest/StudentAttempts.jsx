@@ -1,5 +1,3 @@
-
-
 import React, { useEffect, useMemo, useState, useCallback, useLayoutEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../../../LoginSystem/context/AuthContext";
@@ -44,9 +42,7 @@ export default function StudentAttempts() {
   const [mockIndex, setMockIndex] = useState({});
   const [selectedMock, setSelectedMock] = useState(null);
 
-  /* --------------------------------------------------------- */
-  /*      ⭐ NEW: MOCK TEST ACCESS CHECK (NO LOGIC CHANGE)      */
-  /* --------------------------------------------------------- */
+  /* -------------------- ACCESS CHECK -------------------- */
   const [hasAccess, setHasAccess] = useState(false);
 
   const checkMockAccess = useCallback(async () => {
@@ -67,9 +63,7 @@ export default function StudentAttempts() {
     }
   }, [user, mockTestId]);
 
-  /* --------------------------------------------------------- */
-  /* -------------------- DEFAULT FETCHES -------------------- */
-  /* --------------------------------------------------------- */
+  /* -------------------- FETCH MOCK LIST -------------------- */
 
   useEffect(() => {
     if (!ready || !user) return;
@@ -125,7 +119,13 @@ export default function StudentAttempts() {
       const url = `/api/student/attempts/list${mockTestId ? `?mockTestId=${encodeURIComponent(mockTestId)}` : ""}`;
       const r = await API.get(url);
       const items = Array.isArray(r.data?.items) ? r.data.items : [];
-      setRows(items);
+
+    const studentId = user?.sub || user?.id || user?.userId;
+const mine = items.filter(a => a.userId === studentId);
+
+
+      setRows(mine);
+
     } catch (e) {
       console.error("Load attempts failed:", e);
       setRows([]);
@@ -142,12 +142,10 @@ export default function StudentAttempts() {
     return () => document.removeEventListener("visibilitychange", onShow);
   }, [loadAttempts]);
 
-  /* -------------------- ⭐ NEW ACCESS CHECK -------------------- */
   useEffect(() => {
     if (user && mockTestId) checkMockAccess();
   }, [user, mockTestId, checkMockAccess]);
 
-  /* -------------------- processing rows (unchanged) -------------------- */
   const tableRows = useMemo(() => {
     return rows
       .slice()
@@ -167,7 +165,6 @@ export default function StudentAttempts() {
     [rows]
   );
 
-  /* -------------------- start/resume helpers (unchanged) -------------------- */
   const continueAttempt = async (mId) => {
     try {
       const { data } = await API.post("/api/student/attempts", { mockTestId: mId });
@@ -209,7 +206,6 @@ export default function StudentAttempts() {
     }
   };
 
-  /* -------------------- states (unchanged) -------------------- */
   if (!ready) {
     return (
       <Box textAlign="center" mt={10} px={2}>
@@ -241,7 +237,7 @@ export default function StudentAttempts() {
   return (
     <Box maxWidth={1200} mx="auto" my={3} px={2}>
 
-      {/* HEADER (unchanged) */}
+      {/* HEADER */}
       <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" alignItems="center" mb={2}>
         <Stack direction="row" alignItems="center">
           <IconButton onClick={() => nav(-1)} size="small" sx={{ mr: 0.25 }}>
@@ -357,12 +353,14 @@ export default function StudentAttempts() {
                             Resume
                           </Button>
                         ) : (
-                          <PayNowButton
-                            userId={user?.sub || user?.id || user?.userId}
-                            productId={`MOCK_${mockTestId}`}
-                            onSuccess={checkMockAccess}
-                            label="Pay ₹1 to Unlock"
-                          />
+                          false && (
+                            <PayNowButton
+                              userId={user?.sub || user?.id || user?.userId}
+                              productId={`MOCK_${mockTestId}`}
+                              onSuccess={checkMockAccess}
+                              label="Pay ₹1 to Unlock"
+                            />
+                          )
                         )}
                       </TableCell>
 
@@ -414,12 +412,15 @@ export default function StudentAttempts() {
                       Resume
                     </Button>
                   ) : (
-                    <PayNowButton
-                      userId={user?.sub || user?.id || user?.userId}
-                      productId={`MOCK_${mockTestId}`}
-                      onSuccess={checkMockAccess}
-                      label="Pay ₹1 to Unlock"
-                    />
+                    false && (
+                      <PayNowButton
+                        userId={user?.sub || user?.id || user?.userId}
+                        productId={`MOCK_${mockTestId}`}
+                        productType="MOCKTEST"
+                        onSuccess={checkMockAccess}
+                        label="Pay ₹1 to Unlock"
+                      />
+                    )
                   )}
 
                 </Stack>

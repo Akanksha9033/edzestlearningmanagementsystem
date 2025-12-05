@@ -511,8 +511,12 @@ import "./adminMockSettings.css";
 
 // your existing sidebar (same one used by AdminDashboard)
 import AdminSidebar from "../../Dashboard/AdminSidebar";
+import { useAuth } from "../../../LoginSystem/context/AuthContext";
+
 
 export default function AdminMockTestSettings() {
+  const { user } = useAuth();
+
   const { mockTestId } = useParams();
   const navigate = useNavigate();
 
@@ -607,6 +611,8 @@ export default function AdminMockTestSettings() {
 
       // basic fields
       form.set("status", mock.status || "");
+      form.set("instituteId", user?.instituteId || "");
+
       form.set("title", mock.title ?? "");
       form.set("level", mock.level ?? "");
 

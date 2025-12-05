@@ -52,9 +52,10 @@ router.get("/mocktests", async (req, res) => {
     // -------------------------------------------------------------
     const params = {
       TableName: MOCKS_TABLE,
-      FilterExpression: "#inst = :inst AND #st = :pub",
-      ExpressionAttributeNames: { "#inst": "instituteId", "#st": "status" },
-      ExpressionAttributeValues: { ":inst": instituteId, ":pub": "PUBLISHED" },
+      FilterExpression: "#st = :pub",
+ExpressionAttributeNames: { "#st": "status" },
+ExpressionAttributeValues: { ":pub": "PUBLISHED" },
+
     };
 
     console.log("[student/mocktests] scanning", JSON.stringify(params));

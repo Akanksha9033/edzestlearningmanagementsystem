@@ -426,6 +426,8 @@ const AppContent = () => {
             </ProtectedRoute>
           }
         />
+        console.log("🔴 [ROUTER] Rendering route /student/qbank/session");
+
         <Route
           path="/student/qbank/session/:sessionId"
           element={

@@ -440,6 +440,7 @@ router.post(
         : rows.length;
 
       // Construct new question with defaults
+            // Construct new question with defaults
       const q = {
         id: question.id || `q_${Date.now()}`,
         instruction: question.instruction || "",
@@ -453,10 +454,17 @@ router.post(
           : null,
         explanation: question.explanation || "",
         tags: Array.isArray(question.tags) ? question.tags : [],
+
+        // ⭐ NEW FIELDS COMING FROM FRONTEND / EXCEL
+        task: question.task || "",
+        approach: question.approach || "",
+        domain: question.domain || "",
+
         section: question.section || "",
         difficulty: (question.difficulty ?? "").toString().trim(),
         marks: Number(question.marks ?? 1),
       };
+
 
       const next = [...rows];
       next.splice(insertAt, 0, q);

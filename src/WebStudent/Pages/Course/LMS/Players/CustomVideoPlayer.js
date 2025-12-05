@@ -24,13 +24,20 @@ export default function CustomVideoPlayer({
   const lastSentPct = useRef(0);
   const debounceTimer = useRef(null);
 
-  // attach video source (HLS or MP4)
+  /** ---------------------------------------------
+   *  🔥 HLS OR MP4 AUTO DETECT + ATTACH
+   *  (fully fixed for AWS long filenames)
+   * --------------------------------------------- */
   useEffect(() => {
     const video = videoRef.current;
     if (!video || !src) return;
+
     let hls;
 
-    if (Hls.isSupported() && /\.m3u8($|\?)/i.test(src)) {
+    // ⭐ FIXED HLS DETECTION
+    const isHls = src.includes(".m3u8");
+
+    if (Hls.isSupported() && isHls) {
       hls = new Hls({ autoStartLoad: true });
       hls.loadSource(src);
       hls.attachMedia(video);
@@ -237,8 +244,7 @@ export default function CustomVideoPlayer({
       <div style={{ fontSize: 12, color: "#777", marginTop: 6 }}>
         {duration > 0 ? (
           <>
-            ⏱ Duration: {Math.floor(duration / 60)}m {Math.round(duration % 60)}s
-            • Watched: {localPct}%
+            ⏱ Duration: {Math.floor(duration / 60)}m {Math.round(duration % 60)}s • Watched: {localPct}%
           </>
         ) : (
           <>⏱ Detecting duration...</>
