@@ -1,11 +1,30 @@
-import React, { useEffect, useMemo, useState, useCallback, useLayoutEffect } from "react";
+import React, {
+  useEffect,
+  useMemo,
+  useState,
+  useCallback,
+  useLayoutEffect,
+} from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../../../LoginSystem/context/AuthContext";
 import API from "../../../LoginSystem/axios";
 import {
-  Box, Paper, Stack, Typography, Button, Chip, CircularProgress,
-  Table, TableHead, TableRow, TableCell, TableBody, TableContainer,
-  IconButton, Tooltip, Divider
+  Box,
+  Paper,
+  Stack,
+  Typography,
+  Button,
+  Chip,
+  CircularProgress,
+  Table,
+  TableHead,
+  TableRow,
+  TableCell,
+  TableBody,
+  TableContainer,
+  IconButton,
+  Tooltip,
+  Divider,
 } from "@mui/material";
 
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
@@ -29,7 +48,11 @@ function fmtHMS(sec) {
   const s = Math.max(0, Math.floor(Number(sec || 0)));
   const h = Math.floor(s / 3600);
   const m = Math.floor((s % 3600) / 60);
-  return [h, m, r].map(v => String(v).padStart(2, "0")).join(":");
+  const r = s % 60; // ✔️ FIX: define r before using it
+
+  return [h, m, r]
+    .map((v) => String(v).padStart(2, "0"))
+    .join(":");
 }
 
 export default function StudentAttempts() {
@@ -55,7 +78,7 @@ export default function StudentAttempts() {
 
       const productId = `MOCK_${mockTestId}`;
       const res = await API.get("/api/payments/has-access", {
-        params: { userId: studentId, productId }
+        params: { userId: studentId, productId },
       });
 
       setHasAccess(res.data?.allowed || false);
@@ -80,7 +103,7 @@ export default function StudentAttempts() {
         for (const it of items) {
           map[it.mockTestId] = {
             title: it.title || "Mock Test",
-            duration: it.duration
+            duration: it.duration,
           };
         }
 
@@ -95,7 +118,9 @@ export default function StudentAttempts() {
       }
     })();
 
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, [ready, user, mockTestId]);
 
   /* -------- Fix UI Modal Scroll Issue -------- */
@@ -116,7 +141,9 @@ export default function StudentAttempts() {
     }
 
     if (body.style.position === "fixed") body.style.position = "";
-    if (body.style.height === "100vh" || body.style.height === "100%") body.style.height = "";
+    if (body.style.height === "100vh" || body.style.height === "100%") {
+      body.style.height = "";
+    }
 
     return () => {
       html.style.overflow = prevHtmlOverflow;
@@ -124,7 +151,7 @@ export default function StudentAttempts() {
     };
   }, []);
 
-  /* -------- Load Attempts (FIXED, NO LOGIC CHANGES) -------- */
+  /* -------- Load Attempts -------- */
   const loadAttempts = useCallback(async () => {
     if (!ready || !user) return;
 
@@ -138,10 +165,9 @@ export default function StudentAttempts() {
       const items = Array.isArray(r.data?.items) ? r.data.items : [];
 
       const studentId = user?.sub || user?.id || user?.userId;
-      const mine = items.filter(a => a.userId === studentId);
+      const mine = items.filter((a) => a.userId === studentId);
 
       setRows(mine);
-
     } catch (e) {
       console.error("Load attempts failed:", e);
       setRows([]);
@@ -150,43 +176,56 @@ export default function StudentAttempts() {
     }
   }, [ready, user, mockTestId]);
 
-  useEffect(() => { loadAttempts(); }, [loadAttempts]);
+  useEffect(() => {
+    loadAttempts();
+  }, [loadAttempts]);
 
   useEffect(() => {
-    const onShow = () =>
-      document.visibilityState === "visible" && loadAttempts();
+    const onShow = () => {
+      if (document.visibilityState === "visible") {
+        loadAttempts();
+      }
+    };
+
     document.addEventListener("visibilitychange", onShow);
     return () => document.removeEventListener("visibilitychange", onShow);
   }, [loadAttempts]);
 
   useEffect(() => {
-    if (user && mockTestId) checkMockAccess();
+    if (user && mockTestId) {
+      checkMockAccess();
+    }
   }, [user, mockTestId, checkMockAccess]);
 
   /* -------- Process Rows -------- */
   const tableRows = useMemo(() => {
     return rows
       .slice()
-      .sort((a, b) => Number(b.createdAtEpoch || 0) - Number(a.createdAtEpoch || 0))
-      .map(r => {
+      .sort(
+        (a, b) =>
+          Number(b.createdAtEpoch || 0) - Number(a.createdAtEpoch || 0)
+      )
+      .map((r) => {
         const fallback = mockIndex[r.mockTestId];
         return {
           ...r,
           displayTitle: r.title || fallback?.title || "Mock Test",
-          adminMinutes: fallback?.duration ?? null
+          adminMinutes: fallback?.duration ?? null,
         };
       });
   }, [rows, mockIndex]);
 
   const hasInProgress = useMemo(
-    () => Array.isArray(rows) && rows.some(r => r.status === "IN_PROGRESS"),
+    () => Array.isArray(rows) && rows.some((r) => r.status === "IN_PROGRESS"),
     [rows]
   );
 
   /* -------- Start/Resume/Clear (unchanged logic) -------- */
   const continueAttempt = async (mId) => {
     try {
-      const { data } = await API.post("/api/student/attempts", { mockTestId: mId });
+      const { data } = await API.post("/api/student/attempts", {
+        mockTestId: mId,
+      });
       const attemptId = data?.attemptId;
 
       if (attemptId) nav(`/student/attempt/${attemptId}`);
@@ -244,7 +283,11 @@ export default function StudentAttempts() {
     return (
       <Box textAlign="center" mt={10} px={2}>
         <Typography>You need to log in to view attempts.</Typography>
-        <Button sx={{ mt: 2 }} variant="contained" onClick={() => nav("/login")}>
+        <Button
+          sx={{ mt: 2 }}
+          variant="contained"
+          onClick={() => nav("/login")}
+        >
           Go to Login
         </Button>
       </Box>
@@ -260,42 +303,48 @@ export default function StudentAttempts() {
     );
   }
 
-  /* -------- MAIN RENDER (unchanged) -------- */
+  /* -------- MAIN RENDER -------- */
   return (
     <Box maxWidth={1200} mx="auto" my={3} px={2}>
-
       {/* HEADER */}
-      {/* ... unchanged code above ... */}
+      {/* (unchanged) */}
 
       {/* ---------------- DESKTOP TABLE VIEW ---------------- */}
       {isMdUp ? (
         <Paper elevation={1}>
           <TableContainer sx={{ maxHeight: "70vh", overflow: "auto" }}>
             <Table size="small" stickyHeader>
-              <TableHead>{/* ... unchanged ... */}</TableHead>
+              <TableHead>
+                {/* (unchanged) */}
+              </TableHead>
 
               <TableBody>
                 {tableRows.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
-                      <Typography color="text.secondary">No attempts found.</Typography>
+                      <Typography color="text.secondary">
+                        No attempts found.
+                      </Typography>
                     </TableCell>
                   </TableRow>
                 )}
 
                 {tableRows.map((row) => {
-                  const isInProgress = row.status === "IN_PROGRESS";
                   const isSubmitted = row.status === "SUBMITTED";
 
                   return (
                     <TableRow key={row.attemptId} hover>
-
-                      {/* ... unchanged ... */}
+                      {/* (unchanged) */}
 
                       <TableCell align="center">
                         {isSubmitted ? (
                           <Tooltip title="View Result">
-                            <IconButton onClick={() => nav(`/student/results/${row.attemptId}`)} size="small">
+                            <IconButton
+                              onClick={() =>
+                                nav(`/student/results/${row.attemptId}`)
+                              }
+                              size="small"
+                            >
                               <VisibilityIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
@@ -313,12 +362,10 @@ export default function StudentAttempts() {
                           <></>
                         )}
                       </TableCell>
-
                     </TableRow>
                   );
                 })}
               </TableBody>
-
             </Table>
           </TableContainer>
         </Paper>
@@ -327,18 +374,25 @@ export default function StudentAttempts() {
         <Stack spacing={1}>
           {tableRows.map((row) => {
             const isSubmitted = row.status === "SUBMITTED";
-            const isInProgress = row.status === "IN_PROGRESS";
 
             return (
               <Paper key={row.attemptId} sx={{ p: 2 }}>
+                {/* (unchanged) */}
 
-                {/* ... unchanged ... */}
-
-                <Stack direction="row" justifyContent="flex-end" spacing={1} mt={2}>
-
+                <Stack
+                  direction="row"
+                  justifyContent="flex-end"
+                  spacing={1}
+                  mt={2}
+                >
                   {isSubmitted ? (
-                    <Button size="small" variant="outlined" startIcon={<VisibilityIcon />}
-                      onClick={() => nav(`/student/results/${row.attemptId}`)}
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      startIcon={<VisibilityIcon />}
+                      onClick={() =>
+                        nav(`/student/results/${row.attemptId}`)
+                      }
                     >
                       View
                     </Button>
@@ -355,9 +409,7 @@ export default function StudentAttempts() {
                   ) : (
                     <></>
                   )}
-
                 </Stack>
-
               </Paper>
             );
           })}
