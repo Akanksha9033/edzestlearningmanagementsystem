@@ -351,13 +351,13 @@ export default function StudentDashboard() {
 
           <div className="container-fluid py-4 flex-grow-1 overflow-auto">
             <h2 className="fw-bold text-dark mb-2">Welcome to Your Dashboard</h2>
-            <p className="text-muted mb-4">Quick links to your E-Books, Q-Bank, and Mock Tests.</p>
+            <p className="text-muted mb-4">Quick links to your  Q-Bank, and Mock Tests.</p>
 
             <div className="row ez-grid">
               
               {/* ---------------- E-Books (commented out) ---------------- */}
             
-              <div className="col-12 col-sm-6 col-lg-4">
+              {/* <div className="col-12 col-sm-6 col-lg-4">
                 <div className="ez-card">
                   <div className="ez-ribbon" />
                   <div className="ez-blob" />
@@ -374,7 +374,7 @@ export default function StudentDashboard() {
                     <Link to="/ebooks" className="ez-link" />
                   </div>
                 </div>
-              </div>
+              </div> */}
               
 
               {/* Q-Bank (kept active) */}
@@ -420,7 +420,7 @@ export default function StudentDashboard() {
              
 {/* ----------------courses (commented out) ---------------- */}
 
-             <div className="col-12 col-sm-6 col-lg-4">
+             {/* <div className="col-12 col-sm-6 col-lg-4">
                 <div className="ez-card">
                   <div className="ez-ribbon" />
                   <div className="ez-blob" />
@@ -437,7 +437,7 @@ export default function StudentDashboard() {
                     <Link to="/student/courses" className="ez-link" />
                   </div>
                 </div>
-              </div>
+              </div> */}
 
             </div>
           </div>

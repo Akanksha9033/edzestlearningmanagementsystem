@@ -16,7 +16,7 @@
 
 # Environment files
 .env
-API/.env
+API/.env 
 .env.local
 .env.development.local
 .env.test.local
