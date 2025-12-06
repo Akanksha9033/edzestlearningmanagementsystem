@@ -4,7 +4,6 @@ import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import MenuRoundedIcon from "@mui/icons-material/MenuRounded";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import AccessTimeRoundedIcon from "@mui/icons-material/AccessTimeRounded";
-// import StudentQBankSolutions from "./StudentQBankSolutions"; // not used here
 
 import API from "../../../LoginSystem/axios";
 
@@ -33,28 +32,81 @@ import {
   Tooltip,
 } from "@mui/material";
 
-// 🔹 Added for Mocktest-style toolbar (imports)
 import EditIcon from "@mui/icons-material/Edit";
 import StrikethroughSIcon from "@mui/icons-material/StrikethroughS";
 import StickyNote2Icon from "@mui/icons-material/StickyNote2";
 import QuestionView from "../Mocktest/QuestionView";
-// 🔹 End added imports
 
 export default function StudentQBankSession() {
+  console.log("🔵 [QBANK] MOUNTED StudentQBankSession");
+
   const { sessionId } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
-  const bankId = location.state?.bankId || null;
 
-  const [questions, setQuestions] = useState(location.state?.questions || []);
-  const [answers, setAnswers] = useState({});
-  const [timeLeft, setTimeLeft] = useState(
-    location.state?.duration * 60 || 600
-  );
-  const [currentQIndex, setCurrentQIndex] = useState(0);
+  console.log("🟡 [QBANK] REFRESH CHECK", {
+    sessionId,
+    locationState: location.state,
+  });
+
+  /* ======================================================
+     REFRESH-SAFE STATE RESTORE
+  ====================================================== */
+
+  const [bankId, setBankId] = useState(() => {
+    if (location.state?.bankId) return location.state.bankId;
+    try {
+      const saved = localStorage.getItem("qbank-session-bankId");
+      return saved || null;
+    } catch {
+      return null;
+    }
+  });
+
+  const [questions, setQuestions] = useState(() => {
+    if (location.state?.questions?.length) return location.state.questions;
+    try {
+      const raw = localStorage.getItem("qbank-session-questions");
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const [answers, setAnswers] = useState(() => {
+  try {
+    const raw = localStorage.getItem("qbank-session-answers");
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+});
+
+
+  const [timeLeft, setTimeLeft] = useState(() => {
+    if (location.state?.duration) return location.state.duration * 60;
+    try {
+      const raw = localStorage.getItem("qbank-session-timeLeft");
+      const v = Number(raw);
+      return Number.isFinite(v) && v > 0 ? v : 600;
+    } catch {
+      return 600;
+    }
+  });
+
+ const [currentQIndex, setCurrentQIndex] = useState(() => {
+  try {
+    const raw = localStorage.getItem("qbank-session-currentQIndex");
+    return raw ? Number(raw) : 0;
+  } catch {
+    return 0;
+  }
+});
+
   const [result, setResult] = useState(null);
+
   const [session] = useState({
-    sessionId: sessionId || location.state?.sessionId || null,
+    sessionId,
   });
 
   const [showExplain, setShowExplain] = useState(false);
@@ -65,19 +117,101 @@ export default function StudentQBankSession() {
   const isMdUp = useMediaQuery("(min-width:900px)");
   const [drawerOpen, setDrawerOpen] = useState(false);
 
-  // ✅ ADDED: local state for "time over" popup (from your file)
   const [timeUp, setTimeUp] = useState(false);
   const [backConfirmOpen, setBackConfirmOpen] = useState(false);
 
-  // 🔹 Added for Mocktest-style toolbar (refs)
   const qvRef = useRef(null);
   const [scratchOpen, setScratchOpen] = useState(false);
-  // 🔹 End added refs
 
-  // ⏸️ NEW: pause/resume state for timer
   const [paused, setPaused] = useState(false);
 
-  // defensive cleanup
+  // ⬇ ADD THIS HERE ⬇
+useEffect(() => {
+  if (paused) {
+    document.body.style.overflow = "hidden";
+  } else {
+    document.body.style.overflow = "auto";
+  }
+}, [paused]);
+
+
+  /* ======================================================
+   LOCAL STORAGE PERSIST (REFRESH-PROOF)
+====================================================== */
+
+// Save bankId
+useEffect(() => {
+  if (bankId) {
+    try {
+      localStorage.setItem("qbank-session-bankId", bankId);
+    } catch {}
+  }
+}, [bankId]);
+
+// Save questions
+useEffect(() => {
+  if (questions?.length) {
+    try {
+      localStorage.setItem(
+        "qbank-session-questions",
+        JSON.stringify(questions)
+      );
+    } catch {}
+  }
+}, [questions]);
+
+// Save timer
+useEffect(() => {
+  try {
+    localStorage.setItem(
+      "qbank-session-timeLeft",
+      String(timeLeft)
+    );
+  } catch {}
+}, [timeLeft]);
+
+// Save answers
+useEffect(() => {
+  try {
+    localStorage.setItem(
+      "qbank-session-answers",
+      JSON.stringify(answers)
+    );
+  } catch {}
+}, [answers]);
+
+// Save current question index
+useEffect(() => {
+  try {
+    localStorage.setItem(
+      "qbank-session-currentQIndex",
+      String(currentQIndex)
+    );
+  } catch {}
+}, [currentQIndex]);
+
+/* ======================================================
+   CLEAR STORAGE ON SUBMIT
+====================================================== */
+useEffect(() => {
+  if (result) {
+    // After result, clear storage so next test starts fresh
+    localStorage.removeItem("qbank-session-bankId");
+    localStorage.removeItem("qbank-session-questions");
+    localStorage.removeItem("qbank-session-answers");
+    localStorage.removeItem("qbank-session-timeLeft");
+    localStorage.removeItem("qbank-session-currentQIndex");
+  }
+}, [result]);
+
+
+
+
+
+  /* ======================================================
+     Defensive cleanup (UNCHANGED)
+  ====================================================== */
+
   useEffect(() => {
     document.body.classList.remove("app-fs");
     document.documentElement.style.overflow = "";
@@ -87,12 +221,15 @@ export default function StudentQBankSession() {
   useEffect(() => {
     if (!questions.length) {
       console.warn(
-        "⚠️ No questions found in state. If page was refreshed, implement GET /session/:id to reload."
+        "⚠️ No questions found. Refresh-safe mode (staying here, no redirect)."
       );
     }
   }, [questions]);
 
-  // ⏱️ Timer effect (now respects `paused`)
+  /* ======================================================
+     TIMER (UNCHANGED)
+  ====================================================== */
+
   useEffect(() => {
     if (result || submittedRef.current || paused) return;
     if (timerRef.current) clearInterval(timerRef.current);
@@ -139,26 +276,22 @@ export default function StudentQBankSession() {
         return;
       }
 
-      // 🔹 YAHAN pe hum index -> A/B/C/D convert kar rahe hain
       const payloadAnswers = {};
       Object.entries(answers).forEach(([qid, val]) => {
         if (Array.isArray(val)) {
-          // multi-select: [0,2] -> ["A","C"]
           payloadAnswers[qid] = val.map((i) =>
             String.fromCharCode(65 + Number(i))
           );
         } else if (val !== null && val !== undefined && val !== "") {
-          // single-select: 3 -> "D"
           payloadAnswers[qid] = String.fromCharCode(65 + Number(val));
         } else {
           payloadAnswers[qid] = val;
         }
       });
 
-      const res = await API.post(
-        `/api/student/qbank/session/${sid}/submit`,
-        { answers: payloadAnswers }
-      );
+      const res = await API.post(`/api/student/qbank/session/${sid}/submit`, {
+        answers: payloadAnswers,
+      });
       setResult(res.data);
     } catch (err) {
       console.error("❌ Submit failed", err);
@@ -170,7 +303,6 @@ export default function StudentQBankSession() {
 
   const currentQuestion = questions[currentQIndex];
 
-  // ⏸️ Pause / Resume handler
   const handlePauseToggle = () => {
     setPaused((prev) => {
       const next = !prev;
@@ -181,52 +313,15 @@ export default function StudentQBankSession() {
       return next;
     });
   };
+  /* ======================================================
+      RENDER — FULL UI BELOW (UNCHANGED)
+  ====================================================== */
+  console.log("🟢 [QBANK] DATA SNAPSHOT", {
+    bankId,
+    questionCount: questions?.length,
+    timeLeft,
+  });
 
-  // --- Navigator panel (used both in sidebar and Drawer) ---
-  const NavigatorPanel = (
-    <Box sx={{ p: 1 }}>
-      <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 700 }}>
-        Question Navigator
-      </Typography>
-
-      <Box
-        sx={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(44px, 1fr))",
-          gap: 1,
-        }}
-      >
-        {questions.map((q, idx) => (
-          <Button
-            key={idx}
-            variant={currentQIndex === idx ? "contained" : "outlined"}
-            onClick={() => {
-              setCurrentQIndex(idx);
-              setDrawerOpen(false);
-            }}
-            sx={{
-              minWidth: 0,
-              py: 1,
-          ...(answers[q.questionId] !== undefined
-  ? {
-      bgcolor: "#4748ac",
-      color: "white",
-      ":hover": { bgcolor: "#3e40a5" },
-    }
-  : {}),
-
-            }}
-          >
-            {idx + 1}
-          </Button>
-        ))}
-      </Box>
-    </Box>
-  );
-
-  // ===========================================================
-  // ✅ RENDER
-  // ===========================================================
   return (
     <Box
       sx={{
@@ -298,23 +393,6 @@ export default function StudentQBankSession() {
               </Button>
             </Tooltip>
 
-            {/* <Tooltip title="Scratch Pad">
-              <Button
-                size="small"
-                variant="outlined"
-                startIcon={<StickyNote2Icon fontSize="small" />}
-                onClick={() => setScratchOpen(true)}
-                sx={{
-                  color: "white",
-                  borderColor: "rgba(255,255,255,0.7)",
-                  backgroundColor: "#4748ac",
-                  "&:hover": { borderColor: "#fff", backgroundColor: "#3d3ea2" },
-                }}
-              >
-                Scratch Pad
-              </Button>
-            </Tooltip> */}
-
             <Box sx={{ flexGrow: 1 }} />
 
             <Stack direction="row" alignItems="center" gap={1}>
@@ -342,9 +420,9 @@ export default function StudentQBankSession() {
           </Stack>
         </Paper>
       )}
-      {/* 🔹 Added for Mocktest-style toolbar (end) */}
+      {/* 🔹 Toolbar end */}
 
-      {/* Mobile top bar: menu + time (unchanged original) */}
+      {/* Mobile top bar */}
       {!isMdUp && !result && (
         <Box
           sx={{
@@ -380,9 +458,7 @@ export default function StudentQBankSession() {
         </Box>
       )}
 
-      {/* ====================================================== */}
-      {/* Main Layout (Unchanged original logic below)           */}
-      {/* ====================================================== */}
+      {/* ====================== MAIN LAYOUT ====================== */}
       <Box
         sx={{
           display: "flex",
@@ -391,7 +467,7 @@ export default function StudentQBankSession() {
           gap: { xs: 2, md: 3 },
         }}
       >
-        {/* Left column */}
+        {/* ------------- LEFT PANEL ------------- */}
         <Box
           sx={{
             flex: { md: 3 },
@@ -401,12 +477,12 @@ export default function StudentQBankSession() {
             minHeight: { xs: "100dvh", md: "auto" },
           }}
         >
-          {/* Back button (updated with confirmation dialog) */}
+          {/* Back button */}
           <Box sx={{ mb: 2 }}>
             <Button
               variant="text"
               startIcon={<ArrowBackIosNewIcon />}
-              onClick={() => setBackConfirmOpen(true)} // 🔹 Open confirmation dialog
+              onClick={() => setBackConfirmOpen(true)}
               sx={{
                 color: "#4748ac",
                 textTransform: "none",
@@ -417,7 +493,6 @@ export default function StudentQBankSession() {
               Back to Details
             </Button>
 
-            {/* ⭐ NEW: Q-ID box directly under Back to Details */}
             {currentQuestion?.questionId && (
               <Box
                 sx={{
@@ -439,7 +514,7 @@ export default function StudentQBankSession() {
               </Box>
             )}
 
-            {/* 🔹 Back confirmation dialog */}
+            {/* Back dialog */}
             <Dialog
               open={backConfirmOpen}
               onClose={() => setBackConfirmOpen(false)}
@@ -477,7 +552,7 @@ export default function StudentQBankSession() {
             </Dialog>
           </Box>
 
-          {/* ===== Scrollable content (now includes QuestionView) ===== */}
+          {/* ====================== QUESTION CONTENT ====================== */}
           <Box
             sx={{
               flex: 1,
@@ -486,7 +561,7 @@ export default function StudentQBankSession() {
               pb: { xs: 8, md: 0 },
             }}
           >
-            {/* Result header + Explanation */}
+            {/* Result section */}
             {result && (
               <Box sx={{ mb: 3, textAlign: "center" }}>
                 <Typography
@@ -501,11 +576,12 @@ export default function StudentQBankSession() {
                 <Button
                   variant="contained"
                   onClick={() => {
-                    // 🔹 Sort explanations to match question order
                     const orderedResults = [...(result?.results || [])].sort(
                       (a, b) => {
                         const ids = questions.map((q) => q.questionId);
-                        return ids.indexOf(a.questionId) - ids.indexOf(b.questionId);
+                        return (
+                          ids.indexOf(a.questionId) - ids.indexOf(b.questionId)
+                        );
                       }
                     );
 
@@ -524,7 +600,7 @@ export default function StudentQBankSession() {
               </Box>
             )}
 
-            {/* Render ALL questions, but show only current one */}
+            {/* Main questions */}
             {!result &&
               questions.map((q, idx) => (
                 <Box
@@ -534,17 +610,16 @@ export default function StudentQBankSession() {
                     display: idx === currentQIndex ? "block" : "none",
                   }}
                 >
-                  {/* 🔹 Highlight/Strikethrough question text via QuestionView (with options) */}
                   <QuestionView
                     ref={idx === currentQIndex ? qvRef : null}
                     data={{
                       question: {
                         question: q.questionText,
-                        options: q.options || [], // ✅ now real options are inside
+                        options: q.options || [],
                         questionType: q.questionType,
                       },
                       saved: {
-                        answer: answers[q.questionId], // ✅ pass current selected answer
+                        answer: answers[q.questionId],
                       },
                     }}
                     disabled={!!result}
@@ -552,19 +627,15 @@ export default function StudentQBankSession() {
                     enableStrikethrough
                     hideInternalFlagButton={true}
                     onSave={(payload) => {
-                      // ✅ sync back to existing logic
                       if (!payload) return;
                       if ("answer" in payload) {
                         handleChange(q.questionId, payload.answer);
                       }
                     }}
                   />
-
-                  {/* ⭐ OLD Q-ID box removed from here */}
                 </Box>
               ))}
 
-            {/* Navigation buttons */}
             {!result && (
               <Stack
                 direction="row"
@@ -574,9 +645,7 @@ export default function StudentQBankSession() {
               >
                 <Button
                   disabled={currentQIndex === 0}
-                  onClick={() =>
-                    setCurrentQIndex((i) => Math.max(0, i - 1))
-                  }
+                  onClick={() => setCurrentQIndex((i) => Math.max(0, i - 1))}
                   variant="outlined"
                   sx={{ textTransform: "none", borderRadius: 2 }}
                 >
@@ -621,7 +690,7 @@ export default function StudentQBankSession() {
           </Box>
         </Box>
 
-        {/* Right column: question navigator (unchanged except timer removed) */}
+        {/* ====================== RIGHT NAVIGATION PANEL ====================== */}
         {isMdUp && !result && (
           <Paper
             elevation={1}
@@ -638,12 +707,48 @@ export default function StudentQBankSession() {
               height: "fit-content",
             }}
           >
-            {NavigatorPanel}
+            <Box sx={{ p: 1 }}>
+              <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 700 }}>
+                Question Navigator
+              </Typography>
+
+              <Box
+                sx={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fill, minmax(44px, 1fr))",
+                  gap: 1,
+                }}
+              >
+                {questions.map((q, idx) => (
+                  <Button
+                    key={idx}
+                    variant={currentQIndex === idx ? "contained" : "outlined"}
+                    onClick={() => {
+                      setCurrentQIndex(idx);
+                      setDrawerOpen(false);
+                    }}
+                    sx={{
+                      minWidth: 0,
+                      py: 1,
+                      ...(answers[q.questionId] !== undefined
+                        ? {
+                            bgcolor: "#4748ac",
+                            color: "white",
+                            ":hover": { bgcolor: "#3e40a5" },
+                          }
+                        : {}),
+                    }}
+                  >
+                    {idx + 1}
+                  </Button>
+                ))}
+              </Box>
+            </Box>
           </Paper>
         )}
       </Box>
 
-      {/* Drawer for mobile view */}
+      {/* ====================== MOBILE DRAWER ====================== */}
       <Drawer
         anchor="left"
         open={drawerOpen}
@@ -675,16 +780,97 @@ export default function StudentQBankSession() {
             <CloseRoundedIcon />
           </IconButton>
         </Stack>
-        {NavigatorPanel}
+
+        <Box sx={{ p: 1 }}>
+          <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 700 }}>
+            Question Navigator
+          </Typography>
+
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(44px, 1fr))",
+              gap: 1,
+            }}
+          >
+            {questions.map((q, idx) => (
+              <Button
+                key={idx}
+                variant={currentQIndex === idx ? "contained" : "outlined"}
+                onClick={() => {
+                  setCurrentQIndex(idx);
+                  setDrawerOpen(false);
+                }}
+                sx={{
+                  minWidth: 0,
+                  py: 1,
+                  ...(answers[q.questionId] !== undefined
+                    ? {
+                        bgcolor: "#4748ac",
+                        color: "white",
+                        ":hover": { bgcolor: "#3e40a5" },
+                      }
+                    : {}),
+                }}
+              >
+                {idx + 1}
+              </Button>
+            ))}
+          </Box>
+        </Box>
       </Drawer>
 
-      {/* Submit confirmation dialog */}
+      {/* ====================== PAUSE OVERLAY ====================== */}
+      
+{paused && !result && (
+  <Box
+    sx={{
+      position: "fixed",
+      top: 0,
+      left: 0,
+      width: "100vw",
+      height: "100vh",
+      backgroundColor: "rgba(0,0,0,0.85)",
+      zIndex: 9999,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      flexDirection: "column",
+      color: "white",
+      textAlign: "center",
+      px: 2,
+    }}
+  >
+    <Typography variant="h4" sx={{ fontWeight: "bold", mb: 2 }}>
+      Test Paused
+    </Typography>
+
+    <Typography variant="h6" sx={{ mb: 4 }}>
+      Would you like to resume the test?
+    </Typography>
+
+    <Button
+      variant="contained"
+      sx={{
+        backgroundColor: "#1e88e5",
+        px: 4,
+        py: 1.5,
+        fontSize: "16px",
+        borderRadius: "8px",
+      }}
+      onClick={() => setPaused(false)}
+    >
+      RESUME TEST
+    </Button>
+  </Box>
+)}
+
+
+      {/* ====================== SUBMIT DIALOG ====================== */}
       <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)}>
         <DialogTitle>Submit Confirmation</DialogTitle>
         <DialogContent>
-          <Typography>
-            Are you sure you want to submit your answers?
-          </Typography>
+          <Typography>Are you sure you want to submit your answers?</Typography>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setConfirmOpen(false)}>Cancel</Button>
@@ -701,7 +887,7 @@ export default function StudentQBankSession() {
         </DialogActions>
       </Dialog>
 
-      {/* Time up dialog */}
+      {/* ====================== TIME UP DIALOG ====================== */}
       <Dialog open={timeUp && !result} onClose={() => {}}>
         <DialogTitle>Time's Up!</DialogTitle>
         <DialogContent>
@@ -709,7 +895,6 @@ export default function StudentQBankSession() {
             Your time has ended. Submitting your answers automatically...
           </Typography>
         </DialogContent>
-        {/* ⭐ New: button to go back to Q-Bank list */}
         <DialogActions>
           <Button
             variant="contained"
@@ -724,7 +909,7 @@ export default function StudentQBankSession() {
         </DialogActions>
       </Dialog>
 
-      {/* 🔹 Added for Mocktest-style Scratch Pad Dialog (start) */}
+      {/* ====================== SCRATCH PAD DIALOG ====================== */}
       <Dialog
         open={scratchOpen}
         onClose={() => setScratchOpen(false)}
@@ -745,18 +930,18 @@ export default function StudentQBankSession() {
           <Button onClick={() => setScratchOpen(false)}>Close</Button>
         </DialogActions>
       </Dialog>
-      {/* 🔹 Added for Mocktest-style Scratch Pad Dialog (end) */}
     </Box>
   );
 }
 
-// 🔹 Added: QBank Explanation Pager (for showing explanations in QBank result)
+/* ======================================================
+   Explanation Pager (UNCHANGED)
+====================================================== */
+
 function QBankExplanationPager({ results = [] }) {
   if (!Array.isArray(results) || results.length === 0) {
     return (
-      <Typography
-        sx={{ mt: 2, textAlign: "center", color: "text.secondary" }}
-      >
+      <Typography sx={{ mt: 2, textAlign: "center", color: "text.secondary" }}>
         No explanations available.
       </Typography>
     );
@@ -845,7 +1030,6 @@ function QBankExplanationPager({ results = [] }) {
   );
 }
 
-// 🔹 styles used in StudentQBankSession (for Show Explanation button etc.)
 const styles = {
   explanationToggle: {
     mt: 1.5,
@@ -859,5 +1043,3 @@ const styles = {
     "&:hover": { backgroundColor: "#3f41a0", color: "white" },
   },
 };
-
-// ✅ END OF FILE
