@@ -4,13 +4,16 @@ import { useAuth } from "../../../LoginSystem/context/AuthContext";
 import API from "../../../LoginSystem/axios";
 import {
   Box, Paper, Stack, Typography, Button, Chip, CircularProgress,
-  Table, TableHead, TableRow, TableCell, TableBody, TableContainer, IconButton, Tooltip, Divider
+  Table, TableHead, TableRow, TableCell, TableBody, TableContainer,
+  IconButton, Tooltip, Divider
 } from "@mui/material";
+
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import DeleteSweepIcon from "@mui/icons-material/DeleteSweep";
 import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
+
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import PayNowButton from "../../../Shared/PayNowButton";
@@ -21,6 +24,7 @@ function fmtEpoch(ts) {
   const d = new Date(Number(ts) * 1000);
   return d.toLocaleString();
 }
+
 function fmtHMS(sec) {
   const s = Math.max(0, Math.floor(Number(sec || 0)));
   const h = Math.floor(s / 3600);
@@ -42,7 +46,7 @@ export default function StudentAttempts() {
   const [mockIndex, setMockIndex] = useState({});
   const [selectedMock, setSelectedMock] = useState(null);
 
-  /* -------------------- ACCESS CHECK -------------------- */
+  /* -------- Access Permission Check -------- */
   const [hasAccess, setHasAccess] = useState(false);
 
   const checkMockAccess = useCallback(async () => {
@@ -51,42 +55,51 @@ export default function StudentAttempts() {
       if (!studentId || !mockTestId) return;
 
       const productId = `MOCK_${mockTestId}`;
-
       const res = await API.get("/api/payments/has-access", {
-        params: { userId: studentId, productId },
+        params: { userId: studentId, productId }
       });
 
       setHasAccess(res.data?.allowed || false);
     } catch (err) {
-      console.error("❌ Access check failed", err);
+      console.error("❌ Access check failed:", err);
       setHasAccess(false);
     }
   }, [user, mockTestId]);
 
-  /* -------------------- FETCH MOCK LIST -------------------- */
-
+  /* -------- Fetch Mock Test List -------- */
   useEffect(() => {
     if (!ready || !user) return;
+
     let mounted = true;
+
     (async () => {
       try {
         const r = await API.get("/api/student/mocktests");
         const items = Array.isArray(r.data?.items) ? r.data.items : [];
+
         const map = {};
         for (const it of items) {
-          map[it.mockTestId] = { title: it.title || "Mock Test", duration: it.duration };
+          map[it.mockTestId] = {
+            title: it.title || "Mock Test",
+            duration: it.duration
+          };
         }
+
         if (mounted) {
           setMockIndex(map);
-          if (mockTestId && map[mockTestId]) setSelectedMock(map[mockTestId]);
+          if (mockTestId && map[mockTestId]) {
+            setSelectedMock(map[mockTestId]);
+          }
         }
       } catch (e) {
         console.error("Load mock list failed:", e);
       }
     })();
+
     return () => { mounted = false; };
   }, [ready, user, mockTestId]);
 
+  /* -------- Fix UI Modal Scroll Issue -------- */
   useLayoutEffect(() => {
     const html = document.documentElement;
     const body = document.body;
@@ -112,17 +125,21 @@ export default function StudentAttempts() {
     };
   }, []);
 
+  /* -------- Load Attempts (FIXED, NO LOGIC CHANGES) -------- */
   const loadAttempts = useCallback(async () => {
     if (!ready || !user) return;
+
     setLoading(true);
     try {
-      const url = `/api/student/attempts/list${mockTestId ? `?mockTestId=${encodeURIComponent(mockTestId)}` : ""}`;
+      const url = `/api/student/attempts/list${
+        mockTestId ? `?mockTestId=${encodeURIComponent(mockTestId)}` : ""
+      }`;
+
       const r = await API.get(url);
       const items = Array.isArray(r.data?.items) ? r.data.items : [];
 
-    const studentId = user?.sub || user?.id || user?.userId;
-const mine = items.filter(a => a.userId === studentId);
-
+      const studentId = user?.sub || user?.id || user?.userId;
+      const mine = items.filter(a => a.userId === studentId);
 
       setRows(mine);
 
@@ -137,7 +154,8 @@ const mine = items.filter(a => a.userId === studentId);
   useEffect(() => { loadAttempts(); }, [loadAttempts]);
 
   useEffect(() => {
-    const onShow = () => document.visibilityState === "visible" && loadAttempts();
+    const onShow = () =>
+      document.visibilityState === "visible" && loadAttempts();
     document.addEventListener("visibilitychange", onShow);
     return () => document.removeEventListener("visibilitychange", onShow);
   }, [loadAttempts]);
@@ -146,16 +164,17 @@ const mine = items.filter(a => a.userId === studentId);
     if (user && mockTestId) checkMockAccess();
   }, [user, mockTestId, checkMockAccess]);
 
+  /* -------- Process Rows -------- */
   const tableRows = useMemo(() => {
     return rows
       .slice()
       .sort((a, b) => Number(b.createdAtEpoch || 0) - Number(a.createdAtEpoch || 0))
-      .map((r) => {
+      .map(r => {
         const fallback = mockIndex[r.mockTestId];
         return {
           ...r,
           displayTitle: r.title || fallback?.title || "Mock Test",
-          adminMinutes: fallback?.duration ?? null,
+          adminMinutes: fallback?.duration ?? null
         };
       });
   }, [rows, mockIndex]);
@@ -165,10 +184,12 @@ const mine = items.filter(a => a.userId === studentId);
     [rows]
   );
 
+  /* -------- Start/Resume/Clear (unchanged logic) -------- */
   const continueAttempt = async (mId) => {
     try {
       const { data } = await API.post("/api/student/attempts", { mockTestId: mId });
       const attemptId = data?.attemptId;
+
       if (attemptId) nav(`/student/attempt/${attemptId}`);
       else alert("Could not start/resume the attempt.");
     } catch (e) {
@@ -184,6 +205,7 @@ const mine = items.filter(a => a.userId === studentId);
         forceNew: true,
         cancelPrevious: false,
       });
+
       const attemptId = data?.attemptId;
       if (attemptId) nav(`/student/attempt/${attemptId}`);
       else alert("Could not start a new attempt.");
@@ -194,10 +216,13 @@ const mine = items.filter(a => a.userId === studentId);
   };
 
   const clearAttempts = async () => {
-    const scopeText = mockTestId ? "this mock" : "ALL your attempts";
-    if (!window.confirm(`Are you sure?`)) return;
+    if (!window.confirm("Are you sure?")) return;
+
     try {
-      const url = `/api/student/attempts/clear${mockTestId ? `?mockTestId=${encodeURIComponent(mockTestId)}` : ""}`;
+      const url = `/api/student/attempts/clear${
+        mockTestId ? `?mockTestId=${encodeURIComponent(mockTestId)}` : ""
+      }`;
+
       await API.delete(url);
       await loadAttempts();
     } catch (e) {
@@ -206,6 +231,7 @@ const mine = items.filter(a => a.userId === studentId);
     }
   };
 
+  /* -------- Loading / Login State -------- */
   if (!ready) {
     return (
       <Box textAlign="center" mt={10} px={2}>
@@ -214,14 +240,18 @@ const mine = items.filter(a => a.userId === studentId);
       </Box>
     );
   }
+
   if (ready && !user) {
     return (
       <Box textAlign="center" mt={10} px={2}>
         <Typography>You need to log in to view attempts.</Typography>
-        <Button sx={{ mt: 2 }} variant="contained" onClick={() => nav("/login")}>Go to Login</Button>
+        <Button sx={{ mt: 2 }} variant="contained" onClick={() => nav("/login")}>
+          Go to Login
+        </Button>
       </Box>
     );
   }
+
   if (loading) {
     return (
       <Box textAlign="center" mt={10} px={2}>
@@ -231,9 +261,7 @@ const mine = items.filter(a => a.userId === studentId);
     );
   }
 
-  /* ------------------------------------------------ */
-  /* --------------------- RENDER ------------------- */
-  /* ------------------------------------------------ */
+  /* -------- MAIN RENDER (unchanged) -------- */
   return (
     <Box maxWidth={1200} mx="auto" my={3} px={2}>
 
@@ -264,6 +292,7 @@ const mine = items.filter(a => a.userId === studentId);
               Start New Attempt
             </Button>
           )}
+
           <Button
             color="error"
             variant="outlined"
@@ -283,9 +312,7 @@ const mine = items.filter(a => a.userId === studentId);
             <Table size="small" stickyHeader>
               <TableHead>
                 <TableRow>
-                  {!mockTestId && (
-                    <TableCell><b>Test</b></TableCell>
-                  )}
+                  {!mockTestId && <TableCell><b>Test</b></TableCell>}
                   <TableCell><b>Status</b></TableCell>
                   <TableCell><b>Created</b></TableCell>
                   <TableCell><b>Submitted</b></TableCell>
@@ -334,7 +361,7 @@ const mine = items.filter(a => a.userId === studentId);
 
                       <TableCell align="right">{fmtHMS(row.durationSec)}</TableCell>
 
-                      {/* --------------- ⭐ ACTION COLUMN ⭐ ---------------- */}
+                      {/* ACTION COLUMN */}
                       <TableCell align="center">
                         {isSubmitted ? (
                           <Tooltip title="View Result">
@@ -394,7 +421,6 @@ const mine = items.filter(a => a.userId === studentId);
 
                 <Stack direction="row" justifyContent="flex-end" spacing={1} mt={2}>
 
-                  {/* -------- ⭐ ACTION (MOBILE) ⭐ -------- */}
                   {isSubmitted ? (
                     <Button size="small" variant="outlined" startIcon={<VisibilityIcon />}
                       onClick={() => nav(`/student/results/${row.attemptId}`)}
