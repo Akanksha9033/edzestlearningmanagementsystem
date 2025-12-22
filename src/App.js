@@ -13,7 +13,7 @@ import Navbar from "./Website/components/Navbar";
 import Hero from "./Website/components/Hero";
 // import Banner from "./Website/components/Banner";
 import Benefit from "./Website/components/Benefit";
-import Preparation from "./Website/components/Preparation";
+// import Preparation from "./Website/components/Preparation";
 import Whychooseus from "./Website/components/Whychooseus";
 import Testimonial from "./Website/components/Testimonial";
 import Contact from "./Website/components/Contact";
@@ -26,14 +26,14 @@ import PrivacyPolicy from "./Website/components/Privacy Policy";
 import TermsAndConditions from "./Website/components/TermsAndConditions";
 import RefundPolicy from "./Website/components/Refund Policy";
 import JoinNowForm from "./Website/components/Joinnow";
-import WhatsAppChat from "./Website/components/Whatsappchat";
+// import WhatsAppChat from "./Website/components/Whatsappchat";
 import FlashMain from "./Website/FlashcardApp/FlashMain";
 import Acp from "./Website/components/Acp";
 import Pmp from "./Website/components/Pmp";
 import PdfDocs from "./Website/components/PdfDocs";
 
 // ✅ Docs & Quiz
-import Docs from "./Website/components/ProjectDocs/pages/Docs";
+// import Docs from "./Website/components/ProjectDocs/pages/Docs";
 import InstructionPage from "./Website/DragAndDropQuiz/Components/InstructionPage";
 import DragAndDropQuiz1 from "./Website/DragAndDropQuiz/Set1/DragAndDropQuiz1";
 import DragAndDropQuiz2 from "./Website/DragAndDropQuiz/Set2/DragAndDropQuiz2";
@@ -79,6 +79,7 @@ import StudentQBankFilterForm from "./WebStudent/StudentModule/Q-Bank/StudentQBa
 import StudentQBankHistory from "./WebStudent/StudentModule/Q-Bank/StudentQBankHistory";
 import StudentQBankSession from "./WebStudent/StudentModule/Q-Bank/StudentQBankSession";
 import StudentQBankLatestExplanationPage from "./WebStudent/StudentModule/Q-Bank/StudentQBankLatestExplanationPage";
+import StudentQBankSolutions from "./WebStudent/StudentModule/Q-Bank/StudentQBankSolutions";
 
 // Course Components
 // ✅ ADD: CoursesPage import (your given path)
@@ -163,7 +164,7 @@ const AppContent = () => {
               <Hero />
               {/* <Banner /> */}
               <Benefit />
-              <Preparation />
+              {/* <Preparation /> */}
               <Whychooseus />
               <Testimonial />
               <Contact />
@@ -188,7 +189,7 @@ const AppContent = () => {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/reset-password/:token" element={<ResetPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/verify-email" element={<VerifyEmail />} />
         <Route path="/invite-accept" element={<InviteAccept />} />
 
@@ -207,7 +208,7 @@ const AppContent = () => {
         <Route path="/drag-and-drop/set1" element={<DragAndDropQuiz1 />} />
         <Route path="/drag-and-drop/set2" element={<DragAndDropQuiz2 />} />
         {/* <Route path="/drag-and-drop/set3" element={<DragAndDropQuiz3 />} /> */}
-        <Route path="/docs/*" element={<Docs />} />
+        {/* <Route path="/docs/*" element={<Docs />} /> */}
 
 
         {/* Student Routes */}
@@ -425,6 +426,8 @@ const AppContent = () => {
             </ProtectedRoute>
           }
         />
+        console.log("🔴 [ROUTER] Rendering route /student/qbank/session");
+
         <Route
           path="/student/qbank/session/:sessionId"
           element={
@@ -437,6 +440,11 @@ const AppContent = () => {
           path="/student/qbank/:bankId/explanation/latest"
           element={<StudentQBankLatestExplanationPage />}
         />
+
+        <Route
+  path="/student/qbank/solutions"
+  element={<StudentQBankSolutions />}
+/>
 
 
 
@@ -636,8 +644,8 @@ const AppContent = () => {
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
 
-      <ToastContainer position="top-center" />
-      <WhatsAppChat />
+      {/* <ToastContainer position="top-center" />
+      <WhatsAppChat /> */}
     </>
   );
 };

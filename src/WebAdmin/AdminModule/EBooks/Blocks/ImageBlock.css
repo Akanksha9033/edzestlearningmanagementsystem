@@ -1,0 +1,105 @@
+.image-block {
+  background: #fafaff;
+  border: 1px solid #dfe0ff;
+  padding: 15px;
+  border-radius: 10px;
+  margin-bottom: 1rem;
+  box-shadow: 0 2px 6px rgba(71, 72, 172, 0.1);
+}
+
+.upload-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+
+.upload-btn {
+  background-color: #4748ac;
+  color: #fff;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: 0.2s ease;
+}
+
+.upload-btn:hover {
+  background-color: #3b3ca1;
+}
+
+.url-input {
+  flex: 1;
+  min-width: 250px;
+  padding: 6px 8px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+}
+
+.image-preview {
+  margin-top: 10px;
+  text-align: center;
+}
+
+.resize-control {
+  margin-top: 8px;
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  align-items: center;
+  color: #4748ac;
+  font-size: 0.9rem;
+}
+.image-block {
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 12px;
+  margin-top: 10px;
+  background: #f9fafc;
+}
+
+.upload-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.upload-btn {
+  background-color: #4748ac;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.upload-btn:hover {
+  background-color: #5c5edc;
+}
+
+.url-input {
+  flex: 1;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  padding: 6px;
+}
+
+.image-preview {
+  margin-top: 10px;
+  text-align: center;
+}
+
+.resize-control {
+  margin-top: 6px;
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.no-image-placeholder {
+  color: #999;
+  font-style: italic;
+  margin-top: 10px;
+}

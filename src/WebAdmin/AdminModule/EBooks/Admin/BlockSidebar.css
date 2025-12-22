@@ -1,0 +1,81 @@
+/* ========= 🎨 Edzest Block Sidebar Styles ========= */
+
+.blockSidebar {
+  width: 230px;
+  background: linear-gradient(180deg, #4748ac 0%, #5c5ed4 100%);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  border-right: 3px solid #3a3b8c;
+  font-family: "Poppins", sans-serif;
+  box-shadow: 3px 0 10px rgba(0, 0, 0, 0.1);
+  position: sticky;
+  top: 0;
+}
+
+.sidebarHeader {
+  text-align: center;
+  padding: 1.2rem 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.sidebarHeader h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.toolList {
+  flex-grow: 1;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.toolButton {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: #ffffff;
+  color: #4748ac;
+  border: none;
+  padding: 0.7rem 1rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(71, 72, 172, 0.15);
+}
+
+.toolButton:hover {
+  background-color: #f0f0ff;
+  transform: translateY(-2px);
+  box-shadow: 0 3px 8px rgba(71, 72, 172, 0.25);
+}
+
+.toolIcon {
+  font-size: 1.2rem;
+}
+
+.toolLabel {
+  flex-grow: 1;
+}
+
+/* Scrollbar */
+.toolList::-webkit-scrollbar {
+  width: 6px;
+}
+
+.toolList::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.4);
+  border-radius: 10px;
+}
+
+.toolList::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.6);
+}

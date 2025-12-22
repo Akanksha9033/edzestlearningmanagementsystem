@@ -2,7 +2,7 @@
 const serverless = require("serverless-http");
 
 // Import the Express app (make sure index.js exports the app)
-const app = require("./index");
+const app = require("./index.js");
 
 // Enable binary for media streaming (HLS, MP4, audio, images, etc.)
 module.exports.handler = serverless(app, {

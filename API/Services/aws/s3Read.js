@@ -1,44 +1,63 @@
-// Services/aws/s3Read.js
-const { s3 } = require("./s3");
+// Services/aws/s3Read.js  (AWS SDK v3)
+const {
+  s3,
+  GetObjectCommand,
+  PutObjectCommand,
+  getSignedUrl,
+} = require("./s3");
 
-/** Read JSON from S3 and parse it */
+/** Read JSON from S3 (v3) */
 async function readJsonFromS3(Bucket, Key) {
-  const obj = await s3.getObject({ Bucket, Key }).promise();
-  return JSON.parse(obj.Body.toString("utf8"));
+  const obj = await s3.send(new GetObjectCommand({ Bucket, Key }));
+  const body = await obj.Body.transformToString("utf8");
+  return JSON.parse(body);
 }
 
-/** Write JSON to S3 */
+/** Write JSON to S3 (v3) */
 async function putJsonToS3(Bucket, Key, data, cacheSeconds = 0) {
   const Body = Buffer.from(JSON.stringify(data, null, 2), "utf8");
-  const params = {
-    Bucket,
-    Key,
-    Body,
-    ContentType: "application/json",
-    CacheControl: cacheSeconds ? `public, max-age=${cacheSeconds}` : undefined,
-  };
-  await s3.putObject(params).promise();
+
+  await s3.send(
+    new PutObjectCommand({
+      Bucket,
+      Key,
+      Body,
+      ContentType: "application/json",
+      CacheControl: cacheSeconds
+        ? `public, max-age=${cacheSeconds}`
+        : undefined,
+    })
+  );
 }
 
-/** Generate a public https URL from an s3://bucket/key URI (no auth) */
+/** Generate public URL from s3://bucket/key */
 function httpUrlFromS3Uri(s3uri, region = "") {
   const m = String(s3uri || "").match(/^s3:\/\/([^/]+)\/(.+)$/i);
   if (!m) return s3uri || "";
   const [, bucket, key] = m;
-  // use virtual-hosted style; add region if you want a region-specific endpoint
+
   return region
-    ? `https://${bucket}.s3.${region}.amazonaws.com/${encodeURIComponent(key).replace(/%2F/g, "/")}`
-    : `https://${bucket}.s3.amazonaws.com/${encodeURIComponent(key).replace(/%2F/g, "/")}`;
+    ? `https://${bucket}.s3.${region}.amazonaws.com/${encodeURIComponent(
+        key
+      ).replace(/%2F/g, "/")}`
+    : `https://${bucket}.s3.amazonaws.com/${encodeURIComponent(key).replace(
+        /%2F/g,
+        "/"
+      )}`;
 }
 
-/** Optional: make a short-lived signed URL (if objects are private) */
-function getSignedUrl(Bucket, Key, expires = 900 /* 15 min */) {
-  return s3.getSignedUrl("getObject", { Bucket, Key, Expires: expires });
+/** Signed URL (v3) */
+async function getSignedUrlForS3(Bucket, Key, expires = 900) {
+  return await getSignedUrl(
+    s3,
+    new GetObjectCommand({ Bucket, Key }),
+    { expiresIn: expires }
+  );
 }
 
 module.exports = {
   readJsonFromS3,
   putJsonToS3,
   httpUrlFromS3Uri,
-  getSignedUrl,
+  getSignedUrlForS3,
 };

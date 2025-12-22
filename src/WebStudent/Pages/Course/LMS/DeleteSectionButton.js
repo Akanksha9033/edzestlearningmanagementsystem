@@ -1,68 +1,8 @@
-// // components/DeleteSectionButton.js
-// import React from "react";
-// import axios from "axios";
-// import { useNavigate } from "react-router-dom";
-
-// const REACT_APP_API_URL = process.env.REACT_APP_API_URL;
-
-// const DeleteSectionButton = ({ courseId, sectionId, onDeleted, className = "", children }) => {
-//   const navigate = useNavigate();
-
-//   const handleDelete = async () => {
-//     const confirmDelete = window.confirm("Are you sure you want to delete this section and all its lessons?");
-//     if (!confirmDelete) return;
-
-//     try {
-//       const token = localStorage.getItem("token");
-//       await axios.delete(`${REACT_APP_API_URL}/api/courses/${courseId}/section/${sectionId}`, {
-//         headers: { Authorization: `Bearer ${token}` },
-//       });
-
-//       alert("✅ Section deleted successfully.");
-//       if (onDeleted) {
-//         onDeleted(); // parent can handle UI updates
-//       } else {
-//         navigate(`/course/${courseId}`);
-//       }
-//     } catch (err) {
-//       console.error("❌ Failed to delete section:", err);
-//       alert("Failed to delete section.");
-//     }
-//   };
-
-//   return (
-//     <button className={`btn btn-outline-danger ${className}`} onClick={handleDelete}>
-//       {children || "Delete Section"}
-//     </button>
-//   );
-// };
-
-// export default DeleteSectionButton;
-
-
-
-
 // components/DeleteEntityButton.js
-import React from "react";
-import axios from "axios";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-
-// ✅ use centralized API wrapper
-// ✅ correct
 import API from "../../../../LoginSystem/axios";
 
-
-/**
- * Generic delete button for course/section/lesson.
- *
- * Props:
- * - deleteType: "course" | "section" | "lesson"   (default: "section")
- * - courseId:   required for all three
- * - sectionId:  required for section and lesson
- * - lessonId:   required for lesson
- * - onDeleted:  optional callback after success
- * - className, children: UI overrides
- */
 export default function DeleteEntityButton({
   deleteType = "section",
   courseId,
@@ -73,13 +13,22 @@ export default function DeleteEntityButton({
   children,
 }) {
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
 
-  
-  // Try a list of endpoints in order until one succeeds (2xx/204)
+  /* ---------------- Helpers ---------------- */
+
+  // Treat ONLY the "unassigned" bucket (with optional suffix) as virtual
+  const isVirtualUnassigned = (sid) => {
+    const s = String(sid || "").trim().toLowerCase();
+    // matches: "unassigned", "unassigned-xxxx", "unassigned_xxxx"
+    return /^unassigned(?:[-_].+)?$/.test(s);
+  };
+
+  // Try a list of endpoints in order until one succeeds (2xx)
   const tryDeleteInOrder = async (urls) => {
     let lastErr;
     for (const url of urls) {
-       try {
+      try {
         await API.delete(url);
         return true;
       } catch (err) {
@@ -90,77 +39,96 @@ export default function DeleteEntityButton({
     return false;
   };
 
-  // ----- Verify helpers (best-effort) -----
+  /* ---------------- Verifiers (best-effort) ---------------- */
 
   const verifyCourseGone = async (cid) => {
     try {
-      await API.get(`/api/courses/${cid}`);
-      // GET worked => still exists
-      return false;
+      await API.get(`/api/courses/${encodeURIComponent(cid)}`);
+      return false; // still exists
     } catch (err) {
-      return err?.response?.status === 404; // 404 => gone
+      return err?.response?.status === 404;
     }
   };
 
   const verifySectionGoneFromCourse = async (cid, sid) => {
+    if (isVirtualUnassigned(sid)) return true; // nothing real to verify
+
     try {
-       const res = await API.get(`/api/courses/${cid}`);
-      const course = res?.data?.course || res?.data;
-      const stillThere =
-        Array.isArray(course?.sections) &&
-        course.sections.some((s) => String(s?._id) === String(sid));
-      return !stillThere;
+      // Direct probe
+      await API.get(
+        `/api/courses/${encodeURIComponent(cid)}/section/${encodeURIComponent(sid)}`
+      );
+      return false; // 200 => still exists
     } catch (err) {
-      // 404 => course gone; treat section as gone
-      return err?.response?.status === 404;
+      if (err?.response?.status === 404) return true;
+
+      // Fallback: check via course payload
+      try {
+        const res = await API.get(`/api/courses/${encodeURIComponent(cid)}`);
+        const course = res?.data?.course || res?.data;
+        if (!Array.isArray(course?.sections)) return true;
+        const stillThere = course.sections.some(
+          (s) => String(s?._id) === String(sid)
+        );
+        return !stillThere;
+      } catch {
+        // If fallback fails (network/etc.), assume gone to avoid noisy warnings
+        return true;
+      }
     }
   };
 
   const verifyLessonGoneFromCourse = async (cid, sid, lid) => {
     try {
-      const res = await API.get(`/api/courses/${cid}`);
+      const res = await API.get(`/api/courses/${encodeURIComponent(cid)}`);
       const course = res?.data?.course || res?.data;
       const sec = (course?.sections || []).find(
         (s) => String(s?._id) === String(sid)
       );
-      if (!sec) return true; // section gone => lesson effectively gone
+      if (!sec) return true; // section already gone
       const stillThere =
         (sec.lessons || []).some((l) => String(l?._id) === String(lid));
       return !stillThere;
     } catch (err) {
-      // 404 => course gone; treat lesson as gone
       return err?.response?.status === 404;
     }
   };
 
-  // ----- Delete flows -----
+  /* ---------------- Delete flows ---------------- */
 
   const deleteCourse = async () => {
     if (!courseId) {
       alert("Course ID is missing.");
       return;
     }
-    const ok = window.confirm(
-      "This will permanently delete the entire course and all its sections/lessons. Continue?"
-    );
-    if (!ok) return;
+    if (
+      !window.confirm(
+        "This will permanently delete the entire course and all its sections/lessons. Continue?"
+      )
+    )
+      return;
 
-    await tryDeleteInOrder([
-      `/api/courses/${courseId}?hard=true`,
-      `/api/courses/${courseId}`,
-    ]);
+    setLoading(true);
+    try {
+      await tryDeleteInOrder([
+        `/api/courses/${encodeURIComponent(courseId)}?hard=true`,
+        `/api/courses/${encodeURIComponent(courseId)}`,
+      ]);
 
-    const gone = await verifyCourseGone(courseId);
-    if (!gone) {
-      alert(
-        "The course was removed from the UI, but it still appears to exist in the database. Please check server deletion."
-      );
-    } else {
-      alert("✅ Course deleted successfully.");
+      const gone = await verifyCourseGone(courseId);
+      if (!gone) {
+        alert(
+          "The course was removed from the UI, but it still appears to exist in the database. Please check server deletion."
+        );
+      } else {
+        alert("✅ Course deleted successfully.");
+      }
+
+      if (typeof onDeleted === "function") onDeleted();
+      else navigate(`/courses`);
+    } finally {
+      setLoading(false);
     }
-
-    if (typeof onDeleted === "function") onDeleted();
-    else navigate(`/courses`);
   };
 
   const deleteSection = async () => {
@@ -168,28 +136,44 @@ export default function DeleteEntityButton({
       alert("Course ID or Section ID is missing.");
       return;
     }
-    const ok = window.confirm(
-      "Are you sure you want to delete this section and all its lessons?"
-    );
-    if (!ok) return;
 
-    await tryDeleteInOrder([
-      `/api/courses/${courseId}/section/${sectionId}?hard=true`,
-      `/api/courses/sections/${sectionId}?hard=true`,
-      `/api/courses/${courseId}/section/${sectionId}`,
-    ]);
-
-    const gone = await verifySectionGoneFromCourse(courseId, sectionId);
-    if (!gone) {
+    if (isVirtualUnassigned(sectionId)) {
       alert(
-        "The section was removed from the UI, but it still appears to exist in the database. Please check server deletion."
+        "“Unassigned” is a virtual section. It can’t be deleted. Please move or delete the lessons inside it."
       );
-    } else {
-      alert("✅ Section deleted successfully.");
+      return;
     }
 
-    if (typeof onDeleted === "function") onDeleted();
-    else navigate(`/course/${courseId}`);
+    if (
+      !window.confirm(
+        "Are you sure you want to delete this section and all its lessons?"
+      )
+    )
+      return;
+
+    setLoading(true);
+    try {
+      await tryDeleteInOrder([
+        `/api/courses/${encodeURIComponent(courseId)}/section/${encodeURIComponent(sectionId)}?hard=true`,
+        `/api/courses/${encodeURIComponent(courseId)}/sections/${encodeURIComponent(sectionId)}?hard=true`,
+        `/api/courses/sections/${encodeURIComponent(sectionId)}?hard=true`,
+        `/api/courses/${encodeURIComponent(courseId)}/section/${encodeURIComponent(sectionId)}`,
+      ]);
+
+      const gone = await verifySectionGoneFromCourse(courseId, sectionId);
+      if (!gone) {
+        alert(
+          "The section was removed from the UI, but it still appears to exist in the database. Please check server deletion."
+        );
+      } else {
+        alert("✅ Section deleted successfully.");
+      }
+
+      if (typeof onDeleted === "function") onDeleted(sectionId);
+      else navigate(0); // Hard refresh as safe default
+    } finally {
+      setLoading(false);
+    }
   };
 
   const deleteLesson = async () => {
@@ -197,25 +181,36 @@ export default function DeleteEntityButton({
       alert("Course/Section/Lesson ID is missing.");
       return;
     }
-    const ok = window.confirm("Delete this lesson permanently?");
-    if (!ok) return;
+    if (!window.confirm("Delete this lesson permanently?")) return;
 
-   await tryDeleteInOrder([
-      `/api/courses/lessons/${lessonId}`,
-      `/api/lessons/${lessonId}`,
-    ]);
+    setLoading(true);
+    try {
+      await tryDeleteInOrder([
+        `/api/courses/${encodeURIComponent(courseId)}/lessons/${encodeURIComponent(lessonId)}`,
+        `/api/courses/${encodeURIComponent(courseId)}/sections/${encodeURIComponent(sectionId)}/lessons/${encodeURIComponent(lessonId)}`,
+        `/api/courses/lessons/${encodeURIComponent(lessonId)}`,
+        `/api/lessons/${encodeURIComponent(lessonId)}`,
+        `/api/courses/${encodeURIComponent(courseId)}/lesson/${encodeURIComponent(lessonId)}`,
+      ]);
 
-    const gone = await verifyLessonGoneFromCourse(courseId, sectionId, lessonId);
-    if (!gone) {
-      alert(
-        "The lesson was removed from the UI, but it still appears to exist in the database. Please check server deletion."
+      const gone = await verifyLessonGoneFromCourse(
+        courseId,
+        sectionId,
+        lessonId
       );
-    } else {
-      alert("✅ Lesson deleted.");
-    }
+      if (!gone) {
+        alert(
+          "The lesson was removed from the UI, but it still appears to exist in the database. Please check server deletion."
+        );
+      } else {
+        alert("✅ Lesson deleted.");
+      }
 
-    if (typeof onDeleted === "function") onDeleted();
-    else navigate(0); // safe default refresh
+      if (typeof onDeleted === "function") onDeleted();
+      else navigate(0);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleDelete = async () => {
@@ -228,6 +223,7 @@ export default function DeleteEntityButton({
       const msg =
         err?.response?.data?.message || err?.message || "Delete failed.";
       alert(msg);
+      setLoading(false);
     }
   };
 
@@ -240,8 +236,13 @@ export default function DeleteEntityButton({
       : "Delete Section");
 
   return (
-    <button className={className} onClick={handleDelete} title={label}>
-      {label}
+    <button
+      className={className}
+      onClick={handleDelete}
+      title={label}
+      disabled={loading}
+    >
+      {loading ? `${label}…` : label}
     </button>
   );
 }

@@ -1,17 +1,32 @@
 // --------------------------------------------------------------
 // 📦 Imports and Setup
 // --------------------------------------------------------------
-const express = require("express");
-const { ddb } = require("../../../../../Services/aws/dynamo");
-const { getById, getBySlug } = require("./repo");
-const { authAccess, requireRoles } = require("../../../../../middleware/auth");
-const { s3 } = require("../../../../../Services/aws/s3");
 
+// Express router setup
+const express = require("express");
+
+// DynamoDB v3 wrapper (DocumentClient)
+const { ddb } = require("../../../../../Services/aws/dynamo");
+const { QueryCommand, ScanCommand } = require("@aws-sdk/lib-dynamodb");
+
+// Repo helpers to fetch mock tests from DB
+const { getById, getBySlug } = require("./repo");
+
+// Auth middlewares
+const { authAccess, requireRoles } = require("../../../../../middleware/auth");
+
+// AWS SDK v3 S3 client + GetObjectCommand
+const { s3, GetObjectCommand } = require("../../../../../Services/aws/s3");
+
+// DynamoDB table name (fallback to "MockTests")
 const MOCKTESTS_TABLE = process.env.MOCKTESTS_TABLE || "MockTests";
 
+// --------------------------------------------------------------
+// Helper: Ensure bucket is configured
+// --------------------------------------------------------------
 function mustHaveBucket() {
   if (!process.env.S3_BUCKET) {
-    const err = new Error("S3_BUCKET env not set");
+    const err = new Error("S3_BUCKET env not set"); // Custom error
     err.status = 500;
     throw err;
   }
@@ -19,29 +34,43 @@ function mustHaveBucket() {
 
 const router = express.Router();
 
-// 🔧 Helper: read parsed.json for a mock test
+// --------------------------------------------------------------
+// 🔧 Helper: Read parsed.json (SDK v3) for given mockTestId
+// --------------------------------------------------------------
 async function getParsed(mockTestId) {
-  mustHaveBucket();
+  mustHaveBucket(); // Ensure bucket exists
+
   const Key = `mocktests/${mockTestId}/parsed.json`;
-  const r = await s3.getObject({ Bucket: process.env.S3_BUCKET, Key }).promise();
-  return JSON.parse(r.Body.toString("utf-8")); // { rows, summary }
+
+  // Fetch object from S3
+  const res = await s3.send(
+    new GetObjectCommand({
+      Bucket: process.env.S3_BUCKET,
+      Key,
+    })
+  );
+
+  // Read text from S3 stream
+  const text = await res.Body.transformToString();
+
+  return JSON.parse(text); // return { rows, summary }
 }
 
-/**
- * ============================================================
- * 📌 GET /api/admin/mocktests/:mockTestId
- * ------------------------------------------------------------
- * Fetch a mock test (header) by ID
- * ============================================================
- */
+// --------------------------------------------------------------
+// 📌 GET: Get mock test by ID
+// Route: /api/admin/mocktests/:mockTestId
+// --------------------------------------------------------------
 router.get(
   "/:mockTestId",
   authAccess,
   requireRoles(["SuperAdmin", "Admin", "Teacher"]),
   async (req, res) => {
     try {
+      // Fetch from DynamoDB
       const item = await getById(req.params.mockTestId);
+
       if (!item) return res.status(404).json({ error: "Not found" });
+
       res.json(item);
     } catch (e) {
       res.status(500).json({ error: e.message });
@@ -49,10 +78,10 @@ router.get(
   }
 );
 
-/**
- * 📌 GET /api/admin/mocktests/by-slug/:slug
- * Fetch a mock test by its unique slug
- */
+// --------------------------------------------------------------
+// 📌 GET: Get mock test by slug
+// Route: /api/admin/mocktests/by-slug/:slug
+// --------------------------------------------------------------
 router.get(
   "/by-slug/:slug",
   authAccess,
@@ -60,9 +89,13 @@ router.get(
   async (req, res) => {
     try {
       const slug = String(req.params.slug || "").trim().toLowerCase();
+
       if (!slug) return res.status(400).json({ error: "slug is required" });
+
       const item = await getBySlug(slug);
+
       if (!item) return res.status(404).json({ error: "Not found" });
+
       res.json(item);
     } catch (e) {
       res.status(500).json({ error: e.message });
@@ -70,10 +103,10 @@ router.get(
   }
 );
 
-/**
- * 📌 GET /api/admin/mocktests/:mockTestId/questions/outline
- * Return a lightweight outline (index/id/title/options) for the sidebar.
- */
+// --------------------------------------------------------------
+// 📌 GET: Outline of questions
+// Route: /api/admin/mocktests/:mockTestId/questions/outline
+// --------------------------------------------------------------
 router.get(
   "/:mockTestId/questions/outline",
   authAccess,
@@ -81,18 +114,21 @@ router.get(
   async (req, res) => {
     try {
       const { mockTestId } = req.params;
+
+      // load parsed.json → rows + summary
       const { rows = [], summary = {} } = await getParsed(mockTestId);
 
+      // Create a small outline preview for UI
       const outline = rows.map((q, i) => ({
-        i,
+        i, // index
         id: q.id || `q_${i + 1}`,
-        // Prefer canonical 'question' from the new parser; fall back to older aliases if present
-        title: String(q.question || q.questionText || q.text || "").slice(0, 140),
+        title: String(q.question || q.questionText || q.text || "").slice(0, 140), // short preview
         options: Array.isArray(q.options) ? q.options.slice(0, 4) : [],
       }));
 
       res.json({ outline, total: rows.length, summary });
     } catch (e) {
+      // If file not found → return empty safely
       if (e && (e.code === "NoSuchKey" || e.code === "NotFound")) {
         return res.json({ outline: [], total: 0, summary: {} });
       }
@@ -101,10 +137,10 @@ router.get(
   }
 );
 
-/**
- * 📌 GET /api/admin/mocktests/:mockTestId/questions/:index
- * Return a single question by index + meta (index/total/summary).
- */
+// --------------------------------------------------------------
+// 📌 GET: Single Question by index
+// Route: /api/admin/mocktests/:mockTestId/questions/:index
+// --------------------------------------------------------------
 router.get(
   "/:mockTestId/questions/:index",
   authAccess,
@@ -113,8 +149,10 @@ router.get(
     try {
       const { mockTestId, index } = req.params;
       const idx = Number(index);
+
       const { rows = [], summary = {} } = await getParsed(mockTestId);
 
+      // Check if index is valid
       if (!Number.isInteger(idx) || idx < 0 || idx >= rows.length) {
         return res.status(404).json({ error: "Question index out of range" });
       }
@@ -123,7 +161,7 @@ router.get(
         index: idx,
         total: rows.length,
         summary,
-        question: rows[idx], // contains question, options, answer, section, difficulty, marks, etc.
+        question: rows[idx],
       });
     } catch (e) {
       if (e && (e.code === "NoSuchKey" || e.code === "NotFound")) {
@@ -134,10 +172,10 @@ router.get(
   }
 );
 
-/**
- * 📌 GET /api/admin/mocktests/:mockTestId/questions
- * Return the full parsed payload { rows, summary } from S3.
- */
+// --------------------------------------------------------------
+// 📌 GET: All questions (raw parsed.json)
+// Route: /api/admin/mocktests/:mockTestId/questions
+// --------------------------------------------------------------
 router.get(
   "/:mockTestId/questions",
   authAccess,
@@ -145,23 +183,26 @@ router.get(
   async (req, res) => {
     try {
       const { mockTestId } = req.params;
-      const data = await getParsed(mockTestId); // reuse helper
+
+      const data = await getParsed(mockTestId); // fetch full rows + summary
+
       res.json(data);
     } catch (e) {
       console.error("fetch questions error:", e);
+
       if (e && (e.code === "NoSuchKey" || e.code === "NotFound")) {
         return res.status(404).json({ error: "Questions not found" });
       }
+
       res.status(500).json({ error: "Failed to load questions" });
     }
   }
 );
 
-/**
- * 📌 GET /api/admin/mocktests
- * Optional filters: instituteId
- * (Query GSI when instituteId provided, otherwise scan with a reasonable cap)
- */
+// --------------------------------------------------------------
+// 📌 GET: List all mock tests (with optional filter)
+// Route: /api/admin/mocktests?instituteId=xxx
+// --------------------------------------------------------------
 router.get(
   "/",
   authAccess,
@@ -171,7 +212,9 @@ router.get(
       const { instituteId } = req.query;
 
       let result;
+
       if (instituteId) {
+        // Use GSI_Institute index to fetch mock tests for specific institute
         result = await ddb
           .query({
             TableName: MOCKTESTS_TABLE,
@@ -181,7 +224,13 @@ router.get(
           })
           .promise();
       } else {
-        result = await ddb.scan({ TableName: MOCKTESTS_TABLE, Limit: 200 }).promise();
+        // Full scan (limited to 200 items)
+        result = await ddb
+          .scan({
+            TableName: MOCKTESTS_TABLE,
+            Limit: 200,
+          })
+          .promise();
       }
 
       res.json(result.Items || []);
