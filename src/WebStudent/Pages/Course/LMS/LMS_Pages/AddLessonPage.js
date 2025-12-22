@@ -7,9 +7,19 @@ import LessonTitleInput from "../LessonTitleInput";
 import LessonUploadArea from "../LessonUploadArea";
 import DeleteSectionButton from "../DeleteSectionButton";
 import ArticleEditor from "../ArticleEditor";
+import QLesson from "../../../../../WebStudent/Pages/Course/LMS/LessonRenderer/QLesson";
 
 import { createZoomMeeting } from "../../../../../utils/zoomApi";
 import API from "../../../../../LoginSystem/axios";
+
+const _chk = (name, C) => console.log(`[AddLessonPage] ${name}:`, typeof C);
+
+_chk("LessonPreview", LessonPreview);
+_chk("LessonTitleInput", LessonTitleInput);
+_chk("LessonUploadArea", LessonUploadArea);
+_chk("DeleteSectionButton", DeleteSectionButton);
+_chk("ArticleEditor", ArticleEditor);
+
 
 const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
@@ -215,17 +225,30 @@ async function resolveSignedUrl(key) {
         setTitle(lesson.title || "");
         setDuration(lesson.duration || 0);
 
-        if (lesson.videoKey) {
-          try {
-            const s = await fetch(`${API_BASE}/api/media/sign?key=${encodeURIComponent(lesson.videoKey)}`);
-            const { url } = await s.json();
-            setFileUrl(url);
-            dbg("signed video url", { key: lesson.videoKey, url });
-          } catch (e) {
-            dbgw("sign video url failed", e?.message);
-            setFileUrl("");
-          }
-        } else if (lesson.fileKey) {
+       if (lesson.videoKey) {
+  try {
+    const s = await fetch(`${API_BASE}/api/media/sign?key=${encodeURIComponent(lesson.videoKey)}`);
+    const { url } = await s.json();
+    setFileUrl(url);
+    setVideoKey(lesson.videoKey); // ✅ restore videoKey so Save works
+    dbg("signed video url", { key: lesson.videoKey, url });
+  } catch (e) {
+    dbgw("sign video url failed", e?.message);
+    setFileUrl("");
+  }
+} else if (lesson.fileKey) {
+  try {
+    const s = await fetch(`${API_BASE}/api/media/sign?key=${encodeURIComponent(lesson.fileKey)}`);
+    const { url } = await s.json();
+    setFileUrl(url);
+    setFileKey(lesson.fileKey); // ✅ restore fileKey so Save works for PDFs/others
+    dbg("signed file url", { key: lesson.fileKey, url });
+  } catch (e) {
+    dbgw("sign file url failed", e?.message);
+    setFileUrl("");
+  }
+}
+ else if (lesson.fileKey) {
           try {
             const s = await fetch(`${API_BASE}/api/media/sign?key=${encodeURIComponent(lesson.fileKey)}`);
             const { url } = await s.json();
@@ -286,7 +309,7 @@ async function resolveSignedUrl(key) {
     const isLive = lower === "live";
     const isOtherFile = ["slides", "audio", "assignment", "scorm/tincan"].includes(lower);
     const isExternal = lower === "external link";
-    const isQuiz = lower === "section quiz";
+    const isQuiz = lower === "quiz"; // ✅ keep as-is
 
     dbg("save click", {
       courseId, sectionId, lessonId, createUsingUrlId,
@@ -365,9 +388,10 @@ async function resolveSignedUrl(key) {
       if (!fileUrl) return alert("Please provide an external link URL.");
       payload.fileUrl = fileUrl;
     } else if (isQuiz) {
-      if (!fileKey) return alert("Please upload a quiz file to S3.");
-      payload.fileKey = fileKey;
-    }
+  // ✅ Skip file uploads for quizzes; handled in QLesson
+  return alert("Use the Quiz Builder below to add and save quiz questions.");
+}
+
 
     try {
       setSaving(true);
@@ -419,6 +443,19 @@ async function resolveSignedUrl(key) {
   };
 
   const currentType = (typeParam || lessonType || "").toString();
+// ✅ If this is a Quiz lesson → render QLesson instead of default form
+if (["quiz", "section quiz"].includes(currentType.toLowerCase().trim())) {
+  return (
+    <div className="container py-4">
+      <QLesson
+        courseId={courseId}
+        sectionId={sectionId}
+        title={title}
+        navigate={navigate}
+      />
+    </div>
+  );
+}
 
   return (
     <div className="container py-4">
@@ -583,18 +620,27 @@ async function resolveSignedUrl(key) {
           >
             Cancel
           </button>
-          <button
-            className="btn btn-success"
-            disabled={
-              saving ||
-              !title ||
-              (currentType.toLowerCase().trim() === "video" && !videoKey) ||
-              (currentType.toLowerCase().trim() === "pdf" && !fileKey)
-            }
-            onClick={handleSave}
-          >
-            {saving ? "Saving..." : "Save Lesson"}
-          </button>
+         <button
+  className="btn btn-success"
+  disabled={
+    saving ||
+    !title ||
+    (
+      currentType.toLowerCase().trim() === "video" &&
+      !videoKey &&
+      !fileUrl // ✅ allow existing video
+    ) ||
+    (
+      currentType.toLowerCase().trim() === "pdf" &&
+      !fileKey &&
+      !fileUrl // ✅ allow existing PDF
+    )
+  }
+  onClick={handleSave}
+>
+  {saving ? "Saving..." : "Save Lesson"}
+</button>
+
         </div>
       )}
     </div>

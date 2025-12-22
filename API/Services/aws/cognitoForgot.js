@@ -1,37 +1,4 @@
-// // Services/aws/cognitoForgot.js
-// const { CognitoIdentityProviderClient, ForgotPasswordCommand, ConfirmForgotPasswordCommand } =
-//   require("@aws-sdk/client-cognito-identity-provider");
 
-// const REGION = process.env.COGNITO_REGION;
-// const CLIENT_ID = process.env.COGNITO_APP_CLIENT_ID;
-
-// const cip = new CognitoIdentityProviderClient({ region: REGION });
-
-// async function startForgotPassword(username) {
-//   const cmd = new ForgotPasswordCommand({
-//     ClientId: CLIENT_ID,
-//     Username: username, // can be email if your username = email
-//   });
-//   return await cip.send(cmd);
-// }
-
-// async function confirmForgotPassword({ username, code, newPassword }) {
-//   const cmd = new ConfirmForgotPasswordCommand({
-//     ClientId: CLIENT_ID,
-//     Username: username,
-//     ConfirmationCode: code,
-//     Password: newPassword,
-//   });
-//   return await cip.send(cmd);
-// }
-
-// module.exports = { startForgotPassword, confirmForgotPassword };
-
-
-
-
-// Services/aws/cognitoForgot.js
-// CommonJS version (matches your project). Computes SecretHash *only if* a client secret is configured.
 
 const crypto = require("crypto");
 const {

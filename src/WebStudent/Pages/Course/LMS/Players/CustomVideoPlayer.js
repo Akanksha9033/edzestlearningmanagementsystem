@@ -1,100 +1,172 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import Hls from "hls.js";
-import API from '../../../../../LoginSystem/axios';
-import { putLessonProgress } from '../../../../../utils/ProgressApi';
+import {
+  putLessonProgress,
+  getLessonProgress,
+} from "../../../../../utils/ProgressApi";
+
 export default function CustomVideoPlayer({
   src,
   autoPlay = true,
   poster,
   lessonId,
   courseSlug,
-  fullscreenTargetRef,
-  onEnded,       // parent ko call karna ho to
-  onProgress,    // NEW: parent ko live percent dena (UI ring refresh)
+  onEnded,
+  onProgress,
 }) {
   const videoRef = useRef(null);
+  const hlsRef = useRef(null);
+
   const [duration, setDuration] = useState(0);
   const [localPct, setLocalPct] = useState(0);
-
-  // unique watched seconds (seek/rewind safe)
+  const [resumeMsg, setResumeMsg] = useState("");
   const watched = useRef(new Set());
-  const lastSentPct = useRef(0); // 0, 50, 95, 100 checkpoints
+  const lastSentPct = useRef(0);
+  const debounceTimer = useRef(null);
 
-  // mount: HLS attach / normal src
+  /** ---------------------------------------------
+   *  🔥 HLS OR MP4 AUTO DETECT + ATTACH
+   *  (fully fixed for AWS long filenames)
+   * --------------------------------------------- */
   useEffect(() => {
     const video = videoRef.current;
-    if (!video) return;
+    if (!video || !src) return;
 
     let hls;
-    const attach = () => {
-      if (src && Hls.isSupported() && /\.m3u8($|\?)/i.test(src)) {
-        hls = new Hls({ autoStartLoad: true });
-        hls.loadSource(src);
-        hls.attachMedia(video);
-      } else if (src) {
-        video.src = src;
-      }
-      if (autoPlay) {
-        video.play().catch(() => {});
-      }
-    };
 
-    attach();
+    // ⭐ FIXED HLS DETECTION
+    const isHls = src.includes(".m3u8");
+
+    if (Hls.isSupported() && isHls) {
+      hls = new Hls({ autoStartLoad: true });
+      hls.loadSource(src);
+      hls.attachMedia(video);
+      hlsRef.current = hls;
+    } else {
+      video.src = src;
+      video.load();
+    }
+
+    if (autoPlay) video.play().catch(() => {});
     return () => {
-      if (hls) {
-        hls.destroy();
-      }
+      if (hls) hls.destroy();
     };
   }, [src, autoPlay]);
 
+  /* 🧠 Resume from backend (accurate seek) */
+  useEffect(() => {
+    if (!lessonId) return;
+    const v = videoRef.current;
+    if (!v) return;
+    let resumed = false;
+    let attempts = 0;
+
+    const fetchAndSeek = async () => {
+      try {
+        const local = JSON.parse(
+          localStorage.getItem(`videoProgress_${lessonId}`) || "{}"
+        );
+        const data = await getLessonProgress(lessonId);
+
+        let resumeTime = 0;
+        if (Number(data?.watchedSeconds) > 0)
+          resumeTime = Number(data.watchedSeconds);
+        else if (Number(local?.current) > 0)
+          resumeTime = Number(local.current);
+
+        if (data?.percent >= 100 && resumeTime === 0)
+          resumeTime = Number(local?.current || 0);
+
+        const safeResume = Math.max(
+          0,
+          Math.min(resumeTime - 0.5, (v.duration || 9999) - 1)
+        );
+
+        const trySeekAccurate = () => {
+          if (resumed) return;
+          attempts++;
+          if (v.readyState >= 2 && v.duration > 0 && safeResume > 0) {
+            v.currentTime = safeResume;
+            resumed = true;
+            console.log(`🎯 Resumed from ${safeResume.toFixed(2)}s`);
+            setResumeMsg(
+              `▶️ Resumed from ${Math.floor(safeResume / 60)}:${String(
+                Math.floor(safeResume % 60)
+              ).padStart(2, "0")}`
+            );
+            setTimeout(() => setResumeMsg(""), 2500);
+            setTimeout(() => v.play().catch(() => {}), 200);
+          } else if (attempts < 20) {
+            setTimeout(trySeekAccurate, 250);
+          }
+        };
+
+        v.addEventListener("loadedmetadata", trySeekAccurate);
+        setTimeout(trySeekAccurate, 600);
+      } catch (err) {
+        console.warn("⚠️ getLessonProgress failed:", err?.message || err);
+      }
+    };
+
+    fetchAndSeek();
+  }, [lessonId, src]);
+
+  /* detect duration */
   const onLoaded = useCallback(() => {
     const d = Math.floor(videoRef.current?.duration || 0);
     setDuration(d);
   }, []);
 
-  // compute & maybe send progress
-  const handleTimeUpdate = useCallback(async () => {
+  /* 🧮 progress tracking all fix*/
+  const handleTimeUpdate = useCallback(() => {
     const v = videoRef.current;
     if (!v) return;
-    const d = Math.floor(v.duration || duration || 0);
+    const d = Math.floor(v.duration || 0);
     const t = Math.floor(v.currentTime || 0);
     if (!d) return;
 
-    // mark watched second
     watched.current.add(Math.max(0, Math.min(t, d)));
-
-    // compute unique % watched
     const pct = Math.round((watched.current.size / Math.max(d, 1)) * 100);
     setLocalPct(pct);
-    onProgress?.(pct); // parent UI ko live % do
+    onProgress?.(pct);
 
-    // server checkpoints: 50%, 95%, ended (100)
-    const shouldSend50 = pct >= 50 && lastSentPct.current < 50;
-    const shouldSend95 = pct >= 95 && lastSentPct.current < 95;
+    // store locally
+    localStorage.setItem(
+      `videoProgress_${lessonId}`,
+      JSON.stringify({ current: v.currentTime, duration: d })
+    );
 
-    if (shouldSend50 || shouldSend95) {
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    debounceTimer.current = setTimeout(async () => {
       try {
-        await putLessonProgress({
-          lessonId,
-          courseSlug,
-          watchedSeconds: watched.current.size,
-          duration: d,
-          percent: pct,
-        });
-        lastSentPct.current = shouldSend95 ? 95 : 50;
+        const send50 = pct >= 50 && lastSentPct.current < 50;
+        const send95 = pct >= 95 && lastSentPct.current < 95;
+        if (send50 || send95) {
+          await putLessonProgress({
+            lessonId,
+            courseSlug,
+            watchedSeconds: v.currentTime,
+            duration: d,
+            percent: pct,
+          });
+          lastSentPct.current = send95 ? 95 : 50;
+          console.log("✅ Progress updated:", pct);
+        }
       } catch (e) {
-        // ignore network blips
+        console.warn("⚠️ Progress update failed", e);
       }
-    }
-  }, [courseSlug, lessonId, duration, onProgress]);
+    }, 3000);
+  }, [courseSlug, lessonId, onProgress]);
 
+  /* ended → 100% */
   const handleEnded = useCallback(async () => {
     const v = videoRef.current;
-    const d = Math.floor(v?.duration || duration || 0);
-    // force 100
+    if (!v) return;
+    const d = Math.floor(v.duration || 0);
     watched.current = new Set(Array.from({ length: d }, (_, i) => i + 1));
     setLocalPct(100);
     onProgress?.(100);
+    localStorage.removeItem(`videoProgress_${lessonId}`);
 
     try {
       await putLessonProgress({
@@ -106,25 +178,78 @@ export default function CustomVideoPlayer({
         completed: true,
       });
       lastSentPct.current = 100;
-    } catch (e) {}
+      console.log("🏁 Completed 100%");
+    } catch {}
     onEnded?.();
-  }, [courseSlug, lessonId, duration, onEnded, onProgress]);
+  }, [courseSlug, lessonId, onEnded, onProgress]);
+
+  /* cleanup */
+  useEffect(() => {
+    return () => {
+      clearTimeout(debounceTimer.current);
+      try {
+        hlsRef.current?.destroy();
+      } catch {}
+    };
+  }, []);
 
   return (
-    <div>
-      <video
-        ref={videoRef}
-        poster={poster}
-        controls
-        playsInline
-        onLoadedMetadata={onLoaded}
-        onTimeUpdate={handleTimeUpdate}
-        onEnded={handleEnded}
-        style={{ width: "100%", borderRadius: "10px" }}
-      />
-      <div style={{ fontSize: 12, color: "#777", marginTop: 6 }}>
-        ⏱ Duration: {Math.floor(duration / 60)}m {Math.round(duration % 60)}s • Watched: {localPct}%
+    <>
+      <div
+        style={{
+          position: "relative",
+          width: "100%",
+          aspectRatio: "16 / 9",
+          background: "#000",
+          borderRadius: 10,
+          overflow: "hidden",
+        }}
+      >
+        <video
+          ref={videoRef}
+          poster={poster}
+          controls
+          playsInline
+          preload="auto"
+          onLoadedMetadata={onLoaded}
+          onTimeUpdate={handleTimeUpdate}
+          onEnded={handleEnded}
+          style={{
+            width: "100%",
+            height: "100%",
+            objectFit: "contain",
+            backgroundColor: "#000",
+          }}
+        />
+
+        {resumeMsg && (
+          <div
+            style={{
+              position: "absolute",
+              bottom: 10,
+              left: 10,
+              background: "rgba(0,0,0,0.7)",
+              color: "#fff",
+              padding: "6px 12px",
+              borderRadius: 8,
+              fontSize: 13,
+              animation: "fadeinout 2.5s ease",
+            }}
+          >
+            {resumeMsg}
+          </div>
+        )}
       </div>
-    </div>
+
+      <div style={{ fontSize: 12, color: "#777", marginTop: 6 }}>
+        {duration > 0 ? (
+          <>
+            ⏱ Duration: {Math.floor(duration / 60)}m {Math.round(duration % 60)}s • Watched: {localPct}%
+          </>
+        ) : (
+          <>⏱ Detecting duration...</>
+        )}
+      </div>
+    </>
   );
 }

@@ -49,8 +49,20 @@ function forceInlineForS3Video(u = "") {
   return u;
 }
 
+/* ---------------- HLS SUPPORT ADDED HERE ---------------- */
+const S3 = "https://edzest-bucket.s3.ap-south-1.amazonaws.com/";
+
 function resolveVideoUrlCandidates(lesson, extra) {
-  return [
+  const arr = [];
+
+  // ⭐⭐⭐ Highest priority — HLS (m3u8)
+  if (lesson?.hlsKey) arr.push(S3 + lesson.hlsKey);
+
+  // ⭐ Second priority — raw MP4 S3 key
+  if (lesson?.videoKey) arr.push(S3 + lesson.videoKey);
+
+  // existing fallbacks (do not remove, keep exact order)
+  arr.push(
     pick(extra?.src),
     pick(extra?.videoUrl),
     pick(extra?.fileUrl),
@@ -67,7 +79,9 @@ function resolveVideoUrlCandidates(lesson, extra) {
     pick(lesson?.meta?.videoUrl),
     pick(lesson?.meta?.fileUrl),
     pick(lesson?.meta?.url),
-  ].filter(Boolean);
+  );
+
+  return arr.filter(Boolean);
 }
 
 /* ---------------- component ---------------- */
@@ -149,4 +163,4 @@ export default function VideoLesson({
       )}
     </div>
   );
-}
+} 

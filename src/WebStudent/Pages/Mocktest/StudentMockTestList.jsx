@@ -4,9 +4,20 @@ import API from "../../../LoginSystem/axios";
 import { useAuth } from "../../../LoginSystem/context/AuthContext";
 
 import {
-  Box, Typography, Stack, Card, CardActionArea, CardMedia, CardContent,
-  Chip, Button, CircularProgress
+  Box,
+  Typography,
+  Stack,
+  Card,
+  CardActionArea,
+  CardMedia,
+  CardContent,
+  Chip,
+  Button,
+  CircularProgress,
 } from "@mui/material";
+
+import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
+import PayNowButton from "../../../Shared/PayNowButton";
 
 /* unchanged */
 const resolveImageUrl = (raw) => {
@@ -25,13 +36,16 @@ export default function StudentMockTestList() {
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState([]);
 
-  // Auth gate (unchanged)
+  // ⭐ NEW → Store access for each mockTestId
+  const [accessMap, setAccessMap] = useState({});
+
+  // Auth guard
   useEffect(() => {
     if (!ready) return;
     if (!user) nav("/login", { replace: true });
   }, [ready, user, nav]);
 
-  // Fetch available mock tests (unchanged)
+  // Load mock tests
   useEffect(() => {
     if (!ready || !user) return;
     (async () => {
@@ -47,18 +61,38 @@ export default function StudentMockTestList() {
     })();
   }, [ready, user]);
 
-  // Keep existing behavior (unchanged function kept, not used below per your current logic)
-  const startOrResume = async (mockTestId) => {
+  // ⭐ NEW — Check access for each mock test
+  const checkAccessForAll = async () => {
     try {
-      const r = await API.post("/api/student/attempts", { mockTestId });
-      nav(`/student/exam/${r.data?.attemptId}`);
-    } catch (e) {
-      console.error(e);
-      alert("Could not start attempt");
+      const studentId = user?.sub || user?.id || user?.userId;
+      if (!studentId || items.length === 0) return;
+
+      const map = {};
+
+      for (const m of items) {
+        const productId = `MOCK_${m.mockTestId}`;
+
+        const res = await API.get("/api/payments/has-access", {
+          params: { userId: studentId, productId },
+        });
+
+        map[m.mockTestId] = res.data?.allowed || false;
+      }
+
+      setAccessMap(map);
+    } catch (err) {
+      console.error("Access check error:", err);
     }
   };
 
-  // Clicking the card or button -> Attempts page (unchanged)
+  // Recheck access when items loaded
+  useEffect(() => {
+    if (user && items.length > 0) {
+      checkAccessForAll();
+    }
+  }, [user, items]);
+
+  // Open attempts page
   const openAttemptsForMock = (mockTestId) => {
     nav(`/student/attempts/${mockTestId}`);
   };
@@ -92,11 +126,34 @@ export default function StudentMockTestList() {
         overscrollBehavior: "auto",
       }}
     >
+      {/* 🔙 Back Button */}
+      <Box sx={{ mb: 1 }}>
+        <Button
+          variant="text"
+          startIcon={<ArrowBackIosNewIcon />}
+          onClick={() => nav("/student/dashboard")}
+          sx={{
+            color: "#4748ac",
+            textTransform: "none",
+            fontWeight: 600,
+            px: 0,
+            minWidth: 0,
+            "&:hover": {
+              backgroundColor: "transparent",
+              textDecoration: "underline",
+            },
+          }}
+        >
+          Back to Dashboard
+        </Button>
+      </Box>
+
+      {/* Page heading */}
       <Typography variant="h5" fontWeight={800} mb={{ xs: 1.25, sm: 2 }}>
         Available Mock Tests
       </Typography>
 
-      {/* Responsive grid: 1 col on phones, auto-fit up to 320px cards */}
+      {/* Grid */}
       <Box
         sx={{
           display: "grid",
@@ -105,12 +162,17 @@ export default function StudentMockTestList() {
             sm: "repeat(2, minmax(0, 1fr))",
             md: "repeat(3, minmax(0, 1fr))",
           },
-          gap: 16, // 8px * 2
+          gap: 16,
         }}
       >
         {items.map((m) => {
           const img = resolveImageUrl(m.imageUrl || "");
-          const price = m.isFree ? "Free" : (m.price > 0 ? `₹${m.price}` : "Free");
+          const isPaid = !m.isFree && (m.price || 0) > 0;
+          const hasAccess = accessMap[m.mockTestId];
+
+          // ⭐ NEW → completes the requirement
+          const canOpen = !isPaid || hasAccess;
+
           return (
             <Card
               key={m.mockTestId}
@@ -123,8 +185,16 @@ export default function StudentMockTestList() {
                 overflow: "hidden",
               }}
             >
-              {/* Card click -> Attempts page */}
-              <CardActionArea onClick={() => openAttemptsForMock(m.mockTestId)} sx={{ alignItems: "stretch" }}>
+              {/* ⭐ UPDATED: block click until access */}
+              <CardActionArea
+                onClick={() => {
+                  if (canOpen) openAttemptsForMock(m.mockTestId);
+                }}
+                sx={{
+                  cursor: canOpen ? "pointer" : "not-allowed",
+                  opacity: canOpen ? 1 : 0.6,
+                }}
+              >
                 {img ? (
                   <CardMedia
                     component="img"
@@ -183,25 +253,36 @@ export default function StudentMockTestList() {
                     mt={0.75}
                     sx={{ wordBreak: "break-word" }}
                   >
-                    {price}
+                    {isPaid ? `₹${m.price}` : "Free"}
                   </Typography>
                 </CardContent>
               </CardActionArea>
 
-              {/* Button (kept same destination as your current code) */}
+              {/* ⭐ FINAL LOGIC → PAY OR START */}
               <Box px={2} pb={2} pt={0}>
-                <Button
-                  fullWidth
-                  variant="contained"
-                  onClick={() => openAttemptsForMock(m.mockTestId)}
-                  sx={{
-                    backgroundColor: "#4748ac",
-                    textTransform: "none",
-                    py: 1,
-                  }}
-                >
-                  Start / Resume
-                </Button>
+                {isPaid && !hasAccess ? (
+                  <PayNowButton
+                    userId={user?.sub || user?.id || user?.userId}
+                    productId={`MOCK_${m.mockTestId}`}
+                    productType="MOCKTEST"   
+                    amountPaise={(m.price || 0) * 100}
+                    label={`Pay ₹${m.price} to Unlock`}
+                    onSuccess={checkAccessForAll}
+                  />
+                ) : (
+                  <Button
+                    fullWidth
+                    variant="contained"
+                    onClick={() => openAttemptsForMock(m.mockTestId)}
+                    sx={{
+                      backgroundColor: "#4748ac",
+                      textTransform: "none",
+                      py: 1,
+                    }}
+                  >
+                    Start / Resume
+                  </Button>
+                )}
               </Box>
             </Card>
           );

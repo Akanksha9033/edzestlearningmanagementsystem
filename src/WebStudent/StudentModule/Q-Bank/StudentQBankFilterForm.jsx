@@ -8,6 +8,7 @@
 //   Box, Button, Select, MenuItem, TextField, InputLabel,
 //   FormControl, Typography, Alert, CircularProgress
 // } from "@mui/material";
+// import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew"; // ← added
 
 // export default function StudentQBankFilterForm() {
 //   const navigate = useNavigate();
@@ -22,27 +23,26 @@
 //   );
 
 //   // options
-// const [options, setOptions] = useState({
-//   tasks: [],                 // was: tags
-//   difficulty: [],
-//   questionType: [],
-//   performanceDomain: [],
-//   approach: [],
-//   exam: [],
-// });
+//   const [options, setOptions] = useState({
+//     tasks: [],                 // was: tags
+//     difficulty: [],
+//     questionType: [],
+//     performanceDomain: [],
+//     approach: [],
+//     exam: [],
+//   });
 
-// // form
-// const [form, setForm] = useState({
-//   task: "",                  // was: tags
-//   difficulty: "",
-//   questionType: "",
-//   performanceDomain: "",
-//   approach: "",
-//   exam: "",
-//   duration: 10,
-//   questionCount: 10,
-// });
-
+//   // form
+//   const [form, setForm] = useState({
+//     task: "",                  // was: tags
+//     difficulty: "",
+//     questionType: "",
+//     performanceDomain: "",
+//     approach: "",
+//     exam: "",
+//     duration: 10,
+//     questionCount: 10,
+//   });
 
 //   const [loading, setLoading] = useState(true);
 //   const [errMsg, setErrMsg] = useState("");
@@ -63,34 +63,26 @@
 //       setErrMsg("");
 //       try {
 //         const url = `/api/student/qbank/${bankId}/filters`;
-//         console.log("[QBankFilter] GET", url);
 //         const res = await API.get(url);
-//         console.log("[QBankFilter] Response:", res.status, res.data);
-
 //         const data = res.data || {};
 //         setOptions({
-//   tasks: data.tasks || data.tags || [],   // ✅ prefer tasks
-//   difficulty: data.difficulty || [],
-//   questionType: data.questionType || [],
-//   performanceDomain: data.performanceDomain || [],
-//   approach: data.approach || [],
-//   exam: data.exam || [],
-// });
-
+//           tasks: data.tasks || data.tags || [],   // prefer tasks
+//           difficulty: data.difficulty || [],
+//           questionType: data.questionType || [],
+//           performanceDomain: data.performanceDomain || [],
+//           approach: data.approach || [],
+//           exam: data.exam || [],
+//         });
 
 //         if (
-//           (!data.tags || data.tags.length === 0) &&
+//           (!(data.tasks || data.tags) || (data.tasks || data.tags).length === 0) &&
 //           (!data.difficulty || data.difficulty.length === 0) &&
 //           (!data.questionType || data.questionType.length === 0) &&
-//           (!data.performanceDomain || data.performanceDomain.length === 0) &&
-//           // don't block just because approach/exam are empty
-          
-//           true
+//           (!data.performanceDomain || data.performanceDomain.length === 0)
 //         ) {
 //           setErrMsg("No filter options returned by the server. (Check backend /:bankId/filters route and bankId match.)");
 //         }
 //       } catch (e) {
-//         console.error("[QBankFilter] Fetch error:", e);
 //         const msg = e?.response?.data?.error || e?.message || "Failed to load filters";
 //         setErrMsg(msg);
 //       } finally {
@@ -103,17 +95,15 @@
 
 //   const handleStart = async () => {
 //     try {
-//    const payload = {
-//   ...form,
-//   tasks: form.task || "",   // ✅ new
-//   tags:  form.task || "",   // ✅ mirror for legacy
-//   studentId: user?.sub || user?.id || user?.userId || "anonymous-student",
-// };
+//       const payload = {
+//         ...form,
+//         tasks: form.task || "",   // new
+//         tags:  form.task || "",   // mirror for legacy
+//         studentId: user?.sub || user?.id || user?.userId || "anonymous-student",
+//       };
 
 //       const url = `/api/student/qbank/${bankId}/session/create`;
-//       console.log("[QBankFilter] POST", url, payload);
 //       const res = await API.post(url, payload);
-//       console.log("[QBankFilter] Session:", res.status, res.data);
 
 //       navigate(`/student/qbank/session/${res.data.sessionId}`, {
 //         state: {
@@ -124,7 +114,6 @@
 //         },
 //       });
 //     } catch (e) {
-//       console.error("[QBankFilter] Create session error:", e);
 //       alert(e?.response?.data?.error || "Failed to start session");
 //     }
 //   };
@@ -139,6 +128,18 @@
 
 //   return (
 //     <Box sx={{ p: 3, maxWidth: 600, mx: "auto" }}>
+//       {/* Back to list */}
+//       <Box sx={{ mb: 1 }}>
+//         <Button
+//           variant="text"
+//           startIcon={<ArrowBackIosNewIcon />}
+//           onClick={() => navigate("/student/qbank")}
+//           sx={{ color: "#4748ac", textTransform: "none", fontWeight: 600, px: 0 }}
+//         >
+//           Back to Banks
+//         </Button>
+//       </Box>
+
 //       <Typography variant="h5" sx={{ mb: 3 }}>
 //         Choose Filters
 //       </Typography>
@@ -155,24 +156,76 @@
 //         </Box>
 //       ) : (
 //         <>
-//           {/* Topic/Tag */}
-//           <FormControl fullWidth sx={{ mb: 2 }}>
-//   <InputLabel id="task-label">Task</InputLabel>
-//   <Select
-//     labelId="task-label"
-//     label="Task"
-//     value={form.task}
-//     onChange={(e) => setForm((f) => ({ ...f, task: e.target.value }))}
-//   >
-//     {options.tasks.map((t, i) => (
-//       <MenuItem key={i} value={t}>{t}</MenuItem>
-//     ))}
-//   </Select>
-// </FormControl>
+//           {/* Exam */}
+//           {/* <FormControl fullWidth sx={{ mb: 2 }}>
+//             <InputLabel id="exam-label">Exam</InputLabel>
+//             <Select
+//               labelId="exam-label"
+//               label="Exam"
+//               value={form.exam}
+//               onChange={(e) => handleChange("exam", e.target.value)}
+//             >
+//               {options.exam.map((x, i) => (
+//                 <MenuItem key={i} value={x}>
+//                   {x}
+//                 </MenuItem>
+//               ))}
+//             </Select>
+//           </FormControl> */}
 
+//           {/* Domain (was: Performance Domain) */}
+//           {/* <FormControl fullWidth sx={{ mb: 2 }}>
+//             <InputLabel id="pdomain-label">Domain</InputLabel>
+//             <Select
+//               labelId="pdomain-label"
+//               label="Domain"
+//               value={form.performanceDomain}
+//               onChange={(e) => handleChange("performanceDomain", e.target.value)}
+//             >
+//               {options.performanceDomain.map((p, i) => (
+//                 <MenuItem key={i} value={p}>
+//                   {p}
+//                 </MenuItem>
+//               ))}
+//             </Select>
+//           </FormControl> */}
+
+//           {/* Task */}
+//           <FormControl fullWidth sx={{ mb: 2 }}>
+//             <InputLabel id="task-label">Task</InputLabel>
+//             <Select
+//               labelId="task-label"
+//               label="Task"
+//               value={form.task}
+//               onChange={(e) => setForm((f) => ({ ...f, task: e.target.value }))}
+//             >
+//               {options.tasks.map((t, i) => (
+//                 <MenuItem key={i} value={t}>
+//                   {t}
+//                 </MenuItem>
+//               ))}
+//             </Select>
+//           </FormControl>
+
+//           {/* Approach */}
+//           <FormControl fullWidth sx={{ mb: 2 }}>
+//             <InputLabel id="approach-label">Approach</InputLabel>
+//             <Select
+//               labelId="approach-label"
+//               label="Approach"
+//               value={form.approach}
+//               onChange={(e) => handleChange("approach", e.target.value)}
+//             >
+//               {options.approach.map((a, i) => (
+//                 <MenuItem key={i} value={a}>
+//                   {a}
+//                 </MenuItem>
+//               ))}
+//             </Select>
+//           </FormControl>
 
 //           {/* Difficulty */}
-//           <FormControl fullWidth sx={{ mb: 2 }}>
+//           {/* <FormControl fullWidth sx={{ mb: 2 }}>
 //             <InputLabel id="difficulty-label">Difficulty</InputLabel>
 //             <Select
 //               labelId="difficulty-label"
@@ -186,7 +239,7 @@
 //                 </MenuItem>
 //               ))}
 //             </Select>
-//           </FormControl>
+//           </FormControl> */}
 
 //           {/* Question Type */}
 //           <FormControl fullWidth sx={{ mb: 2 }}>
@@ -205,56 +258,15 @@
 //             </Select>
 //           </FormControl>
 
-//           {/* Performance Domain */}
-//           <FormControl fullWidth sx={{ mb: 2 }}>
-//             <InputLabel id="pdomain-label">Performance Domain</InputLabel>
-//             <Select
-//               labelId="pdomain-label"
-//               label="Performance Domain"
-//               value={form.performanceDomain}
-//               onChange={(e) => handleChange("performanceDomain", e.target.value)}
-//             >
-//               {options.performanceDomain.map((p, i) => (
-//                 <MenuItem key={i} value={p}>
-//                   {p}
-//                 </MenuItem>
-//               ))}
-//             </Select>
-//           </FormControl>
-
-//           {/* ✅ NEW: Approach */}
-//           <FormControl fullWidth sx={{ mb: 2 }}>
-//             <InputLabel id="approach-label">Approach</InputLabel>
-//             <Select
-//               labelId="approach-label"
-//               label="Approach"
-//               value={form.approach}
-//               onChange={(e) => handleChange("approach", e.target.value)}
-//             >
-//               {options.approach.map((a, i) => (
-//                 <MenuItem key={i} value={a}>
-//                   {a}
-//                 </MenuItem>
-//               ))}
-//             </Select>
-//           </FormControl>
-
-//           {/* ✅ NEW: Exam */}
-//           <FormControl fullWidth sx={{ mb: 2 }}>
-//             <InputLabel id="exam-label">Exam</InputLabel>
-//             <Select
-//               labelId="exam-label"
-//               label="Exam"
-//               value={form.exam}
-//               onChange={(e) => handleChange("exam", e.target.value)}
-//             >
-//               {options.exam.map((x, i) => (
-//                 <MenuItem key={i} value={x}>
-//                   {x}
-//                 </MenuItem>
-//               ))}
-//             </Select>
-//           </FormControl>
+//           {/* Number of Questions */}
+//           <TextField
+//             label="Number of Questions"
+//             type="number"
+//             fullWidth
+//             sx={{ mb: 2 }}
+//             value={form.questionCount}
+//             onChange={(e) => handleChange("questionCount", Number(e.target.value))}
+//           />
 
 //           {/* Duration */}
 //           <TextField
@@ -264,16 +276,6 @@
 //             sx={{ mb: 2 }}
 //             value={form.duration}
 //             onChange={(e) => handleChange("duration", Number(e.target.value))}
-//           />
-
-//           {/* Number of Questions */}
-//           <TextField
-//             label="Number of Questions"
-//             type="number"
-//             fullWidth
-//             sx={{ mb: 2 }}
-//             value={form.questionCount}
-//             onChange={(e) => handleChange("questionCount", Number(e.target.value))}
 //           />
 
 //           <Button
@@ -291,6 +293,8 @@
 //   );
 // }
 
+
+
 // src/components/student/StudentQBankFilterForm.jsx
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
@@ -300,13 +304,16 @@ import {
   Box, Button, Select, MenuItem, TextField, InputLabel,
   FormControl, Typography, Alert, CircularProgress
 } from "@mui/material";
-import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew"; // ← added
+import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 
 export default function StudentQBankFilterForm() {
   const navigate = useNavigate();
   const location = useLocation();
   const [params] = useSearchParams();
   const { user } = useAuth();
+
+  // 🔹 NEW: approach notification flag
+  const [approachNotice, setApproachNotice] = useState(false);
 
   // derive bankId (route is /student/qbank/filter?bankId=...)
   const bankId = useMemo(
@@ -383,7 +390,8 @@ export default function StudentQBankFilterForm() {
     })();
   }, [bankId]);
 
-  const handleChange = (field, value) => setForm((f) => ({ ...f, [field]: value }));
+  const handleChange = (field, value) =>
+    setForm((f) => ({ ...f, [field]: value }));
 
   const handleStart = async () => {
     try {
@@ -393,6 +401,9 @@ export default function StudentQBankFilterForm() {
         tags:  form.task || "",   // mirror for legacy
         studentId: user?.sub || user?.id || user?.userId || "anonymous-student",
       };
+
+      // ❗️No logic change: approach already form.se approach hi jaa raha hai
+      // blank ("") hone par backend waise bhi filter skip karega
 
       const url = `/api/student/qbank/${bankId}/session/create`;
       const res = await API.post(url, payload);
@@ -455,30 +466,51 @@ export default function StudentQBankFilterForm() {
               labelId="task-label"
               label="Task"
               value={form.task}
-              onChange={(e) => setForm((f) => ({ ...f, task: e.target.value }))}
+              onChange={(e) => handleChange("task", e.target.value)}
             >
               {options.tasks.map((t, i) => (
-                <MenuItem key={i} value={t}>{t}</MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-
-          {/* Difficulty */}
-          <FormControl fullWidth sx={{ mb: 2 }}>
-            <InputLabel id="difficulty-label">Difficulty</InputLabel>
-            <Select
-              labelId="difficulty-label"
-              label="Difficulty"
-              value={form.difficulty}
-              onChange={(e) => handleChange("difficulty", e.target.value)}
-            >
-              {options.difficulty.map((d, i) => (
-                <MenuItem key={i} value={d}>
-                  {d}
+                <MenuItem key={i} value={t}>
+                  {t}
                 </MenuItem>
               ))}
             </Select>
           </FormControl>
+
+          {/* Approach */}
+          <FormControl fullWidth sx={{ mb: 2 }}>
+            <InputLabel id="approach-label">Approach</InputLabel>
+            <Select
+              labelId="approach-label"
+              label="Approach"
+              value={form.approach}
+              onChange={(e) => {
+                const value = e.target.value;
+                handleChange("approach", value);
+
+                // 🔹 Yahin pe notification trigger hoga
+                setApproachNotice(value === "");
+              }}
+            >
+              {/* 🔹 Blank menu item → All approaches */}
+              <MenuItem value="">
+                <em>All Approaches</em>
+              </MenuItem>
+
+              {options.approach.map((a, i) => (
+                <MenuItem key={i} value={a}>
+                  {a}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          {/* 🔔 Info notification when blank chosen */}
+
+          {/* {approachNotice && (
+            <Alert severity="info" sx={{ mb: 2 }}>
+              Is task ke <strong>saare approaches ke saare questions</strong> dikh jayenge.
+            </Alert>
+          )} */}
 
           {/* Question Type */}
           <FormControl fullWidth sx={{ mb: 2 }}>
@@ -497,56 +529,15 @@ export default function StudentQBankFilterForm() {
             </Select>
           </FormControl>
 
-          {/* Performance Domain */}
-          <FormControl fullWidth sx={{ mb: 2 }}>
-            <InputLabel id="pdomain-label">Performance Domain</InputLabel>
-            <Select
-              labelId="pdomain-label"
-              label="Performance Domain"
-              value={form.performanceDomain}
-              onChange={(e) => handleChange("performanceDomain", e.target.value)}
-            >
-              {options.performanceDomain.map((p, i) => (
-                <MenuItem key={i} value={p}>
-                  {p}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-
-          {/* Approach */}
-          <FormControl fullWidth sx={{ mb: 2 }}>
-            <InputLabel id="approach-label">Approach</InputLabel>
-            <Select
-              labelId="approach-label"
-              label="Approach"
-              value={form.approach}
-              onChange={(e) => handleChange("approach", e.target.value)}
-            >
-              {options.approach.map((a, i) => (
-                <MenuItem key={i} value={a}>
-                  {a}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-
-          {/* Exam */}
-          <FormControl fullWidth sx={{ mb: 2 }}>
-            <InputLabel id="exam-label">Exam</InputLabel>
-            <Select
-              labelId="exam-label"
-              label="Exam"
-              value={form.exam}
-              onChange={(e) => handleChange("exam", e.target.value)}
-            >
-              {options.exam.map((x, i) => (
-                <MenuItem key={i} value={x}>
-                  {x}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          {/* Number of Questions */}
+          <TextField
+            label="Number of Questions"
+            type="number"
+            fullWidth
+            sx={{ mb: 2 }}
+            value={form.questionCount}
+            onChange={(e) => handleChange("questionCount", Number(e.target.value))}
+          />
 
           {/* Duration */}
           <TextField
@@ -556,16 +547,6 @@ export default function StudentQBankFilterForm() {
             sx={{ mb: 2 }}
             value={form.duration}
             onChange={(e) => handleChange("duration", Number(e.target.value))}
-          />
-
-          {/* Number of Questions */}
-          <TextField
-            label="Number of Questions"
-            type="number"
-            fullWidth
-            sx={{ mb: 2 }}
-            value={form.questionCount}
-            onChange={(e) => handleChange("questionCount", Number(e.target.value))}
           />
 
           <Button

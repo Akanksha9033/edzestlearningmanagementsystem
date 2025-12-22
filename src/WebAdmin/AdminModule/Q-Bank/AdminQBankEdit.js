@@ -1,394 +1,4 @@
-
-
-// import React, { useEffect, useState } from "react";
-// import { useParams, useNavigate } from "react-router-dom";
-// import API from "../../../LoginSystem/axios";
-
-// import {
-//   Box,
-//   Card,
-//   CardContent,
-//   Typography,
-//   TextField,
-//   Select,
-//   MenuItem,
-//   Button,
-//   RadioGroup,
-//   FormControlLabel,
-//   Radio,
-//   Checkbox,
-// } from "@mui/material";
-// import SettingsIcon from "@mui/icons-material/Settings";
-// import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-
-// export default function AdminQBankEdit() {
-//   const { bankId } = useParams();
-//   const navigate = useNavigate();
-
-//   const [questions, setQuestions] = useState([]);
-//   const [currentIndex, setCurrentIndex] = useState(0);
-//   const [filters, setFilters] = useState({
-//     difficulty: "",
-//     questionType: "",
-//     tags: "",
-//     performanceDomain: "",
-//   });
-
-//   // 🔹 Fetch questions of this bank
-//   useEffect(() => {
-//     async function fetchQuestions() {
-//       try {
-//         const res = await API.get(`/api/admin/qbank/${bankId}/questions`, {
-//           params: filters,
-//         });
-//         setQuestions(Array.isArray(res.data) ? res.data : []);
-//         setCurrentIndex(0);
-//       } catch (err) {
-//         console.error("❌ Error loading questions:", err);
-//       }
-//     }
-//     fetchQuestions();
-//   }, [bankId, filters]);
-
-//   const handleChange = (field, value) => {
-//     const updated = [...questions];
-//     updated[currentIndex][field] = value;
-//     setQuestions(updated);
-//   };
-
-//   const handleSave = async () => {
-//     try {
-//       const q = questions[currentIndex];
-//       await API.put(`/api/admin/qbank/${bankId}/questions/${q.questionId}`, q);
-//       alert(`✅ Question ${currentIndex + 1} updated!`);
-//     } catch (err) {
-//       console.error("❌ Error saving question:", err);
-//       alert("❌ Failed to save question");
-//     }
-//   };
-
-//   const handleFilterChange = (field, value) => {
-//     setFilters((prev) => ({ ...prev, [field]: value }));
-//   };
-
-//   const nextQuestion = () => {
-//     if (currentIndex < questions.length - 1) {
-//       setCurrentIndex(currentIndex + 1);
-//     }
-//   };
-
-//   const prevQuestion = () => {
-//     if (currentIndex > 0) {
-//       setCurrentIndex(currentIndex - 1);
-//     }
-//   };
-
-//   // 🟢 Publish
-//   const handlePublish = async () => {
-//     if (
-//       window.confirm(
-//         "Are you sure you want to publish this Question Bank? Once published, students will be able to see it."
-//       )
-//     ) {
-//       try {
-//         await API.put(`/api/admin/qbank/publish/${bankId}`);
-//         alert("✅ Question Bank published successfully!");
-//       } catch (err) {
-//         console.error("❌ Publish failed:", err);
-//         alert("❌ Failed to publish Question Bank.");
-//       }
-//     }
-//   };
-
-//   // ✅ Open the QB settings page (qbsetting.js)
-//   const openSettings = () => {
-//     navigate(`/admin/qbank/${bankId}/qbsetting`);
-//   };
-
-//   // ✅ FIXED: Go back to the list route you showed in the screenshot
-//   const goBackToList = () => {
-//     navigate("/admin/qbank/list", { replace: true });
-//   };
-
-//   if (!questions.length) {
-//     return (
-//       <Box sx={{ p: 3 }}>
-//         <Box sx={{ display: "flex", alignItems: "center", mb: 2, gap: 1.5 }}>
-//           <Button
-//             variant="text"
-//             startIcon={<ArrowBackIcon />}
-//             onClick={goBackToList}
-//             sx={{ textTransform: "none" }}
-//           >
-//             Back to List
-//           </Button>
-//         </Box>
-
-//         <Typography variant="h6" color="error">
-//           ⚠️ No questions found for this bank.
-//         </Typography>
-//       </Box>
-//     );
-//   }
-
-//   const q = questions[currentIndex];
-
-//   return (
-//     <Box sx={{ p: 3 }}>
-//       {/* Header row: Back (left), Title (center-ish), Settings (right) */}
-//       <Box sx={{ display: "flex", alignItems: "center", mb: 2, gap: 2 }}>
-//         <Button
-//           variant="text"
-//           startIcon={<ArrowBackIcon />}
-//           onClick={goBackToList}
-//           sx={{ textTransform: "none" }}
-//         >
-//           Back to List
-//         </Button>
-
-//         <Typography variant="h5" gutterBottom sx={{ fontWeight: "bold", m: 0 }}>
-//           ✏️ Edit Question Bank ({currentIndex + 1}/{questions.length})
-//         </Typography>
-
-//         <Box sx={{ ml: "auto" }}>
-//           <Button
-//             size="small"
-//             variant="outlined"
-//             startIcon={<SettingsIcon />}
-//             onClick={openSettings}
-//           >
-//             Settings
-//           </Button>
-//         </Box>
-//       </Box>
-
-//       <Card
-//         sx={{
-//           boxShadow: 3,
-//           borderRadius: "12px",
-//           p: 2,
-//           transition: "0.3s",
-//           "&:hover": { boxShadow: 6 },
-//         }}
-//       >
-//         <CardContent>
-//           {/* Question Text */}
-//           <TextField
-//             label="Question Text"
-//             fullWidth
-//             multiline
-//             rows={3}
-//             value={q.questionText}
-//             onChange={(e) => handleChange("questionText", e.target.value)}
-//             sx={{ mb: 2 }}
-//           />
-
-//           {/* Options */}
-//           <Typography variant="subtitle1" sx={{ fontWeight: "bold", mb: 1 }}>
-//             Options:
-//           </Typography>
-
-//           {q.questionType === "Multi-Select" ? (
-//             q.options?.map((opt, i) => (
-//               <FormControlLabel
-//                 key={i}
-//                 control={
-//                   <Checkbox
-//                     checked={q.correctAnswer?.includes(
-//                       String.fromCharCode(65 + i)
-//                     )}
-//                     onChange={(e) => {
-//                       const val = String.fromCharCode(65 + i);
-//                       let updatedAnswers = [...(q.correctAnswer || [])];
-//                       if (e.target.checked) {
-//                         if (!updatedAnswers.includes(val))
-//                           updatedAnswers.push(val);
-//                       } else {
-//                         updatedAnswers = updatedAnswers.filter(
-//                           (ans) => ans !== val
-//                         );
-//                       }
-//                       handleChange("correctAnswer", updatedAnswers);
-//                     }}
-//                   />
-//                 }
-//                 label={
-//                   <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-//                     <Typography sx={{ minWidth: "20px", fontWeight: "bold" }}>
-//                       {String.fromCharCode(65 + i)}.
-//                     </Typography>
-//                     <TextField
-//                       value={opt}
-//                       onChange={(e) => {
-//                         const updated = [...q.options];
-//                         updated[i] = e.target.value;
-//                         handleChange("options", updated);
-//                       }}
-//                       sx={{ flex: 1, background: "#fff", borderRadius: "8px" }}
-//                     />
-//                   </Box>
-//                 }
-//                 sx={{
-//                   mb: 1,
-//                   alignItems: "flex-start",
-//                   background: "#fff",
-//                   borderRadius: "8px",
-//                   p: 1,
-//                   boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-//                 }}
-//               />
-//             ))
-//           ) : (
-//             <RadioGroup
-//               value={q.correctAnswer?.[0] || ""}
-//               onChange={(e) => handleChange("correctAnswer", [e.target.value])}
-//             >
-//               {q.options?.map((opt, i) => (
-//                 <FormControlLabel
-//                   key={i}
-//                   value={String.fromCharCode(65 + i)}
-//                   control={<Radio />}
-//                   label={
-//                     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-//                       <Typography sx={{ minWidth: "20px", fontWeight: "bold" }}>
-//                         {String.fromCharCode(65 + i)}.
-//                       </Typography>
-//                       <TextField
-//                         value={opt}
-//                         onChange={(e) => {
-//                           const updated = [...q.options];
-//                           updated[i] = e.target.value;
-//                           handleChange("options", updated);
-//                         }}
-//                         sx={{
-//                           flex: 1,
-//                           background: "#fff",
-//                           borderRadius: "8px",
-//                         }}
-//                       />
-//                     </Box>
-//                   }
-//                   sx={{
-//                     mb: 1,
-//                     alignItems: "flex-start",
-//                     background: "#fff",
-//                     borderRadius: "8px",
-//                     p: 1,
-//                     boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-//                   }}
-//                 />
-//               ))}
-//             </RadioGroup>
-//           )}
-
-//           {/* Dropdowns */}
-//           <Box sx={{ display: "flex", gap: 2, mt: 2, flexWrap: "wrap" }}>
-//             <Select
-//               value={q.difficulty || ""}
-//               onChange={(e) => {
-//                 handleChange("difficulty", e.target.value);
-//                 handleFilterChange("difficulty", e.target.value);
-//               }}
-//             >
-//               <MenuItem value="Easy">Easy</MenuItem>
-//               <MenuItem value="Medium">Medium</MenuItem>
-//               <MenuItem value="Difficult">Difficult</MenuItem>
-//             </Select>
-
-//             <Select
-//               value={q.questionType || ""}
-//               onChange={(e) => {
-//                 handleChange("questionType", e.target.value);
-//                 handleFilterChange("questionType", e.target.value);
-//               }}
-//             >
-//               <MenuItem value="Single-Select">Single-Select</MenuItem>
-//               <MenuItem value="Multi-Select">Multi-Select</MenuItem>
-//               <MenuItem value="Fill-in-the-Blank">Fill-in-the-Blank</MenuItem>
-//               <MenuItem value="True/False">True/False</MenuItem>
-//             </Select>
-
-//             <TextField
-//               label="Tags"
-//               value={q.tags || ""}
-//               onChange={(e) => {
-//                 handleChange("tags", e.target.value);
-//                 handleFilterChange("tags", e.target.value);
-//               }}
-//             />
-
-//             <TextField
-//               label="Domain"
-//               value={q.performanceDomain || ""}
-//               onChange={(e) => {
-//                 handleChange("performanceDomain", e.target.value);
-//                 handleFilterChange("performanceDomain", e.target.value);
-//               }}
-//             />
-//           </Box>
-
-//           {/* Explanation */}
-//           <TextField
-//             label="Explanation"
-//             fullWidth
-//             multiline
-//             rows={2}
-//             value={q.explanation || ""}
-//             onChange={(e) => handleChange("explanation", e.target.value)}
-//             sx={{ mt: 2 }}
-//           />
-
-//           {/* ✅ Save, Nav & Publish Buttons */}
-//           <Box sx={{ display: "flex", gap: 2, mt: 3, flexWrap: "wrap" }}>
-//             <Button
-//               variant="outlined"
-//               disabled={currentIndex === 0}
-//               onClick={prevQuestion}
-//             >
-//               ⬅ Previous
-//             </Button>
-
-//             <Button
-//               variant="contained"
-//               sx={{
-//                 backgroundColor: "#4748ac",
-//                 "&:hover": { backgroundColor: "#373885" },
-//               }}
-//               onClick={handleSave}
-//             >
-//               💾 Save
-//             </Button>
-
-//             <Button
-//               variant="outlined"
-//               disabled={currentIndex === questions.length - 1}
-//               onClick={nextQuestion}
-//             >
-//               Next ➡
-//             </Button>
-
-//             {/* 🚀 Publish Button */}
-//             <Button
-//               variant="contained"
-//               color="success"
-//               sx={{
-//                 backgroundColor: "#2e7d32",
-//                 "&:hover": { backgroundColor: "#1b5e20" },
-//                 ml: "auto",
-//               }}
-//               onClick={handlePublish}
-//             >
-//               🚀 Publish
-//             </Button>
-//           </Box>
-//         </CardContent>
-//       </Card>
-//     </Box>
-//   );
-// }
-
-
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import API from "../../../LoginSystem/axios";
 
@@ -398,17 +8,17 @@ import {
   CardContent,
   Typography,
   TextField,
-  Select,
   MenuItem,
   Button,
   RadioGroup,
-  FormControlLabel,
   Radio,
   Checkbox,
-  CircularProgress, // ✅ ADDED
+  CircularProgress,
+  Snackbar,
+  Alert,
 } from "@mui/material";
-import SettingsIcon from "@mui/icons-material/Settings";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import SettingsIcon from "@mui/icons-material/Settings";
 
 export default function AdminQBankEdit() {
   const { bankId } = useParams();
@@ -416,138 +26,589 @@ export default function AdminQBankEdit() {
 
   const [questions, setQuestions] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [filters, setFilters] = useState({
-    difficulty: "",
-    questionType: "",
-    tags: "",
-    performanceDomain: "",
+
+  // ===================== Autosave State =====================
+  const [autoSaveState, setAutoSaveState] = useState("idle");
+  const dirtyRef = useRef(new Set());
+  const debounceTimerRef = useRef(null);
+  const pendingSaveRef = useRef(false);
+  const forceSaveOnLeaveRef = useRef(false);
+  const lastSavedSnapshotRef = useRef({});
+
+  // ⭐ Q-ID / Question # search input
+  const [searchInput, setSearchInput] = useState("");
+  // Snack for errors / saved
+  const [snack, setSnack] = useState({
+    open: false,
+    msg: "",
+    severity: "error",
   });
 
-  // 🔹 Fetch questions of this bank
+  // ⭐⭐⭐ NEW SEARCH STATES
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
+
+  // ⭐⭐⭐ SEARCH HANDLER
+  const handleSearch = (value) => {
+    setSearchQuery(value);
+
+    // Jump to question #
+    if (/^\d+$/.test(value)) {
+      const num = parseInt(value);
+      if (num >= 1 && num <= questions.length) {
+        setCurrentIndex(num - 1);
+        setSearchResults([]);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+      return;
+    }
+
+    // Keyword search
+    if (value.trim().length >= 2) {
+      const lower = value.toLowerCase();
+      const results = questions
+        .map((q, i) => ({ index: i, text: q.questionText }))
+        .filter((item) => item.text?.toLowerCase().includes(lower));
+
+      setSearchResults(results.slice(0, 25));
+    } else {
+      setSearchResults([]);
+    }
+  };
+
+  // ===================== FETCH QUESTIONS =====================
   useEffect(() => {
-    async function fetchQuestions() {
+    let mounted = true;
+
+    (async () => {
       try {
-        const res = await API.get(`/api/admin/qbank/${bankId}/questions`, {
-          params: filters,
-        });
-        setQuestions(Array.isArray(res.data) ? res.data : []);
+        const res = await API.get(`/api/admin/qbank/${bankId}/questions`);
+        const list = Array.isArray(res.data) ? res.data : [];
+        if (!mounted) return;
+
+        setQuestions(list);
         setCurrentIndex(0);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+
+        // Snapshot initial versions
+        const map = {};
+        for (const q of list) {
+          map[q.questionId] = JSON.stringify(q);
+        }
+        lastSavedSnapshotRef.current = map;
+        dirtyRef.current.clear();
+        setAutoSaveState("idle");
       } catch (err) {
         console.error("❌ Error loading questions:", err);
       }
-    }
-    fetchQuestions();
-  }, [bankId, filters]);
+    })();
 
+    return () => {
+      mounted = false;
+    };
+  }, [bankId]);
+
+  const q = questions[currentIndex];
+
+  // ===================== HELPERS =====================
+  const markDirty = useCallback((questionObj) => {
+    if (!questionObj?.questionId) return;
+
+    const id = questionObj.questionId;
+    const now = JSON.stringify(questionObj);
+    const saved = lastSavedSnapshotRef.current[id];
+
+    if (now !== saved) {
+      dirtyRef.current.add(id);
+      forceSaveOnLeaveRef.current = true;
+    } else {
+      dirtyRef.current.delete(id);
+      if (dirtyRef.current.size === 0) forceSaveOnLeaveRef.current = false;
+    }
+  }, []);
+
+  const putQuestion = useCallback(
+    async (questionObj) => {
+      if (!questionObj?.questionId) return;
+
+      pendingSaveRef.current = true;
+      setAutoSaveState("saving");
+
+      try {
+        await API.put(
+          `/api/admin/qbank/${bankId}/questions/${questionObj.questionId}`,
+          questionObj
+        );
+
+        lastSavedSnapshotRef.current[questionObj.questionId] =
+          JSON.stringify(questionObj);
+
+        dirtyRef.current.delete(questionObj.questionId);
+        if (dirtyRef.current.size === 0) forceSaveOnLeaveRef.current = false;
+
+        setAutoSaveState("saved");
+        setTimeout(() => {
+          if (!pendingSaveRef.current) setAutoSaveState("idle");
+        }, 600);
+      } catch (err) {
+        console.error("❌ Autosave failed:", err);
+        setAutoSaveState("error");
+        setSnack({
+          open: true,
+          msg: "Autosave failed.",
+          severity: "error",
+        });
+      } finally {
+        pendingSaveRef.current = false;
+      }
+    },
+    [bankId]
+  );
+  const saveCurrentIfDirty = useCallback(async () => {
+    const current = questions[currentIndex];
+    if (!current) return;
+
+    const saved = lastSavedSnapshotRef.current[current.questionId];
+    if (saved !== JSON.stringify(current)) {
+      await putQuestion(current);
+    }
+  }, [questions, currentIndex, putQuestion]);
+
+  // ===================== AUTOSAVE =====================
+  const scheduleAutosave = useCallback(() => {
+    if (debounceTimerRef.current)
+      clearTimeout(debounceTimerRef.current);
+
+    debounceTimerRef.current = setTimeout(async () => {
+      await saveCurrentIfDirty();
+    }, 1200);
+  }, [saveCurrentIfDirty]);
+
+  // ===================== CHANGE HANDLERS =====================
   const handleChange = (field, value) => {
-    const updated = [...questions];
-    updated[currentIndex][field] = value;
-    setQuestions(updated);
+    setQuestions((prev) => {
+      const updated = [...prev];
+      const copy = { ...updated[currentIndex], [field]: value };
+      updated[currentIndex] = copy;
+      markDirty(copy);
+      scheduleAutosave();
+      return updated;
+    });
   };
 
+  const handleOptionChange = (i, newVal) => {
+    setQuestions((prev) => {
+      const updated = [...prev];
+      const qx = { ...updated[currentIndex] };
+      const opts = [...qx.options];
+      opts[i] = newVal;
+      qx.options = opts;
+      updated[currentIndex] = qx;
+
+      markDirty(qx);
+      scheduleAutosave();
+      return updated;
+    });
+  };
+
+  const handleCorrectAnswerChange = (newVal) => {
+    setQuestions((prev) => {
+      const updated = [...prev];
+      const qx = { ...updated[currentIndex], correctAnswer: newVal };
+      updated[currentIndex] = qx;
+      markDirty(qx);
+      scheduleAutosave();
+      return updated;
+    });
+  };
+
+  // ===================== MANUAL SAVE =====================
   const handleSave = async () => {
     try {
-      const q = questions[currentIndex];
-      await API.put(`/api/admin/qbank/${bankId}/questions/${q.questionId}`, q);
-      alert(`✅ Question ${currentIndex + 1} updated!`);
-    } catch (err) {
-      console.error("❌ Error saving question:", err);
-      alert("❌ Failed to save question");
-    }
+      await saveCurrentIfDirty();
+      setSnack({ open: true, msg: "Saved.", severity: "success" });
+    } catch {}
   };
 
-  const handleFilterChange = (field, value) => {
-    setFilters((prev) => ({ ...prev, [field]: value }));
-  };
+  // ===================== NAVIGATION =====================
+  const guardedGo = useCallback(
+    async (fn) => {
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
 
-  const nextQuestion = () => {
-    if (currentIndex < questions.length - 1) {
-      setCurrentIndex(currentIndex + 1);
-    }
-  };
-
-  const prevQuestion = () => {
-    if (currentIndex > 0) {
-      setCurrentIndex(currentIndex - 1);
-    }
-  };
-
-  // 🟢 Publish
-  const handlePublish = async () => {
-    if (
-      window.confirm(
-        "Are you sure you want to publish this Question Bank? Once published, students will be able to see it."
-      )
-    ) {
       try {
-        await API.put(`/api/admin/qbank/publish/${bankId}`);
-        alert("✅ Question Bank published successfully!");
-      } catch (err) {
-        console.error("❌ Publish failed:", err);
-        alert("❌ Failed to publish Question Bank.");
+        await saveCurrentIfDirty();
+      } finally {
+        fn();
+        window.scrollTo({ top: 0, behavior: "smooth" });
       }
-    }
+    },
+    [saveCurrentIfDirty]
+  );
+
+  const nextQuestion = async () => {
+    if (currentIndex >= questions.length - 1) return;
+    await guardedGo(() => setCurrentIndex((p) => p + 1));
   };
 
-  // ✅ Open the QB settings page (qbsetting.js)
-  const openSettings = () => {
-    navigate(`/admin/qbank/${bankId}/qbsetting`);
+  const prevQuestion = async () => {
+    if (currentIndex <= 0) return;
+    await guardedGo(() => setCurrentIndex((p) => p - 1));
   };
 
-  // ✅ FIXED: Go back to the list route you showed in the screenshot
-  const goBackToList = () => {
-    navigate("/admin/qbank/list", { replace: true });
+  const openSettings = async () => {
+    await guardedGo(() => navigate(`/admin/qbank/${bankId}/qbsetting`));
   };
 
-  if (!questions.length) {
+  const goBackToList = async () => {
+    await guardedGo(() => navigate("/admin/qbank/list", { replace: true }));
+  };
+
+  // ===================== JUMP TO QUESTION (By Number or Q-ID) =====================
+  const jumpToQuestion = useCallback(
+    (rawValue) => {
+      const value = String(rawValue || "").trim();
+      if (!value) return;
+
+      // 1) If user enters number → jump to that index
+      if (/^\d+$/.test(value)) {
+        const num = parseInt(value, 10);
+        if (num >= 1 && num <= questions.length) {
+          setCurrentIndex(num - 1);
+          window.scrollTo({ top: 0, behavior: "smooth" });
+          return;
+        }
+      }
+
+      // 2) If user enters questionId → jump by ID
+      const idx = questions.findIndex((q) => {
+        const id = String(q.questionId || "").trim().toLowerCase();
+        return id === value.toLowerCase();
+      });
+
+      if (idx !== -1) {
+        setCurrentIndex(idx);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      } else {
+        setSnack({
+          open: true,
+          msg: `No question found for "${value}"`,
+          severity: "error",
+        });
+      }
+    },
+    [questions]
+  );
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (forceSaveOnLeaveRef.current || pendingSaveRef.current) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, []);
+
+  // ===================== FINAL FLUSH =====================
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current)
+        clearTimeout(debounceTimerRef.current);
+
+      const current = questions[currentIndex];
+      if (!current) return;
+
+      const saved = lastSavedSnapshotRef.current[current.questionId];
+      if (JSON.stringify(current) !== saved) {
+        API.put(
+          `/api/admin/qbank/${bankId}/questions/${current.questionId}`,
+          current
+        ).catch(() => {});
+      }
+    };
+  }, [questions, currentIndex, bankId]);
+
+  if (!questions.length)
     return (
-      <Box sx={{ p: 3 }}>
-        <Box sx={{ display: "flex", alignItems: "center", mb: 2, gap: 1.5 }}>
-          <Button
-            variant="text"
-            startIcon={<ArrowBackIcon />}
-            onClick={goBackToList}
-            sx={{ textTransform: "none" }}
-          >
-            Back to List
-          </Button>
+      <Box sx={{ p: 3, display: "flex", justifyContent: "center" }}>
+        <CircularProgress />
+      </Box>
+    );
+
+  // ================== UNIQUE FILTER VALUES ==================
+  const uniqueValues = (key) =>
+    [...new Set(questions.map((item) => item[key]).filter(Boolean))];
+
+  const difficulties = ["Easy", "Medium", "Difficult"];
+  const types = uniqueValues("questionType");
+  const tags = uniqueValues("tags");
+  const domains = uniqueValues("performanceDomain");
+  const approaches = uniqueValues("approach");
+  const exams = uniqueValues("exam");
+
+  // ===================== AUTOSAVE BADGE =====================
+  const AutoSaveBadge = () => (
+    <Typography
+      variant="caption"
+      sx={{
+        ml: 2,
+        px: 1,
+        py: 0.25,
+        borderRadius: 1,
+        bgcolor:
+          autoSaveState === "saving"
+            ? "warning.light"
+            : autoSaveState === "saved"
+            ? "success.light"
+            : autoSaveState === "error"
+            ? "error.light"
+            : "grey.100",
+      }}
+    >
+      {autoSaveState === "saving"
+        ? "Autosaving…"
+        : autoSaveState === "saved"
+        ? "Saved"
+        : autoSaveState === "error"
+        ? "Autosave failed"
+        : "Idle"}
+    </Typography>
+  );
+  // ==========================================================
+  //                     RETURN JSX START
+  // ==========================================================
+  return (
+    <Box sx={{ display: "flex", p: 2 }}>
+
+      {/* ================= LEFT SIDEBAR ================= */}
+      <Box
+        sx={{
+          width: 260,
+          pr: 2,
+          borderRight: "1px solid #ddd",
+          height: "calc(100vh - 40px)",
+          position: "sticky",
+          top: 20,
+          overflowY: "auto",
+        }}
+      >
+        {/* SAVE BUTTON */}
+        <Button
+          variant="contained"
+          fullWidth
+          onClick={handleSave}
+          sx={{
+            backgroundColor: "#4748ac",
+            textTransform: "none",
+            py: 1.1,
+            mb: 1.5,
+          }}
+        >
+          💾 Save Now
+        </Button>
+
+        <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
+          Edit Filters <AutoSaveBadge />
+        </Typography>
+
+        {/* Difficulty */}
+        <Typography variant="subtitle2">Difficulty</Typography>
+        <TextField
+          select
+          fullWidth
+          value={q.difficulty || ""}
+          onChange={(e) => handleChange("difficulty", e.target.value)}
+          onBlur={() => scheduleAutosave()}
+          sx={{ mb: 2 }}
+        >
+          {difficulties.map((d) => (
+            <MenuItem key={d} value={d}>
+              {d}
+            </MenuItem>
+          ))}
+        </TextField>
+
+        {/* Question Type */}
+        <Typography variant="subtitle2">Question Type</Typography>
+        <TextField
+          select
+          fullWidth
+          value={q.questionType || ""}
+          onChange={(e) => handleChange("questionType", e.target.value)}
+          onBlur={() => scheduleAutosave()}
+          sx={{ mb: 2 }}
+        >
+          {types.map((t) => (
+            <MenuItem key={t} value={t}>
+              {t}
+            </MenuItem>
+          ))}
+        </TextField>
+
+        {/* Tags */}
+        <Typography variant="subtitle2">Tags</Typography>
+        <TextField
+          select
+          fullWidth
+          value={q.tags || ""}
+          onChange={(e) => handleChange("tags", e.target.value)}
+          onBlur={() => scheduleAutosave()}
+          sx={{ mb: 2 }}
+        >
+          {tags.map((t) => (
+            <MenuItem key={t} value={t}>
+              {t}
+            </MenuItem>
+          ))}
+        </TextField>
+
+        {/* Domain */}
+        <Typography variant="subtitle2">Domain</Typography>
+        <TextField
+          select
+          fullWidth
+          value={q.performanceDomain || ""}
+          onChange={(e) => handleChange("performanceDomain", e.target.value)}
+          onBlur={() => scheduleAutosave()}
+          sx={{ mb: 2 }}
+        >
+          {domains.map((d) => (
+            <MenuItem key={d} value={d}>
+              {d}
+            </MenuItem>
+          ))}
+        </TextField>
+
+        {/* Approach */}
+        <Typography variant="subtitle2">Approach</Typography>
+        <TextField
+          select
+          fullWidth
+          value={q.approach || ""}
+          onChange={(e) => handleChange("approach", e.target.value)}
+          onBlur={() => scheduleAutosave()}
+          sx={{ mb: 2 }}
+        >
+          {approaches.map((a) => (
+            <MenuItem key={a} value={a}>
+              {a}
+            </MenuItem>
+          ))}
+        </TextField>
+
+        {/* Exam */}
+        <Typography variant="subtitle2">Exam</Typography>
+        <TextField
+          select
+          fullWidth
+          value={q.exam || ""}
+          onChange={(e) => handleChange("exam", e.target.value)}
+          onBlur={() => scheduleAutosave()}
+          sx={{ mb: 2 }}
+        >
+          {exams.map((e) => (
+            <MenuItem key={e} value={e}>
+              {e}
+            </MenuItem>
+          ))}
+        </TextField>
+      </Box>
+
+      {/* ================= RIGHT CONTENT ================= */}
+      <Box sx={{ flexGrow: 1, pl: 3 }}>
+
+        {/* ⭐ FIXED SEARCH BAR BLOCK — moved inside RIGHT CONTENT */}
+        <Box sx={{ mb: 2 }}>
+          <TextField
+            fullWidth
+            size="small"
+            placeholder="Search by Question # or Q-ID..."
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                jumpToQuestion(searchInput);
+              }
+            }}
+          />
         </Box>
 
-        {/* 🔄 Replaced "No questions found" with a loader */}
+        {/* ⭐⭐⭐ SEARCH BAR (keyword search) ⭐⭐⭐ */}
+        <Box sx={{ mb: 2 }}>
+          <TextField
+            fullWidth
+            placeholder="Search or Jump to Question #"
+            value={searchQuery}
+            onChange={(e) => handleSearch(e.target.value)}
+            InputProps={{
+              style: { fontSize: "15px", padding: "10px" },
+            }}
+          />
+        </Box>
+
+        {/* SEARCH RESULTS DROPDOWN */}
+        {searchResults.length > 0 && (
+          <Box
+            sx={{
+              mb: 2,
+              p: 1,
+              border: "1px solid #ccc",
+              borderRadius: "6px",
+              maxHeight: 200,
+              overflowY: "auto",
+              background: "#fff",
+            }}
+          >
+            {searchResults.map((item) => (
+              <Box
+                key={item.index}
+                sx={{
+                  p: 1,
+                  borderBottom: "1px solid #eee",
+                  cursor: "pointer",
+                  "&:hover": { background: "#f5f5f5" },
+                }}
+                onClick={() => {
+                  setCurrentIndex(item.index);
+                  setSearchResults([]);
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
+              >
+                <strong>#{item.index + 1}</strong> —{" "}
+                {item.text?.slice(0, 70) || "Untitled"}...
+              </Box>
+            ))}
+          </Box>
+        )}
+
+        {/* HEADER ROW */}
         <Box
           sx={{
             display: "flex",
             alignItems: "center",
-            justifyContent: "center",
-            minHeight: 200,
+            mb: 2,
+            justifyContent: "space-between",
           }}
         >
-          <CircularProgress />
-        </Box>
-      </Box>
-    );
-  }
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <Button
+              variant="text"
+              startIcon={<ArrowBackIcon />}
+              onClick={goBackToList}
+              sx={{ textTransform: "none" }}
+            >
+              Back
+            </Button>
 
-  const q = questions[currentIndex];
+            <Typography variant="h6">
+              ✏️ Edit Question ({currentIndex + 1}/{questions.length})
+            </Typography>
 
-  return (
-    <Box sx={{ p: 3 }}>
-      {/* Header row: Back (left), Title (center-ish), Settings (right) */}
-      <Box sx={{ display: "flex", alignItems: "center", mb: 2, gap: 2 }}>
-        <Button
-          variant="text"
-          startIcon={<ArrowBackIcon />}
-          onClick={goBackToList}
-          sx={{ textTransform: "none" }}
-        >
-          Back to List
-        </Button>
+            <AutoSaveBadge />
+          </Box>
 
-        <Typography variant="h5" gutterBottom sx={{ fontWeight: "bold", m: 0 }}>
-          ✏️ Edit Question Bank ({currentIndex + 1}/{questions.length})
-        </Typography>
-
-        <Box sx={{ ml: "auto" }}>
           <Button
             size="small"
             variant="outlined"
@@ -557,229 +618,167 @@ export default function AdminQBankEdit() {
             Settings
           </Button>
         </Box>
-      </Box>
+        {/* QUESTION EDITOR */}
+        <Card sx={{ mb: 3 }}>
+          <CardContent>
+            <TextField
+              label="Question Text"
+              fullWidth
+              multiline
+              minRows={3}
+              value={q.questionText}
+              onChange={(e) => handleChange("questionText", e.target.value)}
+              onBlur={() => scheduleAutosave()}
+              sx={{
+                mb: 2,
+                "& .MuiOutlinedInput-root": {
+                  fontSize: "1.05rem",
+                  fontWeight: 500,
+                  lineHeight: 1.6,
+                },
+              }}
+            />
 
-      <Card
-        sx={{
-          boxShadow: 3,
-          borderRadius: "12px",
-          p: 2,
-          transition: "0.3s",
-          "&:hover": { boxShadow: 6 },
-        }}
-      >
-        <CardContent>
-          {/* Question Text */}
-          <TextField
-            label="Question Text"
-            fullWidth
-            multiline
-            rows={3}
-            value={q.questionText}
-            onChange={(e) => handleChange("questionText", e.target.value)}
-            sx={{ mb: 2 }}
-          />
+            <Typography variant="subtitle1" sx={{ mb: 1 }}>
+              Options:
+            </Typography>
 
-          {/* Options */}
-          <Typography variant="subtitle1" sx={{ fontWeight: "bold", mb: 1 }}>
-            Options:
-          </Typography>
+            {/* ================= MULTI-SELECT ================= */}
+            {q.questionType === "Multi-Select" ? (
+              q.options?.map((opt, i) => {
+                const val = String.fromCharCode(65 + i);
+                const checked = q.correctAnswer?.includes(val);
 
-          {q.questionType === "Multi-Select" ? (
-            q.options?.map((opt, i) => (
-              <FormControlLabel
-                key={i}
-                control={
-                  <Checkbox
-                    checked={q.correctAnswer?.includes(
-                      String.fromCharCode(65 + i)
-                    )}
-                    onChange={(e) => {
-                      const val = String.fromCharCode(65 + i);
-                      let updatedAnswers = [...(q.correctAnswer || [])];
-                      if (e.target.checked) {
-                        if (!updatedAnswers.includes(val))
-                          updatedAnswers.push(val);
-                      } else {
-                        updatedAnswers = updatedAnswers.filter(
-                          (ans) => ans !== val
-                        );
-                      }
-                      handleChange("correctAnswer", updatedAnswers);
-                    }}
-                  />
-                }
-                label={
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <Typography sx={{ minWidth: "20px", fontWeight: "bold" }}>
-                      {String.fromCharCode(65 + i)}.
-                    </Typography>
-                    <TextField
-                      value={opt}
+                return (
+                  <Box key={i} sx={{ mb: 1.5, position: "relative" }}>
+                    <Checkbox
+                      checked={checked}
                       onChange={(e) => {
-                        const updated = [...q.options];
-                        updated[i] = e.target.value;
-                        handleChange("options", updated);
+                        let updated = [...(q.correctAnswer || [])];
+                        if (e.target.checked) {
+                          if (!updated.includes(val)) updated.push(val);
+                        } else {
+                          updated = updated.filter((ans) => ans !== val);
+                        }
+                        handleCorrectAnswerChange(updated);
                       }}
-                      sx={{ flex: 1, background: "#fff", borderRadius: "8px" }}
+                      sx={{
+                        position: "absolute",
+                        left: 8,
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        zIndex: 1,
+                      }}
+                    />
+
+                    <TextField
+                      fullWidth
+                      multiline
+                      minRows={1}
+                      value={opt}
+                      onChange={(e) => handleOptionChange(i, e.target.value)}
+                      onBlur={() => scheduleAutosave()}
+                      InputProps={{ sx: { pl: 7 } }}
                     />
                   </Box>
-                }
-                sx={{
-                  mb: 1,
-                  alignItems: "flex-start",
-                  background: "#fff",
-                  borderRadius: "8px",
-                  p: 1,
-                  boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-                }}
-              />
-            ))
-          ) : (
-            <RadioGroup
-              value={q.correctAnswer?.[0] || ""}
-              onChange={(e) => handleChange("correctAnswer", [e.target.value])}
-            >
-              {q.options?.map((opt, i) => (
-                <FormControlLabel
-                  key={i}
-                  value={String.fromCharCode(65 + i)}
-                  control={<Radio />}
-                  label={
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                      <Typography sx={{ minWidth: "20px", fontWeight: "bold" }}>
-                        {String.fromCharCode(65 + i)}.
-                      </Typography>
-                      <TextField
-                        value={opt}
-                        onChange={(e) => {
-                          const updated = [...q.options];
-                          updated[i] = e.target.value;
-                          handleChange("options", updated);
-                        }}
+                );
+              })
+            ) : (
+              // ================= SINGLE-SELECT =================
+              <RadioGroup
+                value={q.correctAnswer?.[0] || ""}
+                onChange={(e) => handleCorrectAnswerChange([e.target.value])}
+              >
+                {q.options?.map((opt, i) => {
+                  const val = String.fromCharCode(65 + i);
+                  return (
+                    <Box key={i} sx={{ mb: 1.5, position: "relative" }}>
+                      <Radio
+                        value={val}
                         sx={{
-                          flex: 1,
-                          background: "#fff",
-                          borderRadius: "8px",
+                          position: "absolute",
+                          left: 8,
+                          top: "50%",
+                          transform: "translateY(-50%)",
+                          zIndex: 1,
                         }}
                       />
+
+                      <TextField
+                        fullWidth
+                        multiline
+                        minRows={1}
+                        value={opt}
+                        onChange={(e) => handleOptionChange(i, e.target.value)}
+                        onBlur={() => scheduleAutosave()}
+                        InputProps={{ sx: { pl: 7 } }}
+                      />
                     </Box>
-                  }
-                  sx={{
-                    mb: 1,
-                    alignItems: "flex-start",
-                    background: "#fff",
-                    borderRadius: "8px",
-                    p: 1,
-                    boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-                  }}
-                />
-              ))}
-            </RadioGroup>
-          )}
+                  );
+                })}
+              </RadioGroup>
+            )}
 
-          {/* Dropdowns */}
-          <Box sx={{ display: "flex", gap: 2, mt: 2, flexWrap: "wrap" }}>
-            <Select
-              value={q.difficulty || ""}
-              onChange={(e) => {
-                handleChange("difficulty", e.target.value);
-                handleFilterChange("difficulty", e.target.value);
-              }}
-            >
-              <MenuItem value="Easy">Easy</MenuItem>
-              <MenuItem value="Medium">Medium</MenuItem>
-              <MenuItem value="Difficult">Difficult</MenuItem>
-            </Select>
-
-            <Select
-              value={q.questionType || ""}
-              onChange={(e) => {
-                handleChange("questionType", e.target.value);
-                handleFilterChange("questionType", e.target.value);
-              }}
-            >
-              <MenuItem value="Single-Select">Single-Select</MenuItem>
-              <MenuItem value="Multi-Select">Multi-Select</MenuItem>
-              <MenuItem value="Fill-in-the-Blank">Fill-in-the-Blank</MenuItem>
-              <MenuItem value="True/False">True/False</MenuItem>
-            </Select>
-
+            {/* EXPLANATION */}
             <TextField
-              label="Tags"
-              value={q.tags || ""}
-              onChange={(e) => {
-                handleChange("tags", e.target.value);
-                handleFilterChange("tags", e.target.value);
+              label="Explanation"
+              fullWidth
+              multiline
+              minRows={3}
+              value={q.explanation || ""}
+              onChange={(e) => handleChange("explanation", e.target.value)}
+              onBlur={() => scheduleAutosave()}
+              sx={{
+                mt: 2,
+                "& .MuiInputLabel-root": {
+                  color: "#4748ac",
+                  fontWeight: 600,
+                },
+                "& .MuiOutlinedInput-root": {
+                  fontSize: "0.95rem",
+                  lineHeight: 1.6,
+                },
               }}
             />
+          </CardContent>
+        </Card>
 
-            <TextField
-              label="Domain"
-              value={q.performanceDomain || ""}
-              onChange={(e) => {
-                handleChange("performanceDomain", e.target.value);
-                handleFilterChange("performanceDomain", e.target.value);
-              }}
-            />
-          </Box>
+        {/* NAV BUTTONS */}
+        <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+          <Button
+            variant="outlined"
+            onClick={prevQuestion}
+            disabled={currentIndex === 0}
+          >
+            ⬅ PREVIOUS
+          </Button>
 
-          {/* Explanation */}
-          <TextField
-            label="Explanation"
-            fullWidth
-            multiline
-            rows={2}
-            value={q.explanation || ""}
-            onChange={(e) => handleChange("explanation", e.target.value)}
-            sx={{ mt: 2 }}
-          />
+          <Button
+            variant="outlined"
+            onClick={nextQuestion}
+            disabled={currentIndex === questions.length - 1}
+          >
+            NEXT ➡
+          </Button>
+        </Box>
+      </Box>
 
-          {/* ✅ Save, Nav & Publish Buttons */}
-          <Box sx={{ display: "flex", gap: 2, mt: 3, flexWrap: "wrap" }}>
-            <Button
-              variant="outlined"
-              disabled={currentIndex === 0}
-              onClick={prevQuestion}
-            >
-              ⬅ Previous
-            </Button>
-
-            <Button
-              variant="contained"
-              sx={{
-                backgroundColor: "#4748ac",
-                "&:hover": { backgroundColor: "#373885" },
-              }}
-              onClick={handleSave}
-            >
-              💾 Save
-            </Button>
-
-            <Button
-              variant="outlined"
-              disabled={currentIndex === questions.length - 1}
-              onClick={nextQuestion}
-            >
-              Next ➡
-            </Button>
-
-            {/* 🚀 Publish Button */}
-            <Button
-              variant="contained"
-              color="success"
-              sx={{
-                backgroundColor: "#2e7d32",
-                "&:hover": { backgroundColor: "#1b5e20" },
-                ml: "auto",
-              }}
-              onClick={handlePublish}
-            >
-              🚀 Publish
-            </Button>
-          </Box>
-        </CardContent>
-      </Card>
+      {/* SNACKBAR */}
+      <Snackbar
+        open={snack.open}
+        autoHideDuration={2000}
+        onClose={() => setSnack((s) => ({ ...s, open: false }))}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          onClose={() => setSnack((s) => ({ ...s, open: false }))}
+          severity={snack.severity}
+          sx={{ width: "100%" }}
+        >
+          {snack.msg}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }
+
