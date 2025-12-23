@@ -5,9 +5,11 @@ import React, {
   useCallback,
   useLayoutEffect,
 } from "react";
+
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../../../LoginSystem/context/AuthContext";
 import API from "../../../LoginSystem/axios";
+
 import {
   Box,
   Paper,
@@ -48,7 +50,7 @@ function fmtHMS(sec) {
   const s = Math.max(0, Math.floor(Number(sec || 0)));
   const h = Math.floor(s / 3600);
   const m = Math.floor((s % 3600) / 60);
-  const r = s % 60; // ✔️ FIX: define r before using it
+  const r = s % 60;
 
   return [h, m, r]
     .map((v) => String(v).padStart(2, "0"))
@@ -181,17 +183,6 @@ export default function StudentAttempts() {
   }, [loadAttempts]);
 
   useEffect(() => {
-    const onShow = () => {
-      if (document.visibilityState === "visible") {
-        loadAttempts();
-      }
-    };
-
-    document.addEventListener("visibilitychange", onShow);
-    return () => document.removeEventListener("visibilitychange", onShow);
-  }, [loadAttempts]);
-
-  useEffect(() => {
     if (user && mockTestId) {
       checkMockAccess();
     }
@@ -220,53 +211,10 @@ export default function StudentAttempts() {
     [rows]
   );
 
-  /* -------- Start/Resume/Clear (unchanged logic) -------- */
-  const continueAttempt = async (mId) => {
-    try {
-      const { data } = await API.post("/api/student/attempts", {
-        mockTestId: mId,
-      });
-      const attemptId = data?.attemptId;
-
-      if (attemptId) nav(`/student/attempt/${attemptId}`);
-      else alert("Could not start/resume the attempt.");
-    } catch (e) {
-      console.error(e);
-      alert("Failed to start/resume the attempt.");
-    }
-  };
-
-  const createNewAttempt = async (mId) => {
-    try {
-      const { data } = await API.post("/api/student/attempts", {
-        mockTestId: mId,
-        forceNew: true,
-        cancelPrevious: false,
-      });
-
-      const attemptId = data?.attemptId;
-      if (attemptId) nav(`/student/attempt/${attemptId}`);
-      else alert("Could not start a new attempt.");
-    } catch (e) {
-      console.error(e);
-      alert("Failed to start a new attempt.");
-    }
-  };
-
-  const clearAttempts = async () => {
-    if (!window.confirm("Are you sure?")) return;
-
-    try {
-      const url = `/api/student/attempts/clear${
-        mockTestId ? `?mockTestId=${encodeURIComponent(mockTestId)}` : ""
-      }`;
-
-      await API.delete(url);
-      await loadAttempts();
-    } catch (e) {
-      console.error("Clear attempts failed:", e);
-      alert("Failed to clear attempts.");
-    }
+  /* -------- Actions (unchanged logic) -------- */
+  const resumeAttempt = (attemptId) => {
+    if (attemptId) nav(`/student/attempt/${attemptId}`);
+    else alert("Could not resume the attempt.");
   };
 
   /* -------- Loading / Login State -------- */
@@ -283,11 +231,7 @@ export default function StudentAttempts() {
     return (
       <Box textAlign="center" mt={10} px={2}>
         <Typography>You need to log in to view attempts.</Typography>
-        <Button
-          sx={{ mt: 2 }}
-          variant="contained"
-          onClick={() => nav("/login")}
-        >
+        <Button sx={{ mt: 2 }} variant="contained" onClick={() => nav("/login")}>
           Go to Login
         </Button>
       </Box>
@@ -306,43 +250,38 @@ export default function StudentAttempts() {
   /* -------- MAIN RENDER -------- */
   return (
     <Box maxWidth={1200} mx="auto" my={3} px={2}>
-      {/* HEADER */}
-      {/* (unchanged) */}
-
-      {/* ---------------- DESKTOP TABLE VIEW ---------------- */}
       {isMdUp ? (
         <Paper elevation={1}>
-          <TableContainer sx={{ maxHeight: "70vh", overflow: "auto" }}>
+          <TableContainer sx={{ maxHeight: "70vh" }}>
             <Table size="small" stickyHeader>
-              <TableHead>
-                {/* (unchanged) */}
-              </TableHead>
-
+              <TableHead />
               <TableBody>
-                {tableRows.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
-                      <Typography color="text.secondary">
-                        No attempts found.
-                      </Typography>
-                    </TableCell>
-                  </TableRow>
-                )}
-
                 {tableRows.map((row) => {
                   const isSubmitted = row.status === "SUBMITTED";
 
                   return (
-                    <TableRow key={row.attemptId} hover>
-                      {/* (unchanged) */}
+                    <TableRow
+                      key={row.attemptId}
+                      hover
+                      sx={{
+                        cursor: hasInProgress ? "pointer" : "default",
+                      }}
+                      onClick={() => {
+                        if (hasInProgress) {
+                          nav(`/student/attempt/${row.attemptId}`);
+                        }
+                      }}
+                    >
+                      <TableCell>{row.displayTitle}</TableCell>
 
                       <TableCell align="center">
                         {isSubmitted ? (
                           <Tooltip title="View Result">
                             <IconButton
-                              onClick={() =>
-                                nav(`/student/results/${row.attemptId}`)
-                              }
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                nav(`/student/results/${row.attemptId}`);
+                              }}
                               size="small"
                             >
                               <VisibilityIcon fontSize="small" />
@@ -352,14 +291,22 @@ export default function StudentAttempts() {
                           <Button
                             variant="contained"
                             startIcon={<PlayArrowIcon />}
-                            onClick={() => continueAttempt(mockTestId)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              resumeAttempt(row.attemptId);
+                            }}
                             size="small"
                             sx={{ backgroundColor: "#4748ac" }}
                           >
                             Resume
                           </Button>
                         ) : (
-                          <></>
+                          <PayNowButton
+                            userId={user?.sub || user?.id || user?.userId}
+                            productId={`MOCK_${mockTestId}`}
+                            productType="MOCKTEST"
+                            onSuccess={checkMockAccess}
+                          />
                         )}
                       </TableCell>
                     </TableRow>
@@ -370,21 +317,15 @@ export default function StudentAttempts() {
           </TableContainer>
         </Paper>
       ) : (
-        /* ---------------- MOBILE CARD VIEW ---------------- */
         <Stack spacing={1}>
           {tableRows.map((row) => {
             const isSubmitted = row.status === "SUBMITTED";
 
             return (
               <Paper key={row.attemptId} sx={{ p: 2 }}>
-                {/* (unchanged) */}
+                <Typography>{row.displayTitle}</Typography>
 
-                <Stack
-                  direction="row"
-                  justifyContent="flex-end"
-                  spacing={1}
-                  mt={2}
-                >
+                <Stack direction="row" justifyContent="flex-end" mt={2}>
                   {isSubmitted ? (
                     <Button
                       size="small"
@@ -402,12 +343,17 @@ export default function StudentAttempts() {
                       variant="contained"
                       startIcon={<PlayArrowIcon />}
                       sx={{ backgroundColor: "#4748ac" }}
-                      onClick={() => continueAttempt(mockTestId)}
+                      onClick={() => resumeAttempt(row.attemptId)}
                     >
                       Resume
                     </Button>
                   ) : (
-                    <></>
+                    <PayNowButton
+                      userId={user?.sub || user?.id || user?.userId}
+                      productId={`MOCK_${mockTestId}`}
+                      productType="MOCKTEST"
+                      onSuccess={checkMockAccess}
+                    />
                   )}
                 </Stack>
               </Paper>

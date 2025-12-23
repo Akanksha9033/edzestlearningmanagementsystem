@@ -1,5 +1,7 @@
 
 // ExamShell.jsx
+
+
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Box, CircularProgress, Typography } from "@mui/material";
@@ -42,15 +44,27 @@ export default function ExamShell() {
   const nav = useNavigate();
   const { ready, user } = useAuth();
 
+  console.log("🟣 ExamShell MOUNTED");
+console.log("🟣 attemptId from URL:", attemptId);
+console.log("🟣 ready:", ready);
+console.log("🟣 user:", user);
+
   const [loading, setLoading] = useState(true);
   const [meta, setMeta] = useState(null);
   const [mockMinutes, setMockMinutes] = useState(null);
 
   // auth gate
-  useEffect(() => {
-    if (!ready) return;
+ useEffect(() => {
+  if (!ready) return;
+
+  // 🔒 wait a tick so auth can hydrate
+  const t = setTimeout(() => {
     if (!user) nav("/login", { replace: true });
-  }, [ready, user, nav]);
+  }, 300);
+
+  return () => clearTimeout(t);
+}, [ready, user, nav]);
+
 
   // load attempt
   useEffect(() => {

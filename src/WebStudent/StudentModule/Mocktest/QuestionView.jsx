@@ -59,7 +59,15 @@ function QuestionViewInner(
       Array.isArray(data?.saved?.highlights) ? data.saved.highlights : []
     );
     setTimeSpent(Number(data?.saved?.timeSpentSec || 0));
+
+ // ✅ RESTORE HIGHLIGHT / STRIKE HTML AFTER REFRESH
+  if (data?.saved?.markup && rootRef.current) {
+    rootRef.current.innerHTML = data.saved.markup;
+  }
+
   }, [data, isMulti]);
+
+
 
   useEffect(() => {
     if (disabled) return;
@@ -146,7 +154,18 @@ function QuestionViewInner(
     return null;
   };
 
+  // ✅ Save current question HTML (for refresh-safe highlight/strike)
+const saveMarkup = () => {
+  if (!rootRef.current) return;
+  const html = rootRef.current.innerHTML;
+  onSave?.({ markup: html });
+};
+
+
   const wrapRange = (range, nodeName, style = {}) => {
+
+ 
+
     const wrapper = document.createElement(nodeName);
     Object.assign(wrapper.style, style);
     try {
@@ -160,13 +179,16 @@ function QuestionViewInner(
   };
 
   const applyHighlightFromSelection = () => {
+
     if (disabled || !enableHighlight) return;
     const range = getValidRange();
     if (!range) return;
     wrapRange(range, "mark");
     const next = [...highlights, { t: Date.now() }];
-    setHighlights(next);
-    debouncedSave({ highlights: next });
+  setHighlights(next);
+debouncedSave({ highlights: next });
+setTimeout(saveMarkup, 0); // ✅ ADD THIS LINE
+
   };
 
   const applyStrikeFromSelection = () => {
@@ -175,8 +197,10 @@ function QuestionViewInner(
     if (!range) return;
     wrapRange(range, "span", { textDecoration: "line-through" });
     const next = [...strikes];
-    setStrikes(next);
-    debouncedSave();
+   setStrikes(next);
+debouncedSave();
+setTimeout(saveMarkup, 0); // ✅ ADD THIS LINE
+
   };
 
   const toggleStrikeOption = (i) => {
@@ -184,7 +208,11 @@ function QuestionViewInner(
     setStrikes((prev) => {
       const has = prev.includes(i);
       const next = has ? prev.filter((x) => x !== i) : [...prev, i];
-      setTimeout(() => debouncedSave(), 0);
+      setTimeout(() => {
+  debouncedSave();
+  saveMarkup(); // ✅ ADD
+}, 0);
+
       return next;
     });
   };
