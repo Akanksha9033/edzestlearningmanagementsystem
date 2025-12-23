@@ -101,6 +101,15 @@ router.post(
       const normType = normalizeType(type);
       // ⭐ QUIZ CREATE HANDLER — no video/file needed
 if (normType === "quiz") {
+
+
+  // 🔥 HLS path auto-calc
+let hlsKey = "";
+if (videoKey && videoKey.endsWith(".mp4")) {
+  const base = videoKey.replace(".mp4", "");
+  hlsKey = `${base}/hls/${base.split("/").pop()}_720p.m3u8`;
+}
+
   const doc = await Lesson.create({
     _id: _idFromClient,
     courseId,
@@ -232,13 +241,23 @@ router.put(
   "fileKey",
   "fileUrl",
   "videoUrl",
+
     "hlsKey",     // ✅ ADD THIS
   "hlsUrl", 
+
   "questions",       // ⭐ added
   "explanation"      // ⭐ added
 ].forEach((f) => {
   if (body[f] !== undefined) $set[f] = body[f];
 });
+
+
+      // ⭐ AUTO CREATE hlsKey IF videoKey is mp4
+      if ($set.videoKey && $set.videoKey.endsWith(".mp4")) {
+        const base = $set.videoKey.replace(".mp4", "");
+        $set.hlsKey = `${base}/hls/${base.split("/").pop()}_720p.m3u8`;
+      }
+
 
       if ($set.type) $set.type = normalizeType($set.type);
 
