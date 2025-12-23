@@ -483,7 +483,7 @@ export default function StudentAttempts() {
                     >
                       Resume
                     </Button>
-                  ) : (
+                  
                     false && (
                       <PayNowButton
                         userId={user?.sub || user?.id || user?.userId}
@@ -493,6 +493,15 @@ export default function StudentAttempts() {
                         label="Pay ₹1 to Unlock"
                       />
                     )
+
+                    <PayNowButton
+                      userId={user?.sub || user?.id || user?.userId}
+                      productId={`MOCK_${mockTestId}`}
+                      productType="MOCKTEST"   
+                      onSuccess={checkMockAccess}
+                      label="Pay ₹1 to Unlock"
+                    />
+
                   )}
 
                 </Stack>
