@@ -26,3 +26,10 @@ API/.env
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# zip backups / exports
+*.zip
+
+# generated media / local assets
+public/hls/
+videos/

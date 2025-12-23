@@ -12,11 +12,36 @@ import { useNavigate, useLocation } from "react-router-dom";
    ✅ Student Sidebar Menu Configuration
 ====================================================== */
 const menuItems = [
-  { id: "dashboard", icon: <FaTachometerAlt />, label: "Dashboard", path: "/student/dashboard" },
-  { id: "mocktest",   icon: <FaBookOpen />,      label: "MockTest", path: "/student/mocktests" },
-  { id: "q-bank",   icon: <FaUserCircle />,    label: "Q-Bank",    path: "/student/qbank" },
- { id: "course",   icon: <FaUserCircle />,    label: "Course",    path: "/student/courses" },
- { id: "e-book",   icon: <FaUserCircle />,    label: "E-Book",    path: "/ebooks" },
+  {
+    id: "dashboard",
+    icon: <FaTachometerAlt />,
+    label: "Dashboard",
+    path: "/student/dashboard",
+  },
+  {
+    id: "mocktest",
+    icon: <FaBookOpen />,
+    label: "MockTest",
+    path: "/student/mocktests",
+  },
+  {
+    id: "q-bank",
+    icon: <FaUserCircle />,
+    label: "Q-Bank",
+    path: "/student/qbank",
+  },
+  {
+    id: "course",
+    icon: <FaUserCircle />,
+    label: "Course",
+    path: "/student/courses",
+  },
+  {
+    id: "e-book",
+    icon: <FaUserCircle />,
+    label: "E-Book",
+    path: "/ebooks",
+  },
 ];
 
 export default function StudentSidebar({ isCollapsed, toggleSidebar }) {
@@ -57,7 +82,7 @@ export default function StudentSidebar({ isCollapsed, toggleSidebar }) {
                 isActive ? "btn-primary" : "btn-dark"
               }`}
               type="button"
-              onClick={() => navigate(item.path)} // ✅ navigate to page
+              onClick={() => navigate(item.path)}
             >
               <span className="fs-5 me-3">{item.icon}</span>
               <span

@@ -1050,7 +1050,7 @@ function QBankExplanationPager({ results = [] }) {
                     }}
                   >
                     {String.fromCharCode(65 + i)}. {opt}
-                  </Box>
+                  </Box> 
                 );
               })}
             </Stack>
