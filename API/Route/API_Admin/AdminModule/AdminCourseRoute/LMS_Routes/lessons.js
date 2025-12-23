@@ -101,13 +101,6 @@ router.post(
       const normType = normalizeType(type);
       // ⭐ QUIZ CREATE HANDLER — no video/file needed
 if (normType === "quiz") {
-
-  // 🔥 HLS path auto-calc
-let hlsKey = "";
-if (videoKey && videoKey.endsWith(".mp4")) {
-  const base = videoKey.replace(".mp4", "");
-  hlsKey = `${base}/hls/${base.split("/").pop()}_720p.m3u8`;
-}
   const doc = await Lesson.create({
     _id: _idFromClient,
     courseId,
@@ -174,9 +167,37 @@ if (videoKey && videoKey.endsWith(".mp4")) {
         fileKey,
         fileUrl: fileUrlOut,
         videoUrl: videoUrlOut,
+        hlsKey: req.body.hlsKey || "",
+
         duration: Number(duration) || 0,
         status: status || "draft",
       });
+      // ⭐ SAVE UPLOADED VIDEO INFO TO NEW DYNAMODB TABLE
+try {
+  const { DynamoDBClient, PutItemCommand } = require("@aws-sdk/client-dynamodb");
+
+  const ddb = new DynamoDBClient({ region: process.env.AWS_REGION });
+
+  await ddb.send(
+    new PutItemCommand({
+      TableName: "EdzestVideoTable",
+      Item: {
+        lessonId:  { S: doc._id.toString() },
+        courseId:  { S: courseId },
+        sectionId: { S: sectionId },
+        videoKey:  { S: videoKey || "" },
+        type:      { S: normType },
+        createdAt: { S: new Date().toISOString() }
+      }
+    })
+  );
+
+  console.log("🔥 UI Upload Saved to EdzestVideoTable");
+
+} catch (e) {
+  console.error("❌ Dynamo Insert Failed:", e);
+}
+
 
       res.status(201).json({ ok: true, lesson: doc });
     } catch (err) {
@@ -211,18 +232,13 @@ router.put(
   "fileKey",
   "fileUrl",
   "videoUrl",
+    "hlsKey",     // ✅ ADD THIS
+  "hlsUrl", 
   "questions",       // ⭐ added
   "explanation"      // ⭐ added
 ].forEach((f) => {
   if (body[f] !== undefined) $set[f] = body[f];
 });
-
-      // ⭐ AUTO CREATE hlsKey IF videoKey is mp4
-      if ($set.videoKey && $set.videoKey.endsWith(".mp4")) {
-        const base = $set.videoKey.replace(".mp4", "");
-        $set.hlsKey = `${base}/hls/${base.split("/").pop()}_720p.m3u8`;
-      }
-
 
       if ($set.type) $set.type = normalizeType($set.type);
 

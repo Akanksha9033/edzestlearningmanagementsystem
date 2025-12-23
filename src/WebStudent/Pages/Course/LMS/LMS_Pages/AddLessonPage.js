@@ -75,6 +75,8 @@ export default function AddLessonPage() {
   const [articleHtml, setArticleHtml] = useState("");
 
   const [videoKey, setVideoKey] = useState("");
+  const [hlsKey, setHlsKey] = useState("");
+
   const [fileKey, setFileKey] = useState("");
 
   const [existingTitles, setExistingTitles] = useState([]);
@@ -331,6 +333,7 @@ async function resolveSignedUrl(key) {
       courseId,
       sectionId,
       title: title.trim(),
+        hlsKey,   
       type: currentType,
       duration: isVideo ? (duration && duration > 0 ? duration : 1) : Number(duration) || 0,
     };
@@ -540,18 +543,16 @@ if (["quiz", "section quiz"].includes(currentType.toLowerCase().trim())) {
       {/* S3 Uploads */}
       {currentType.toLowerCase().trim() === "video" && (
         <LessonUploadArea
-          label="Upload MP4"
-          folder={`courses/${courseId}/sections/${sectionId}`}
-          fileInputRef={fileInputRef}
-          onUploaded={({ key, duration: d }) => {
-            dbg("onUploaded(video)", { key, d });
-            setVideoKey(key);
-            setDuration(d || 1);
-            setFileUrl(
-              `${API_BASE}/api/media/stream?key=${encodeURIComponent(key)}`
-            );
-          }}
-        />
+  type="video"
+  folder={`courses/${courseId}/sections/${sectionId}`}
+  onUploaded={({ key }) => {
+    setVideoKey(key);
+
+    // ✅ STEP-3: FAKE AUTO-HLS (local testing)
+    setHlsKey("hls/index.m3u8");
+  }}
+/>
+
       )}
 
       {/* ---- PDF ---- */}

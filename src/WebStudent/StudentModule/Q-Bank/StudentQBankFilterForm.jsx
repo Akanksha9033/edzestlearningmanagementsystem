@@ -393,7 +393,22 @@ export default function StudentQBankFilterForm() {
   const handleChange = (field, value) =>
     setForm((f) => ({ ...f, [field]: value }));
 
+
+  // ✅ at least one filter selected?
+const hasAnyFilter =
+  Boolean(form.task) ||
+  Boolean(form.difficulty) ||
+  Boolean(form.questionType) ||
+  Boolean(form.performanceDomain) ||
+  Boolean(form.approach) ||
+  Boolean(form.exam);
+
   const handleStart = async () => {
+
+    if (!hasAnyFilter) {
+  setErrMsg("Please select at least one filter (Task / Difficulty / Type / Domain / Approach).");
+  return;
+}
     try {
       const payload = {
         ...form,
@@ -554,7 +569,8 @@ export default function StudentQBankFilterForm() {
             fullWidth
             onClick={handleStart}
             sx={{ backgroundColor: "#4748ac" }}
-            disabled={!bankId}
+            disabled={!hasAnyFilter || loading}
+
           >
             Start Session
           </Button>

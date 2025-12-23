@@ -24,6 +24,8 @@ const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 
 /* -------------------- S3 client -------------------- */
 // Supports either AWS_REGION or S3_REGION, and S3_BUCKET_NAME or S3_BUCKET
+const IS_LOCAL = process.env.NODE_ENV !== "production";
+
 const REGION = process.env.AWS_REGION || process.env.S3_REGION;
 const BUCKET = process.env.S3_BUCKET_NAME || process.env.S3_BUCKET;
 
@@ -311,6 +313,19 @@ router.post("/upload-direct", upload.single("file"), async (req, res) => {
     });
 
     await s3.send(cmd);
+
+    // ⭐⭐⭐ LOCAL AUTO-HLS (FAKE FOR DEV)
+if (IS_LOCAL && req.file.mimetype.startsWith("video/")) {
+  console.log("🧪 LOCAL MODE: assuming HLS ready for", key);
+
+  // yahan frontend ko HLS path mil jayega
+  return res.json({
+    key,
+    hlsKey: "hls/index.m3u8",
+  });
+}
+
+// default response
     res.json({ key });
   } catch (e) {
     console.error("[upload-direct ERROR]", e);

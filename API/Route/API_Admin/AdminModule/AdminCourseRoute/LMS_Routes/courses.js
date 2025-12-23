@@ -627,7 +627,10 @@ async function hydrateLessonsIntoSections(_courseId, courseDoc) {
       fileKey: l.fileKey || null,
       fileUrl: l.fileUrl || "",
       videoUrl: l.videoUrl || "",
+      hlsKey: l.hlsKey || "",
+  hlsUrl: l.hlsUrl || "",
       status: l.status || "draft",
+
       createdAt: l.createdAt,
       updatedAt: l.updatedAt,
       sectionId: sid,

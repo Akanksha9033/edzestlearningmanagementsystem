@@ -1,3 +1,4 @@
+
 import React, { useEffect, useMemo, useState, useCallback, useLayoutEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../../../LoginSystem/context/AuthContext";
@@ -37,6 +38,13 @@ export default function StudentAttempts() {
   const { mockTestId } = useParams();
   const nav = useNavigate();
   const { ready, user } = useAuth();
+
+ 
+  console.log("🟢 StudentAttempts mounted");
+  console.log("🟢 mockTestId:", mockTestId);
+  console.log("🟢 ready:", ready);
+  console.log("🟢 user:", user);
+
 
   const theme = useTheme();
   const isMdUp = useMediaQuery(theme.breakpoints.up("md"));
@@ -189,8 +197,13 @@ export default function StudentAttempts() {
     try {
       const { data } = await API.post("/api/student/attempts", { mockTestId: mId });
       const attemptId = data?.attemptId;
+       console.log("🟢 extracted attemptId:", attemptId);
 
+      // ✅ FIX: Always go to ExamRunner route
       if (attemptId) nav(`/student/attempt/${attemptId}`);
+
+      
+
       else alert("Could not start/resume the attempt.");
     } catch (e) {
       console.error(e);
@@ -198,24 +211,44 @@ export default function StudentAttempts() {
     }
   };
 
-  const createNewAttempt = async (mId) => {
-    try {
-      const { data } = await API.post("/api/student/attempts", {
-        mockTestId: mId,
-        forceNew: true,
-        cancelPrevious: false,
-      });
+ const createNewAttempt = async (mId) => {
+  console.log("🟡 createNewAttempt CLICKED");
+  console.log("🟡 mockTestId:", mId);
 
-      const attemptId = data?.attemptId;
-      if (attemptId) nav(`/student/attempt/${attemptId}`);
-      else alert("Could not start a new attempt.");
-    } catch (e) {
-      console.error(e);
-      alert("Failed to start a new attempt.");
+  try {
+    const { data } = await API.post("/api/student/attempts", {
+      mockTestId: mId,
+      forceNew: true,
+      cancelPrevious: false,
+    });
+
+    console.log("🟢 createNewAttempt API RESPONSE:", data);
+
+    const attemptId = data?.attemptId;
+    console.log("🟢 extracted attemptId:", attemptId);
+
+    if (attemptId) {
+      console.log("🟢 NAVIGATING TO /student/exam/" + attemptId);
+      nav(`/student/attempt/${attemptId}`);
+
+    } else {
+      console.error("🔴 attemptId MISSING");
     }
+  } catch (e) {
+    console.error("🔴 createNewAttempt FAILED:", e);
+  }
+};
+
+  // ✅ FIX: Resume should open existing attempt (no new API call)
+  const resumeAttempt = (attemptId) => {
+    if (attemptId) nav(`/student/attempt/${attemptId}`);
+
+    else alert("Could not resume the attempt.");
   };
 
   const clearAttempts = async () => {
+
+
     if (!window.confirm("Are you sure?")) return;
 
     try {
@@ -335,7 +368,20 @@ export default function StudentAttempts() {
                   const isSubmitted = row.status === "SUBMITTED";
 
                   return (
-                    <TableRow key={row.attemptId} hover>
+                   
+<TableRow
+  key={row.attemptId}
+  hover
+  sx={{
+    cursor: isInProgress ? "pointer" : "default",
+  }}
+  onClick={() => {
+    if (isInProgress) {
+      nav(`/student/attempt/${row.attemptId}`);
+    }
+  }}
+>
+
 
                       {!mockTestId && (
                         <TableCell>
@@ -373,7 +419,7 @@ export default function StudentAttempts() {
                           <Button
                             variant="contained"
                             startIcon={<PlayArrowIcon />}
-                            onClick={() => continueAttempt(mockTestId)}
+                            onClick={() => resumeAttempt(row.attemptId)}
                             size="small"
                             sx={{ backgroundColor: "#4748ac" }}
                           >
@@ -433,7 +479,7 @@ export default function StudentAttempts() {
                       variant="contained"
                       startIcon={<PlayArrowIcon />}
                       sx={{ backgroundColor: "#4748ac" }}
-                      onClick={() => continueAttempt(mockTestId)}
+                      onClick={() => resumeAttempt(row.attemptId)}
                     >
                       Resume
                     </Button>

@@ -3,7 +3,7 @@ import axios from "axios";
 const API = axios.create({
   baseURL: process.env.REACT_APP_API_URL || "http://localhost:5000",
   withCredentials: true, // httpOnly refresh cookie
-  timeout: 60000,
+  timeout: 80000,
 });
 
 let _accessToken = null;

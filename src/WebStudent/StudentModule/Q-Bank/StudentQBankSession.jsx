@@ -83,16 +83,25 @@ export default function StudentQBankSession() {
 });
 
 
-  const [timeLeft, setTimeLeft] = useState(() => {
-    if (location.state?.duration) return location.state.duration * 60;
-    try {
-      const raw = localStorage.getItem("qbank-session-timeLeft");
-      const v = Number(raw);
-      return Number.isFinite(v) && v > 0 ? v : 600;
-    } catch {
-      return 600;
+const [timeLeft, setTimeLeft] = useState(() => {
+  try {
+    // ✅ FIRST priority: saved remaining time
+    const raw = localStorage.getItem("qbank-session-timeLeft");
+    const v = Number(raw);
+    if (Number.isFinite(v) && v > 0) {
+      return v;
     }
-  });
+  } catch {}
+
+  // ✅ SECOND priority: duration from filter page (first load only)
+  if (location.state?.duration) {
+    return location.state.duration * 60;
+  }
+
+  // ✅ fallback
+  return 600;
+});
+
 
  const [currentQIndex, setCurrentQIndex] = useState(() => {
   try {
@@ -139,6 +148,22 @@ useEffect(() => {
    LOCAL STORAGE PERSIST (REFRESH-PROOF)
 ====================================================== */
 
+// ✅ SAVE TIMER FOR REFRESH
+useEffect(() => {
+  if (result) return; // ⛔ submit ke baad save band
+
+  try {
+    localStorage.setItem(
+      "qbank-session-timeLeft",
+      String(timeLeft)
+    );
+  } catch (e) {
+    console.warn("Timer save failed", e);
+  }
+}, [timeLeft, result]);
+
+
+
 // Save bankId
 useEffect(() => {
   if (bankId) {
@@ -160,15 +185,7 @@ useEffect(() => {
   }
 }, [questions]);
 
-// Save timer
-useEffect(() => {
-  try {
-    localStorage.setItem(
-      "qbank-session-timeLeft",
-      String(timeLeft)
-    );
-  } catch {}
-}, [timeLeft]);
+
 
 // Save answers
 useEffect(() => {
@@ -201,8 +218,16 @@ useEffect(() => {
     localStorage.removeItem("qbank-session-answers");
     localStorage.removeItem("qbank-session-timeLeft");
     localStorage.removeItem("qbank-session-currentQIndex");
+
+    // ✅ clear highlight / strike markup ONLY after submit
+    questions.forEach((q) => {
+      localStorage.removeItem(
+        `qbank-session-markup-${q.questionId}`
+      );
+    });
   }
 }, [result]);
+
 
 
 
@@ -248,6 +273,8 @@ useEffect(() => {
         return prev - 1;
       });
     }, 1000);
+
+
 
     return () => timerRef.current && clearInterval(timerRef.current);
   }, [result, paused]);
@@ -618,20 +645,41 @@ useEffect(() => {
                         options: q.options || [],
                         questionType: q.questionType,
                       },
-                      saved: {
-                        answer: answers[q.questionId],
-                      },
+                     saved: {
+  answer: answers[q.questionId],
+  markup: (() => {
+    try {
+      return localStorage.getItem(
+        `qbank-session-markup-${q.questionId}`
+      );
+    } catch {
+      return "";
+    }
+  })(),
+},
+
                     }}
                     disabled={!!result}
                     enableHighlight
                     enableStrikethrough
                     hideInternalFlagButton={true}
-                    onSave={(payload) => {
-                      if (!payload) return;
-                      if ("answer" in payload) {
-                        handleChange(q.questionId, payload.answer);
-                      }
-                    }}
+                 onSave={(payload) => {
+  if (!payload) return;
+
+  if ("answer" in payload) {
+    handleChange(q.questionId, payload.answer);
+  }
+
+  if (payload.markup !== undefined) {
+    try {
+      localStorage.setItem(
+        `qbank-session-markup-${q.questionId}`,
+        payload.markup || ""
+      );
+    } catch {}
+  }
+}}
+
                   />
                 </Box>
               ))}
