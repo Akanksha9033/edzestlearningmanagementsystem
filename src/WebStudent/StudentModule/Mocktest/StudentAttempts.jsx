@@ -468,41 +468,35 @@ export default function StudentAttempts() {
                 <Stack direction="row" justifyContent="flex-end" spacing={1} mt={2}>
 
                   {isSubmitted ? (
-                    <Button size="small" variant="outlined" startIcon={<VisibilityIcon />}
-                      onClick={() => nav(`/student/results/${row.attemptId}`)}
-                    >
-                      View
-                    </Button>
-                  ) : hasAccess ? (
-                    <Button
-                      size="small"
-                      variant="contained"
-                      startIcon={<PlayArrowIcon />}
-                      sx={{ backgroundColor: "#4748ac" }}
-                      onClick={() => resumeAttempt(row.attemptId)}
-                    >
-                      Resume
-                    </Button>
-                  
-                    false && (
-                      <PayNowButton
-                        userId={user?.sub || user?.id || user?.userId}
-                        productId={`MOCK_${mockTestId}`}
-                        productType="MOCKTEST"
-                        onSuccess={checkMockAccess}
-                        label="Pay ₹1 to Unlock"
-                      />
-                    )
+  <Button
+    size="small"
+    variant="outlined"
+    startIcon={<VisibilityIcon />}
+    onClick={() => nav(`/student/results/${row.attemptId}`)}
+  >
+    View
+  </Button>
+) : hasAccess ? (
+  <Button
+    size="small"
+    variant="contained"
+    startIcon={<PlayArrowIcon />}
+    sx={{ backgroundColor: "#4748ac" }}
+    onClick={() => resumeAttempt(row.attemptId)}
+  >
+    Resume
+  </Button>
+) : (
+  <PayNowButton
+    userId={user?.sub || user?.id || user?.userId}
+    productId={`MOCK_${mockTestId}`}
+    productType="MOCKTEST"
+    onSuccess={checkMockAccess}
+    label="Pay ₹1 to Unlock"
+  />
+)}
 
-                    <PayNowButton
-                      userId={user?.sub || user?.id || user?.userId}
-                      productId={`MOCK_${mockTestId}`}
-                      productType="MOCKTEST"   
-                      onSuccess={checkMockAccess}
-                      label="Pay ₹1 to Unlock"
-                    />
 
-                  )}
 
                 </Stack>
 
@@ -513,4 +507,4 @@ export default function StudentAttempts() {
       )}
     </Box>
   );
-}
+};
