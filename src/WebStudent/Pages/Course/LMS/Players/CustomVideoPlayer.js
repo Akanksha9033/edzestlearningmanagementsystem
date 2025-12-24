@@ -13,9 +13,6 @@ export default function CustomVideoPlayer({
   courseSlug,
   onEnded,
   onProgress,
-
-  // ✅ NEW (OPTIONAL, NON-BREAKING)
-  isHls: forceHls = false,
 }) {
   const videoRef = useRef(null);
   const hlsRef = useRef(null);
@@ -29,49 +26,56 @@ export default function CustomVideoPlayer({
 
   /** ---------------------------------------------
    *  🔥 HLS OR MP4 AUTO DETECT + ATTACH
-   *  (existing logic preserved + forceHls support)
+   *  (fully fixed for AWS long filenames)
    * --------------------------------------------- */
   useEffect(() => {
     const video = videoRef.current;
     if (!video || !src) return;
-
+ console.log("🎥 [CustomVideoPlayer] src received:", src);
     let hls;
 
-    // ✅ OLD AUTO-DETECT (UNCHANGED)
-    const autoHls = src.includes(".m3u8");
-
-    // ✅ NEW: forceHls OVERRIDES auto-detect (safe)
-    const isHls = forceHls || autoHls;
+    // ⭐ FIXED HLS DETECTION
+    const isHls = src.includes(".m3u8");
 
    if (Hls.isSupported() && isHls) {
-  hls = new Hls({
+  const hlsInstance = new Hls({
     autoStartLoad: true,
-
-    // 🔥 IMPORTANT TUNING (FAST START)
-    maxBufferLength: 10,       // seconds to buffer
-    maxMaxBufferLength: 20,    // hard cap
-    backBufferLength: 5,       // past buffer cleanup
-    startLevel: 0,             // start from lowest quality
-    lowLatencyMode: true,      // faster startup
   });
 
-  hls.loadSource(src);
-  hls.attachMedia(video);
-  hlsRef.current = hls;
+  hlsInstance.loadSource(src);
+  hlsInstance.attachMedia(video);
+
+  hlsRef.current = hlsInstance;
+
+  console.log("✅ HLS.js ATTACHED to video element");
+  console.log("🎬 HLS Source URL:", src);
+
+  // 🔴 HLS ERROR DEBUG (VERY IMPORTANT)
+ hlsInstance.on(Hls.Events.ERROR, (event, data) => {
+  // Ignore non-fatal buffer seek warnings
+  if (data?.details === "bufferSeekOverHole" && data?.fatal === false) {
+    console.warn("⚠️ HLS buffer hole (safe to ignore)");
+    return;
+  }
+
+  console.error("❌ HLS ERROR:", data);
+});
+
 } else {
+  console.log("⚠️ HLS NOT SUPPORTED, playing normally:", src);
+
   video.src = src;
   video.load();
 }
 
 
     if (autoPlay) video.play().catch(() => {});
-
     return () => {
       if (hls) hls.destroy();
     };
-  }, [src, autoPlay, forceHls]);
+  }, [src, autoPlay]);
 
-  /* 🧠 Resume from backend (UNCHANGED) */
+  /* 🧠 Resume from backend (accurate seek) */
   useEffect(() => {
     if (!lessonId) return;
     const v = videoRef.current;
@@ -106,6 +110,7 @@ export default function CustomVideoPlayer({
           if (v.readyState >= 2 && v.duration > 0 && safeResume > 0) {
             v.currentTime = safeResume;
             resumed = true;
+            console.log(`🎯 Resumed from ${safeResume.toFixed(2)}s`);
             setResumeMsg(
               `▶️ Resumed from ${Math.floor(safeResume / 60)}:${String(
                 Math.floor(safeResume % 60)
@@ -128,13 +133,13 @@ export default function CustomVideoPlayer({
     fetchAndSeek();
   }, [lessonId, src]);
 
-  /* detect duration (UNCHANGED) */
+  /* detect duration */
   const onLoaded = useCallback(() => {
     const d = Math.floor(videoRef.current?.duration || 0);
     setDuration(d);
   }, []);
 
-  /* 🧮 progress tracking (UNCHANGED) */
+  /* 🧮 progress tracking all fix*/
   const handleTimeUpdate = useCallback(() => {
     const v = videoRef.current;
     if (!v) return;
@@ -147,6 +152,7 @@ export default function CustomVideoPlayer({
     setLocalPct(pct);
     onProgress?.(pct);
 
+    // store locally
     localStorage.setItem(
       `videoProgress_${lessonId}`,
       JSON.stringify({ current: v.currentTime, duration: d })
@@ -166,6 +172,7 @@ export default function CustomVideoPlayer({
             percent: pct,
           });
           lastSentPct.current = send95 ? 95 : 50;
+          console.log("✅ Progress updated:", pct);
         }
       } catch (e) {
         console.warn("⚠️ Progress update failed", e);
@@ -173,7 +180,7 @@ export default function CustomVideoPlayer({
     }, 3000);
   }, [courseSlug, lessonId, onProgress]);
 
-  /* ended → 100% (UNCHANGED) */
+  /* ended → 100% */
   const handleEnded = useCallback(async () => {
     const v = videoRef.current;
     if (!v) return;
@@ -193,11 +200,12 @@ export default function CustomVideoPlayer({
         completed: true,
       });
       lastSentPct.current = 100;
+      console.log("🏁 Completed 100%");
     } catch {}
     onEnded?.();
   }, [courseSlug, lessonId, onEnded, onProgress]);
 
-  /* cleanup (UNCHANGED) */
+  /* cleanup */
   useEffect(() => {
     return () => {
       clearTimeout(debounceTimer.current);
@@ -247,6 +255,7 @@ export default function CustomVideoPlayer({
               padding: "6px 12px",
               borderRadius: 8,
               fontSize: 13,
+              animation: "fadeinout 2.5s ease",
             }}
           >
             {resumeMsg}
@@ -257,8 +266,7 @@ export default function CustomVideoPlayer({
       <div style={{ fontSize: 12, color: "#777", marginTop: 6 }}>
         {duration > 0 ? (
           <>
-            ⏱ Duration: {Math.floor(duration / 60)}m{" "}
-            {Math.round(duration % 60)}s • Watched: {localPct}%
+            ⏱ Duration: {Math.floor(duration / 60)}m {Math.round(duration % 60)}s • Watched: {localPct}%
           </>
         ) : (
           <>⏱ Detecting duration...</>
