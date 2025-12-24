@@ -74,6 +74,7 @@ export default function StudentDashboard() {
       `}</style>
 
       <div className="row g-0 ez-bg">
+        {/* Sidebar (desktop md+) */}
         <div className={`d-none d-md-block bg-dark ${sidebarCols}`}>
           <StudentSidebar
             isCollapsed={isCollapsed}
@@ -81,6 +82,31 @@ export default function StudentDashboard() {
           />
         </div>
 
+        {/* ✅ Offcanvas (mobile sidebar) — ADDED */}
+        <div
+          className="offcanvas offcanvas-start bg-dark text-white d-md-none"
+          tabIndex="-1"
+          id="mobileSidebar"
+          aria-labelledby="mobileSidebarLabel"
+        >
+          <div className="offcanvas-header">
+            <h5 className="offcanvas-title" id="mobileSidebarLabel">
+              Student
+            </h5>
+            <button
+              type="button"
+              className="btn-close btn-close-white"
+              data-bs-dismiss="offcanvas"
+              aria-label="Close"
+            ></button>
+          </div>
+
+          <div className="offcanvas-body p-0">
+            <StudentSidebar isCollapsed={false} toggleSidebar={() => {}} />
+          </div>
+        </div>
+
+        {/* Content */}
         <div className={`${contentCols} d-flex flex-column min-vh-100`}>
           <DashboardHeader />
 
