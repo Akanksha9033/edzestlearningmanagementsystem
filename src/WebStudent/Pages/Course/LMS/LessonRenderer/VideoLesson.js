@@ -3,11 +3,11 @@ import React, { useEffect, useMemo, useState } from "react";
 import CustomVideoPlayer from "../Players/CustomVideoPlayer";
 import "../Players/player.css";
 
-// dev/prod ke hisaab se progress toggles
+// dev/prod के हिसाब से progress toggles
 const PROGRESS_ON =
   String(process.env.REACT_APP_PROGRESS_ENABLED || "").toLowerCase() === "true";
 
-/* ---------------- helpers (UNCHANGED) ---------------- */
+/* ---------------- helpers ---------------- */
 function pick(v) {
   if (!v) return "";
   if (typeof v === "string") return v.trim();
@@ -41,10 +41,7 @@ function forceInlineForS3Video(u = "") {
       /X-Amz-Credential/i.test(url.search);
     if (isSigned) {
       if (!/response-content-disposition=/i.test(url.search)) {
-        url.searchParams.append(
-          "response-content-disposition",
-          "inline"
-        );
+        url.searchParams.append("response-content-disposition", "inline");
       }
       if (!/response-content-type=/i.test(url.search)) {
         url.searchParams.append("response-content-type", "video/mp4");
@@ -55,39 +52,29 @@ function forceInlineForS3Video(u = "") {
   return u;
 }
 
-/* ---------------- HLS SUPPORT (FIXED) ---------------- */
-const S3 = "https://edzest-bucket.s3.ap-south-1.amazonaws.com/";
+/* ---------------- HLS SUPPORT ---------------- */
+
+// ✅ FIX #1 — CORRECT HLS BUCKET
+const S3 =
+  "https://pratibha-edzest-video-hls-ap-south-1.s3.ap-south-1.amazonaws.com/";
 
 function resolveVideoUrlCandidates(lesson, extra) {
-  // ✅ HLS ALWAYS FIRST (NO FALLBACK WHEN PRESENT)
-  if (lesson?.hlsKey) {
-    return [
-      {
-        src: `http://localhost:3000/${lesson.hlsKey}`,
-        type: "application/x-mpegURL",
-        isHls: true,
-      },
-    ];
-  }
-
   const arr = [];
 
-  // MP4 fallback (unchanged)
-  if (lesson?.videoKey) {
-    arr.push({
-      src: S3 + lesson.videoKey,
-      type: "video/mp4",
-      isHls: false,
-    });
+  // ✅ FIX #2 — HIGHEST PRIORITY: HLS m3u8 from DB
+  if (lesson?.videoUrl && lesson.videoUrl.includes(".m3u8")) {
+    arr.push(lesson.videoUrl);
   }
 
-  // legacy fallbacks (kept)
-  const legacy = [
+  // old behaviour (do not remove)
+  if (lesson?.hlsKey) arr.push(S3 + lesson.hlsKey);
+  if (lesson?.videoKey) arr.push(S3 + lesson.videoKey);
+
+  arr.push(
     pick(extra?.src),
     pick(extra?.videoUrl),
     pick(extra?.fileUrl),
 
-    pick(lesson?.videoUrl),
     pick(lesson?.fileUrl),
     pick(lesson?.url),
     pick(lesson?.source),
@@ -98,18 +85,10 @@ function resolveVideoUrlCandidates(lesson, extra) {
     pick(lesson?.cloudinary?.url),
     pick(lesson?.meta?.videoUrl),
     pick(lesson?.meta?.fileUrl),
-    pick(lesson?.meta?.url),
-  ].filter(Boolean);
-
-  legacy.forEach((u) =>
-    arr.push({
-      src: u,
-      type: "video/mp4",
-      isHls: false,
-    })
+    pick(lesson?.meta?.url)
   );
 
-  return arr;
+  return arr.filter(Boolean);
 }
 
 /* ---------------- component ---------------- */
@@ -126,14 +105,13 @@ export default function VideoLesson({
   );
 
   const [src, setSrc] = useState("");
-  const [isHls, setIsHls] = useState(false);
   const [err, setErr] = useState(false);
 
   useEffect(() => {
     let alive = true;
     setErr(false);
 
-    const first = candidates[0];
+    const first = candidates[0] || "";
     if (!first) {
       setSrc("");
       return () => {
@@ -141,17 +119,13 @@ export default function VideoLesson({
       };
     }
 
-    setIsHls(!!first.isHls);
-
-    if (first.src.includes("/api/media/sign?")) {
-      fetch(first.src)
+    if (first.includes("/api/media/sign?")) {
+      fetch(first)
         .then((r) => r.json())
         .then((d) => {
           if (!alive) return;
           const real = d?.url || "";
-          const fixed = forceInlineForS3Video(
-            normalizeDriveUrl(real)
-          );
+          const fixed = forceInlineForS3Video(normalizeDriveUrl(real));
           setSrc(fixed || real || "");
         })
         .catch(() => {
@@ -159,10 +133,8 @@ export default function VideoLesson({
           setSrc("");
         });
     } else {
-      const fixed = forceInlineForS3Video(
-        normalizeDriveUrl(first.src)
-      );
-      setSrc(fixed || first.src);
+      const fixed = forceInlineForS3Video(normalizeDriveUrl(first));
+      setSrc(fixed || first);
     }
 
     return () => {
@@ -174,9 +146,7 @@ export default function VideoLesson({
 
   if (!src) {
     return (
-      <div className="alert alert-warning">
-        Video URL not available.
-      </div>
+      <div className="alert alert-warning">Video URL not available.</div>
     );
   }
 
@@ -186,7 +156,6 @@ export default function VideoLesson({
         <CustomVideoPlayer
           key={videoKey}
           src={src}
-          isHls={isHls}              // ✅ IMPORTANT
           autoPlay={false}
           lessonId={String(lesson?._id || "")}
           courseSlug={course?.slug || ""}
