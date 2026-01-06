@@ -8,6 +8,7 @@ const stream = require("stream");
 const { authAccess, requireRoles } = require("../../../../../middleware/auth");
 const multer = require("multer");
 const upload = multer({ storage: multer.memoryStorage() });
+const VIDEO_INPUT_BUCKET = process.env.VIDEO_INPUT_BUCKET;
 
 const {
   S3Client,
@@ -24,8 +25,6 @@ const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 
 /* -------------------- S3 client -------------------- */
 // Supports either AWS_REGION or S3_REGION, and S3_BUCKET_NAME or S3_BUCKET
-const IS_LOCAL = process.env.NODE_ENV !== "production";
-
 const REGION = process.env.AWS_REGION || process.env.S3_REGION;
 const BUCKET = process.env.S3_BUCKET_NAME || process.env.S3_BUCKET;
 
@@ -266,77 +265,95 @@ router.post("/abort-multipart", async (req, res) => {
 /* ====================== New routes for frontend ====================== */
 router.post("/presignPut", async (req, res) => {
   try {
-    const { filename, contentType, folder } = req.body;
-    console.log("[presignPut] body:", req.body);
-    console.log("[presignPut] BUCKET:", BUCKET, "REGION:", REGION);
+    const { filename, contentType } = req.body;
 
-    if (!filename) return res.status(400).json({ error: "filename required" });
-    if (!BUCKET) return res.status(500).json({ error: "S3_BUCKET missing" });
+    if (!filename) {
+      return res.status(400).json({ error: "filename required" });
+    }
 
-    const safeFolder = folder ? String(folder).replace(/\/+$/g, "") + "/" : "";
-    const key = `${safeFolder}${Date.now()}-${uuid()}-${filename}`;
-    console.log("[presignPut] key:", key);
+    const safeName = String(filename).replace(/\s+/g, "-");
+
+    // ✅ VIDEO DETECTION
+    const isVideo =
+      (contentType || "").startsWith("video/") ||
+      safeName.toLowerCase().endsWith(".mp4");
+
+    // ✅ BUCKET DECISION
+    const targetBucket = isVideo ? VIDEO_INPUT_BUCKET : BUCKET;
+
+    if (!targetBucket) {
+      return res.status(500).json({ error: "Target bucket missing" });
+    }
+
+    // ✅ KEY STRUCTURE
+    const key = isVideo
+      ? `raw/${Date.now()}-${uuid()}-${safeName}`   // 👈 RAW bucket
+      : `${Date.now()}-${uuid()}-${safeName}`;     // 👈 old behaviour
 
     const cmd = new PutObjectCommand({
-      Bucket: BUCKET,
+      Bucket: targetBucket,
       Key: key,
       ContentType: contentType || "application/octet-stream",
     });
 
     const url = await getSignedUrl(s3, cmd, { expiresIn: 3600 });
-    res.json({ url, key });
+
+    return res.json({
+      url,
+      key,
+      bucket: targetBucket,
+      isVideo,
+    });
   } catch (e) {
     console.error("[presignPut ERROR]", e);
     res.status(500).json({
       error: "Failed to presign",
       detail: e.message,
-      name: e.name,
-      code: e.$metadata?.httpStatusCode,
     });
   }
 });
 
+
 router.post("/upload-direct", upload.single("file"), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: "file missing" });
-    if (!BUCKET) return res.status(500).json({ error: "S3_BUCKET missing" });
 
-    const folder = req.body.folder || "uploads";
-    const key = `${folder}/${Date.now()}-${uuid()}-${req.file.originalname}`;
-    console.log("[upload-direct] key:", key);
+    const safeName = req.file.originalname.replace(/\s+/g, "-");
+
+    // ✅ detect video
+    const isVideo =
+      req.file.mimetype.startsWith("video/") ||
+      safeName.toLowerCase().endsWith(".mp4");
+
+    // ✅ decide bucket
+    const targetBucket = isVideo ? VIDEO_INPUT_BUCKET : BUCKET;
+
+    if (!targetBucket) {
+      return res.status(500).json({ error: "Target bucket missing" });
+    }
+
+    // ✅ key
+    const key = isVideo
+      ? `raw/${Date.now()}-${uuid()}-${safeName}`
+      : `${Date.now()}-${uuid()}-${safeName}`;
+
+    console.log("[upload-direct]", { isVideo, targetBucket, key });
 
     const cmd = new PutObjectCommand({
-      Bucket: BUCKET,
+      Bucket: targetBucket,
       Key: key,
       Body: req.file.buffer,
       ContentType: req.file.mimetype,
     });
 
     await s3.send(cmd);
-
-    // ⭐⭐⭐ LOCAL AUTO-HLS (FAKE FOR DEV)
-if (IS_LOCAL && req.file.mimetype.startsWith("video/")) {
-  console.log("🧪 LOCAL MODE: assuming HLS ready for", key);
-
-  // yahan frontend ko HLS path mil jayega
-  return res.json({
-    key,
-    hlsKey: "hls/index.m3u8",
-  });
-}
-
-// default response
-    res.json({ key });
+    res.json({ key, bucket: targetBucket, isVideo });
   } catch (e) {
     console.error("[upload-direct ERROR]", e);
-    res.status(500).json({
-      error: "Upload failed",
-      detail: e.message,
-      name: e.name,
-      code: e.$metadata?.httpStatusCode,
-    });
+    res.status(500).json({ error: "Upload failed", detail: e.message });
   }
 });
+
 
 router.post(
   "/save-text",

@@ -301,9 +301,19 @@ export default function StudentAttempts() {
       {/* HEADER */}
       <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" alignItems="center" mb={2}>
         <Stack direction="row" alignItems="center">
+
+          <IconButton
+  onClick={() => nav("/student/mocktests")}
+  size="small"
+  sx={{ mr: 0.25 }}
+>
+  <ArrowBackIcon />
+</IconButton>
+
           <IconButton onClick={() => nav(-1)} size="small" sx={{ mr: 0.25 }}>
             <ArrowBackIcon />
           </IconButton>
+
 
           <Typography variant="h6" fontWeight={800}>
             {mockTestId ? (selectedMock?.title || "Your Attempts") : "Your Attempts"}
@@ -381,6 +391,11 @@ export default function StudentAttempts() {
     }
   }}
 >
+
+
+
+
+
 
 
                       {!mockTestId && (

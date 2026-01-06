@@ -320,6 +320,8 @@ setTimeout(saveMarkup, 0); // ✅ ADD THIS LINE
                       const next = has
                         ? arr.filter((x) => x !== i)
                         : [...arr, i];
+                        
+// next.sort((a, b) => a - b); 
                       setAnswer(next);
                       debouncedSave({ answer: next });
                     }}
