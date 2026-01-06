@@ -72,6 +72,9 @@ export default function ExamRunner({
   const [sectionEndOpen, setSectionEndOpen] = useState(false);
   const [breakOpen, setBreakOpen] = useState(false);
   const [breakLeft, setBreakLeft] = useState(0);
+  // ✅ Back button confirm dialog
+const [exitOpen, setExitOpen] = useState(false);
+
 
   // timer
   const timeLeftRef = useRef(seedSec);
@@ -635,6 +638,21 @@ const submitCurrentSection = async () => {
 
         <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mt: 1 }}>
           <Stack direction="row" spacing={2} alignItems="center">
+
+            <Button
+  size="small"
+  variant="outlined"
+  startIcon={<NavigateBeforeIcon />}
+  onClick={() => setExitOpen(true)}
+  sx={{
+    color: "#4748ac",
+    borderColor: "#4748ac",
+    fontWeight: 600,
+  }}
+>
+  Back
+</Button>
+
             <Typography variant="h6" fontWeight={800}>{metaState?.title || "Mock Test"}</Typography>
             <Chip size="small" label={
               hasSections ? `${localCurrent}/${localTotal}` : `${index + 1}/${metaState?.totalQuestions ?? 0}`
@@ -841,6 +859,44 @@ const submitCurrentSection = async () => {
           <Button variant="contained" onClick={submitCurrentSection}>Submit section</Button>
         </DialogActions>
       </Dialog>
+
+      {/* 🔙 Back confirm dialog */}
+<Dialog open={exitOpen} onClose={() => setExitOpen(false)}>
+  <DialogTitle>Are you sure you want to go back?</DialogTitle>
+
+  <DialogContent>
+    <Typography>
+      If you go back now your current progress in this test will be lost.
+    </Typography>
+  </DialogContent>
+
+  <DialogActions>
+    <Button onClick={() => setExitOpen(false)}>
+      Continue Test
+    </Button>
+
+    <Button
+      variant="contained"
+      color="error"
+      onClick={async () => {
+        // ✅ Save + pause attempt safely
+        await keepalivePatchAttempt(attemptId, {
+          timeLeftSec: Math.max(0, Math.floor(timeLeftRef.current)),
+          paused: true,
+          currentIndex: index,
+        });
+
+        setExitOpen(false);
+
+        // 🔥 Redirect to mocktest list
+        onExit();   // already comes from ExamShell
+      }}
+    >
+      Yes
+    </Button>
+  </DialogActions>
+</Dialog>
+
 
       {/* 🔳 Full-screen BLACKOUT overlay during break */}
       {breakOpen && (

@@ -17,7 +17,62 @@ const ATTEMPTS_TABLE = process.env.DDB_STU_ATTEMPTS || "StudentMocktestAttempts"
 const DATA_TABLE = process.env.DDB_STU_DATA || "StudentMocktestData";
 
 router.use(authAccess);
+function normalizeMulti(ans) {
+  if (ans == null) return [];
+
+  if (Array.isArray(ans)) {
+    return Array.from(
+      new Set(
+        ans.map((x) => {
+          if (x == null) return NaN;
+          if (typeof x === "object") return Number(x.optionIndex);
+          return Number(x);
+        })
+      )
+    )
+      .filter((n) => Number.isFinite(n))
+      .sort((a, b) => a - b);
+  }
+
+  if (typeof ans === "string") {
+    return ans
+      .split(/[,\s]+/)
+      .map(Number)
+      .filter((n) => Number.isFinite(n))
+      .sort((a, b) => a - b);
+  }
+
+  return [];
+}
+
+function sameAnswer(user, correct) {
+  // ✅ MULTI CHOICE
+  if (Array.isArray(correct)) {
+    // 🔥 FIX: agar user single number bhej raha hai
+    const ua = normalizeMulti(
+      Array.isArray(user) ? user : [user]
+    );
+
+    const ca = normalizeMulti(correct);
+
+    if (ua.length !== ca.length) return false;
+    for (let i = 0; i < ua.length; i++) {
+      if (ua[i] !== ca[i]) return false;
+    }
+    return true;
+  }
+
+  // ✅ SINGLE CHOICE
+  return Number(user) === Number(correct);
+}
+
+
+
+
 router.use(requireRoles());
+// ✅ COMMON ANSWER COMPARISON (MULTI + SINGLE SELECT)
+
+
 
 /* ------------------------------- helpers ------------------------------- */
 
@@ -236,6 +291,12 @@ if (!maybeExisting) {
 
     const seedSecs = computeSeedSeconds(meta);
 
+// 🔒 HARD GUARD (ADD THIS)
+if (seedSecs <= 0) {
+  return res.status(400).json({
+    error: "Invalid mock duration. Please check admin duration settings.",
+  });
+}
     function buildSectionTimers(meta, totalDurationSec, sections) {
       if (!sections?.length) return [];
       let mins = Array.isArray(meta?.sectionDurations)
@@ -650,15 +711,28 @@ router.patch("/attempts/:attemptId/submit-section", async (req, res) => {
     if (att.userId !== req.user?.id) return res.status(403).json({ error: "Forbidden" });
     if (!att.useSections) return res.status(400).json({ error: "Sections not enabled" });
     if (att.status !== "IN_PROGRESS") return res.status(400).json({ error: "Attempt not in progress" });
+    if (sectionIndex !== att.currentSection) {
+  return res.status(400).json({
+    error: "Cannot submit inactive section"
+  });
+}
+
 
     const sectionInfo = Array.isArray(att.sectionInfo) ? [...att.sectionInfo] : [];
     if (!sectionInfo[sectionIndex]) {
       return res.status(400).json({ error: "Invalid section index" });
     }
-    sectionInfo[sectionIndex].submittedAt = nowSec();
+   const totalSecs = Array.isArray(att.sections) ? att.sections.length : 0;
+const isLastSection = sectionIndex >= totalSecs - 1;
+const next = isLastSection ? null : sectionIndex + 1;
 
-    const totalSecs = Array.isArray(att.sections) ? att.sections.length : 0;
-    const next = sectionIndex + 1 < totalSecs ? sectionIndex + 1 : null;
+sectionInfo[sectionIndex].submittedAt = nowSec();
+
+if (next !== null && sectionInfo[next]) {
+  sectionInfo[next].startedAt = nowSec();
+}
+
+
 
     let nextIndex = att.currentIndex;
     if (next !== null) {
@@ -670,14 +744,20 @@ router.patch("/attempts/:attemptId/submit-section", async (req, res) => {
       .update({
         TableName: ATTEMPTS_TABLE,
         Key: { attemptId, entity: "attempt" },
-        UpdateExpression:
-          "SET sectionInfo = :si, currentSection = :cs, currentIndex = :ci, qStartedAtEpoch = :qs",
-        ExpressionAttributeValues: {
-          ":si": sectionInfo,
-          ":cs": next,
-          ":ci": nextIndex,
-          ":qs": nowSec(),
-        },
+       UpdateExpression:
+  "SET sectionInfo = :si, currentSection = :cs, currentIndex = :ci, qStartedAtEpoch = :qs, #st = :st",
+ExpressionAttributeNames: {
+  "#st": "status"
+},
+ExpressionAttributeValues: {
+  ":si": sectionInfo,
+  ":cs": next,
+  ":ci": nextIndex,
+  ":qs": next !== null ? nowSec() : att.qStartedAtEpoch,
+
+  ":st": "IN_PROGRESS"
+},
+
       })
       .promise();
 
@@ -708,16 +788,7 @@ router.patch("/attempts/:attemptId/submit-section", async (req, res) => {
             ans !== null &&
             (Array.isArray(ans) ? ans.length > 0 : String(ans ?? "").trim() !== "");
 
-          const same = (u, c) => {
-            if (Array.isArray(c)) {
-              const ua = Array.isArray(u) ? [...new Set(u)].map(Number).sort() : [];
-              const ca = [...new Set(c)].map(Number).sort();
-              if (ua.length !== ca.length) return false;
-              for (let i = 0; i < ua.length; i++) if (ua[i] !== ca[i]) return false;
-              return true;
-            }
-            return Number(u) === Number(c);
-          };
+         
 
           const secAgg = { total: 0, correct: 0, incorrect: 0, skipped: 0 };
 
@@ -734,13 +805,19 @@ router.patch("/attempts/:attemptId/submit-section", async (req, res) => {
             let correctVal;
             try {
               const qd = await loadOneQuestion(meta, i);
-              correctVal = qd?.correct;
+              // correctVal = qd?.correct;
+              correctVal = qd?.correct ?? qd?.answer;
+              console.log("🟥 RAW CORRECT =", correctVal);
+                     console.log("🟦 USER ANSWER =", ans);
+
             } catch {}
 
-            if (correctVal === undefined) continue;
+           if (correctVal == null) continue; // null OR undefined -> skip scoring for that question
 
-            if (same(ans, correctVal)) secAgg.correct += 1;
-            else secAgg.incorrect += 1;
+
+       if (sameAnswer(ans, correctVal)) secAgg.correct += 1;
+else secAgg.incorrect += 1;
+
           }
 
           // Persist
@@ -784,8 +861,12 @@ router.patch("/attempts/:attemptId/submit-section", async (req, res) => {
     } catch (err) {
       console.warn("section-only aggregate failed:", err?.message || err);
     }
+res.json({
+  ok: true,
+  nextSection: next,
+  isLastSection: isLastSection
+});
 
-    res.json({ ok: true, nextSection: next });
   } catch (e) {
     console.error("submit-section:", e);
     res.status(500).json({ error: "Failed to submit section" });
@@ -841,16 +922,7 @@ router.patch("/attempts/:attemptId/submit-final", async (req, res) => {
       ans !== null &&
       (Array.isArray(ans) ? ans.length > 0 : String(ans ?? "").trim() !== "");
 
-    const isCorrect = (user, correct) => {
-      if (Array.isArray(correct)) {
-        const ua = Array.isArray(user) ? [...new Set(user)].map(Number).sort() : [];
-        const ca = [...new Set(correct)].map(Number).sort();
-        if (ua.length !== ca.length) return false;
-        for (let i = 0; i < ua.length; i++) if (ua[i] !== ca[i]) return false;
-        return true;
-      }
-      return Number(user) === Number(correct);
-    };
+  
 
     const meta = await loadMockMeta(att.mockTestId);
     const totalQ = Number(meta?.totalQuestions || 0);
@@ -895,20 +967,37 @@ router.patch("/attempts/:attemptId/submit-final", async (req, res) => {
       }
 
       let correctVal;
-      try {
-        const qd = await loadOneQuestion(meta, abs);
-        correctVal = qd?.correct;
-      } catch {}
+try {
+  const qd = await loadOneQuestion(meta, abs);
+  // correctVal = qd?.correct;
+  correctVal = qd?.correct ?? qd?.answer;
 
-      if (correctVal !== undefined) {
-        const ok = isCorrect(ans, correctVal);
-        if (ok) {
-          sectionAgg[sec].correct++;
-          sectionAgg.all.correct++;
-        } else {
-          sectionAgg[sec].incorrect++;
-          sectionAgg.all.incorrect++;
-        }
+} catch (e) {
+  correctVal = null;
+}
+
+if (correctVal == null) {
+  continue;
+}
+
+console.log("🔥 [SCORING DEBUG - FINAL]", {
+  questionIndex: abs,
+  correctFromMeta: correctVal,
+  userAnswer: ans,
+});
+
+
+const ok = sameAnswer(ans, correctVal);
+
+if (ok) {
+  sectionAgg[sec].correct++;
+  sectionAgg.all.correct++;
+} else {
+  sectionAgg[sec].incorrect++;
+  sectionAgg.all.incorrect++;
+}
+
+
 
         const tags = Array.isArray(row?.tags) ? row.tags : [];
         for (const t of tags) {
@@ -924,21 +1013,8 @@ router.patch("/attempts/:attemptId/submit-final", async (req, res) => {
           if (ok) tagAgg[tt].correct++;
           else tagAgg[tt].incorrect++;
         }
-      } else {
-        const tags = Array.isArray(row?.tags) ? row.tags : [];
-        for (const t of tags) {
-          const tt = String(t || "").trim().toLowerCase();
-          if (!tt) continue;
-          tagAgg[tt] = tagAgg[tt] || {
-            total: 0,
-            correct: 0,
-            incorrect: 0,
-            skipped: 0,
-          };
-          tagAgg[tt].total++;
-        }
-      }
-    }
+      } 
+    
 
     const r = await dynamo
       .update({

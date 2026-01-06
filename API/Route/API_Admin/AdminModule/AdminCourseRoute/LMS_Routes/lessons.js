@@ -176,11 +176,48 @@ if (videoKey && videoKey.endsWith(".mp4")) {
         fileKey,
         fileUrl: fileUrlOut,
         videoUrl: videoUrlOut,
-        hlsKey: req.body.hlsKey || "",
-
         duration: Number(duration) || 0,
         status: status || "draft",
       });
+      // =======================
+// ✅ FINAL HLS FIX (DO NOT CHANGE ANY OTHER LOGIC)
+// =======================
+
+// =======================
+// ✅ FINAL HLS FIX (CORRECT PATH)
+// =======================
+
+// 🔥 ONLY CHANGE THIS BLOCK
+// =======================
+// ✅ FINAL HLS FIX (ONLY THIS BLOCK)
+// =======================
+
+if (normType === "video" && videoKey) {
+  const baseName = videoKey
+    .replace(/^raw\//, "")
+    .replace(/\.mp4$/i, "");
+
+  // ✅ FULL & CORRECT HLS URL
+  const hlsUrl =
+    `https://pratibha-edzest-video-hls-ap-south-1.s3.ap-south-1.amazonaws.com/${baseName}/${baseName}_hls.m3u8`;
+
+  await Lesson.findByIdAndUpdate(
+    doc._id,
+    {
+      videoUrl: hlsUrl,   // ⭐ player directly use karega
+      videoKey: "",       // optional (raw ko hata do)
+    },
+    { new: true }
+  );
+
+  console.log("✅ HLS URL saved:", hlsUrl);
+}
+
+
+
+
+
+
       // ⭐ SAVE UPLOADED VIDEO INFO TO NEW DYNAMODB TABLE
 try {
   const { DynamoDBClient, PutItemCommand } = require("@aws-sdk/client-dynamodb");
@@ -194,7 +231,8 @@ try {
         lessonId:  { S: doc._id.toString() },
         courseId:  { S: courseId },
         sectionId: { S: sectionId },
-        videoKey:  { S: videoKey || "" },
+       videoKey: { S: normType === "video" ? hlsKey : (videoKey || "") },
+
         type:      { S: normType },
         createdAt: { S: new Date().toISOString() }
       }
@@ -242,8 +280,11 @@ router.put(
   "fileUrl",
   "videoUrl",
 
+
     "hlsKey",     // ✅ ADD THIS
   "hlsUrl", 
+
+
 
   "questions",       // ⭐ added
   "explanation"      // ⭐ added

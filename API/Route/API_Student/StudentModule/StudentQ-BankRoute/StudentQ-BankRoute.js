@@ -24,6 +24,29 @@ const normalizeDifficulty = (v) => {
 const pickDate = (x) =>
   new Date(x?.endTime || x?.completedAt || x?.startTime || x?.createdAt || 0).getTime();
 
+
+// ======================================================
+// 🔁 DynamoDB SCAN pagination helper (ALL items fetch)
+// ======================================================
+async function scanAll(params) {
+  let items = [];
+  let lastKey = undefined;
+
+  do {
+    const res = await ddb
+      .scan({
+        ...params,
+        ExclusiveStartKey: lastKey,
+      })
+      .promise();
+
+    items = items.concat(res.Items || []);
+    lastKey = res.LastEvaluatedKey;
+  } while (lastKey);
+
+  return items;
+}
+
 // ======================================================
 // 📌 1️⃣ Get available filter options for a Question Bank
 // ======================================================
@@ -525,6 +548,45 @@ router.get("/sessions/my", async (req, res) => {
   }
 });
 
+
+// 📌 4️⃣.1 Get all attempts (SESSION → ATTEMPT mapping)
+// ===============================
+router.get("/attempts/my", async (req, res) => {
+  try {
+    const studentId = req.user?.sub;
+    if (!studentId) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    const allItems = await scanAll({
+  TableName: process.env.DDB_SESSIONS,
+  FilterExpression: "studentId = :s",
+  ExpressionAttributeValues: { ":s": studentId },
+});
+
+
+ const attempts = (allItems || [])
+
+      .sort((a, b) => new Date(b.startTime) - new Date(a.startTime))
+      .map((s) => ({
+        attemptId: s.sessionId,                // 🔁 mapping
+        bankId: s.bankId,
+        startedAt: s.startTime,                // 🔁 mapping
+        score: s.score || 0,
+        total:
+          s.filters?.questionCount ||
+          s.questions?.length ||
+          0,
+        status: s.completed ? "COMPLETED" : "IN_PROGRESS",
+      }));
+
+    return res.json(attempts);
+  } catch (err) {
+    console.error("❌ attempts/my error", err);
+    return res.status(500).json({ error: "Failed to load attempts" });
+  }
+});
+
 // ======================================================
 // 📊 5️⃣ Get all attempts history (for charts)
 // ======================================================
@@ -532,45 +594,89 @@ router.get("/student/attempts/:studentId", async (req, res) => {
   try {
     const { studentId } = req.params;
 
-    const result = await ddb
-      .scan({
-        TableName: process.env.DDB_SESSIONS,
-        FilterExpression: "studentId = :sid",
-        ExpressionAttributeValues: { ":sid": studentId },
-      })
-      .promise();
+  const allItems = await scanAll({
+  TableName: process.env.DDB_SESSIONS,
+  FilterExpression: "studentId = :sid",
+  ExpressionAttributeValues: {
+    ":sid": studentId,
+  },
+});
+
 
     const attempts = {};
 
-    (result.Items || []).forEach((item) => {
+    // 🔁 LOOP — YAHI MAIN FIX HAI
+   (allItems || []).forEach((item) => {
+
       const bankId = item.bankId;
 
+      // ✅ bank bucket create
       if (!attempts[bankId]) {
         attempts[bankId] = {
-          ...item,
-          allAttempts: [],
+          bankId,
+          latestAttempt: null,   // 👈 summary ke liye
+          allAttempts: [],       // 👈 history ke liye
         };
       }
 
-      attempts[bankId].allAttempts.push({
+      // ✅ attempt object (safe)
+      const attemptObj = {
+        attemptId: item.sessionId,
         attemptDate: item.startTime,
         score: item.score || 0,
         total: item.filters?.questionCount || 0,
-      });
+        status: item.completed ? "COMPLETED" : "IN_PROGRESS",
+      };
+
+      // 👇 history me push
+      attempts[bankId].allAttempts.push(attemptObj);
+
+      // 👇 LATEST attempt decide (CONFUSION YAHAN FIX HOTA HAI)
+      if (
+        !attempts[bankId].latestAttempt ||
+        new Date(attemptObj.attemptDate) >
+          new Date(attempts[bankId].latestAttempt.attemptDate)
+      ) {
+        attempts[bankId].latestAttempt = attemptObj;
+      }
     });
 
+    // 🔽 history ko newest → oldest sort
     Object.values(attempts).forEach((bank) => {
       bank.allAttempts.sort(
-        (a, b) => new Date(a.attemptDate) - new Date(b.attemptDate)
+        (a, b) => new Date(b.attemptDate) - new Date(a.attemptDate)
       );
     });
 
-    res.json({ success: true, attempts });
-  } catch (err) {
-    console.error("❌ Error fetching attempts:", err);
-    res.status(500).json({ success: false, message: err.message });
+
+    // ✅ Frontend compatibility: root fields set from latestAttempt
+Object.values(attempts).forEach((bank) => {
+  // newest → oldest
+  bank.allAttempts.sort((a, b) => new Date(b.attemptDate) - new Date(a.attemptDate));
+
+  const la = bank.latestAttempt;
+  if (la) {
+    bank.startTime = la.attemptDate;                 // ✅ frontend uses latest.startTime
+    bank.score = la.score;                           // ✅ frontend uses latest.score
+    bank.filters = { questionCount: la.total || 0 }; // ✅ frontend uses latest.filters.questionCount
+    bank.completed = la.status === "COMPLETED";
+    bank.sessionId = la.attemptId;
   }
 });
+
+    return res.json({
+      success: true,
+      attempts,
+    });
+  } catch (err) {
+    console.error("❌ student attempts error", err);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to load student attempts",
+    });
+  }
+});
+
 
 /* ======================================================
    📘 List only published banks for students

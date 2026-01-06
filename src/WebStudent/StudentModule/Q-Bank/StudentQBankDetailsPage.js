@@ -64,26 +64,42 @@ export default function StudentQBankDetailsPage() {
   }, [bankId]);
 
   // fetch attempts
-  useEffect(() => {
-    const fetchAttempts = async () => {
-      try {
-        const studentId = user?.sub || user?.id || user?.userId;
-        if (!studentId) return;
-        const res = await API.get(`/api/student/qbank/student/attempts/${studentId}`);
-        setAttemptsMap(res.data?.attempts || {});
-      } catch (e) {
-        console.error(e);
-      }
-    };
-    fetchAttempts();
-  }, [user]);
+  // ✅ Fetch attempts (FIXED & STABLE)
+useEffect(() => {
+  const fetchAttempts = async () => {
+    try {
+      const studentId = user?.sub || user?.id || user?.userId;
+      if (!studentId) return;
 
-  const latest = attemptsMap[bankId];
-  const denom = latest?.filters?.questionCount || 1;
+      const res = await API.get(
+        `/api/student/qbank/student/attempts/${studentId}`
+      );
+      setAttemptsMap(res.data?.attempts || {});
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  fetchAttempts(); // first load
+
+  // refresh when coming back after test submit
+  const onFocus = () => fetchAttempts();
+  window.addEventListener("focus", onFocus);
+
+  return () => window.removeEventListener("focus", onFocus);
+}, [user, bankId]);
+
+
+const bankAttempts = attemptsMap[bankId];
+const latest = bankAttempts?.latestAttempt;
+
+const denom = bankAttempts?.filters?.questionCount || latest?.total || 1;
+
 
   // timeline (ascending by date)
   const timeline = useMemo(() => {
-    let arr = latest?.allAttempts || [];
+   let arr = bankAttempts?.allAttempts || [];
+
     arr = arr.slice().sort((a, b) => new Date(a.attemptDate) - new Date(b.attemptDate));
     if (!arr.length && latest) {
       return [
