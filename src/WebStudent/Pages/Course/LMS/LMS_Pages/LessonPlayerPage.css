@@ -470,3 +470,16 @@ body.app-fs .lesson-overlay-wrap .overlay-nav.Mui-disabled {
 }
 
 /* Optional: when not fullscreen, keep your existing behavior (hover fade-in) */
+/* ✅ THIS is the real sticky */
+.video-sticky-wrapper {
+  position: sticky;
+  top: 72px; /* header height */
+  z-index: 5;
+}
+
+/* Bootstrap grid fix */
+.row,
+.col-lg-8,
+.col-12 {
+  overflow: visible !important;
+}

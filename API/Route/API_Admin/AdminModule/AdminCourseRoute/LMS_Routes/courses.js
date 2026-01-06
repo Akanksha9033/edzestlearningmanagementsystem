@@ -614,6 +614,11 @@ async function hydrateLessonsIntoSections(_courseId, courseDoc) {
   course.sections = Array.isArray(course.sections) ? course.sections : [];
 
   const lessons = await fetchLessonsForCourse(course);
+  const lessonMap = {};
+(lessons || []).forEach((l) => {
+  lessonMap[String(l._id)] = l;
+});
+
 
   const bySection = (lessons || []).reduce((acc, l) => {
     const sid = String(l.sectionId || "");
@@ -627,10 +632,7 @@ async function hydrateLessonsIntoSections(_courseId, courseDoc) {
       fileKey: l.fileKey || null,
       fileUrl: l.fileUrl || "",
       videoUrl: l.videoUrl || "",
-      hlsKey: l.hlsKey || "",
-  hlsUrl: l.hlsUrl || "",
       status: l.status || "draft",
-
       createdAt: l.createdAt,
       updatedAt: l.updatedAt,
       sectionId: sid,
@@ -639,8 +641,12 @@ async function hydrateLessonsIntoSections(_courseId, courseDoc) {
   }, {});
 
   for (const s of course.sections) {
-    s.lessons = bySection[String(s._id)] || [];
-  }
+  s.lessons =
+    Array.isArray(s.lessons) && s.lessons.length
+      ? s.lessons.map(id => lessonMap[String(id)]).filter(Boolean)
+      : bySection[String(s._id)] || [];
+}
+
 
   const sectionIds = new Set(course.sections.map((s) => String(s._id)));
   const orphans = (lessons || []).filter(
@@ -821,7 +827,15 @@ router.get("/:courseId", authAccess, async (req, res) => {
     // ⭐ Attach lessons → sections
     const course = await hydrateLessonsIntoSections(courseId, cdoc);
 
-    return res.json({ course });
+// 🔴 IMPORTANT: disable cache for student
+res.set({
+  "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+  Pragma: "no-cache",
+  Expires: "0",
+});
+
+return res.json({ course });
+
   } catch (err) {
     console.error("❌ Course fetch error:", err);
     return res.status(500).json({ message: "Server error" });
@@ -838,7 +852,14 @@ router.get("/fetchCourse/by/:courseId", authAccess, async (req, res) => {
     if (!courseDoc) return res.status(404).json({ message: "Course not found" });
 
     const course = await hydrateLessonsIntoSections(courseId, courseDoc);
-    res.json({ course });
+    res.set({
+  "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+  Pragma: "no-cache",
+  Expires: "0",
+});
+
+res.json({ course });
+
   } catch (err) {
     console.error("❌ Fallback fetchCourse error:", err);
     res.status(500).json({ message: "Server error", detail: err.message });
@@ -903,6 +924,51 @@ router.delete("/:courseId/section/:sectionId", authAccess, requireRoles(["Admin"
     res.status(500).json({ message: "Server error" });
   }
 });
+
+/* ===============================
+   🔁 Reorder lessons inside section
+=============================== */
+router.patch(
+  "/:courseId/section/:sectionId/reorder-lessons",
+  authAccess,
+  requireRoles(["Admin", "Teacher"]),
+  async (req, res) => {
+    try {
+      const { courseId, sectionId } = req.params;
+      const { lessons } = req.body;
+
+      if (!Array.isArray(lessons)) {
+        return res.status(400).json({ message: "lessons array required" });
+      }
+
+      const course = await Courses.findById(courseId);
+      if (!course) {
+        return res.status(404).json({ message: "Course not found" });
+      }
+
+      const section = course.sections.find(
+        (s) => String(s._id) === String(sectionId)
+      );
+
+      if (!section) {
+        return res.status(404).json({ message: "Section not found" });
+      }
+
+      section.lessons = lessons; // ✅ reorder
+
+      await course.save();
+
+      res.json({
+        message: "Lesson order updated",
+        sectionId,
+      });
+    } catch (err) {
+      console.error("❌ Lesson reorder error:", err);
+      res.status(500).json({ message: "Server error" });
+    }
+  }
+);
+
 
 /* Toggle Publish */
 /* Toggle Publish */
@@ -969,7 +1035,14 @@ router.patch(
 router.get("/student-visible-courses", authAccess, async (req, res) => {
   try {
     const courses = await Courses.find({ status: "published" });
-    res.json({ courses });
+  res.set({
+  "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+  Pragma: "no-cache",
+  Expires: "0",
+});
+
+res.json({ courses });
+
   } catch (err) {
     console.error("❌ Fetch published error:", err);
     res.status(500).json({ message: "Server error" });

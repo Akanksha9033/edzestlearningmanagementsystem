@@ -217,6 +217,21 @@ const CreateCourse = () => {
   return (
     <div style={{ maxWidth: "600px", margin: "auto", padding: "2rem" }}>
       <h2>Create Course</h2>
+      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+  <button
+    type="button"
+    onClick={() => navigate(-1)}
+    style={{
+      padding: "4px 10px",
+      cursor: "pointer"
+    }}
+  >
+    ← Back
+  </button>
+
+  <h2 style={{ margin: 0 }}>Create Course</h2>
+</div>
+
       <form onSubmit={handleSubmit}>
         <div style={{ marginBottom: "1rem" }}>
           <label>Title*</label>

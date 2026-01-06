@@ -223,7 +223,18 @@ const CourseSettingsPage = () => {
 
   return (
     <div className="container py-5">
-      <h3>⚙️ Course Settings</h3>
+      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+  <button
+    type="button"
+    onClick={() => window.history.back()}
+    style={{ padding: "4px 10px", cursor: "pointer" }}
+  >
+    ← Back
+  </button>
+
+  <h3 style={{ margin: 0 }}>⚙️ Course Settings</h3>
+</div>
+
       <p><strong>Title:</strong> {course.title}</p>
       <p><strong>Status:</strong> {course.status === "published" ? "Published ✅" : "Unpublished ❌"}</p>
 

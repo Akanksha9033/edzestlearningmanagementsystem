@@ -86,14 +86,12 @@ class Lesson {
       // ⭐ FOR QUIZ
       questions: obj.questions || [],
       explanation: obj.explanation || "",
-
+       parentVideoId: obj.parentVideoId || null, // ✅ ADD THIS LINE
       // ⭐ For other lessons
       videoKey: obj.videoKey || "",
       fileKey: obj.fileKey || "",
       fileUrl: obj.fileUrl || "",
       videoUrl: obj.videoUrl || "",
-      hlsKey: obj.hlsKey || "",
-
 
       duration: Number(obj.duration) || 0,
       isFree: !!obj.isFree,
