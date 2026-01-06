@@ -7,6 +7,7 @@ import React, { useEffect, useRef } from "react";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import DeleteEntityButton from "./DeleteSectionButton";
 
+
 const SectionBuilderUI = ({
   sections,
   onDragEnd,
@@ -152,7 +153,33 @@ const SectionBuilderUI = ({
   }, [sections]);
 
   return (
-    <DragDropContext onDragEnd={onDragEnd}>
+   <DragDropContext
+ onDragEnd={(result) => {
+  console.log("🔥 DRAG FIRED (UI)", result);
+
+  const { source, destination, type } = result;
+
+  if (!destination) {
+    console.log("❌ DROPPED OUTSIDE");
+    return;
+  }
+
+  console.log("TYPE =", type);
+  console.log("FROM =", source);
+  console.log("TO   =", destination);
+
+  // 🔴 VERY IMPORTANT DEBUG
+  console.log("📤 FORWARDING DRAG EVENT TO PARENT");
+
+  // parent handler call
+  onDragEnd({
+    ...result,
+    _debugFromUI: true, // 👈 sirf debug ke liye
+  });
+}}
+
+>
+
       <Droppable droppableId="sectionList">
         {(provided) => (
           <ul
@@ -315,96 +342,117 @@ const SectionBuilderUI = ({
                     >
                       {/* CONTENT stays mounted for animation; measure this */}
                       <div ref={setContentRef(sec._id)}>
-                        {sec.lessons?.length > 0 ? (
-                          <ul
-                            className="list-group list-group-flush"
-                            style={{
-                              ...glassInner,
-                              paddingTop: 6,
-                              paddingBottom: 6,
-                            }}
-                          >
-                          {(sec.lessons || [])
-  .slice()
-  .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt)) // ✅ oldest first
-  .map((lesson, idx) => (
+                       {sec.lessons?.length > 0 ? (
+  <Droppable
+    droppableId={`LESSON-${sec._id}`}
+    type="LESSON"
+    key={`LESSON-${sec._id}`}
+  >
+    {(provided) => (
+      <ul
+        ref={provided.innerRef}
+        {...provided.droppableProps}
+        className="list-group list-group-flush"
+        style={{
+          ...glassInner,
+          paddingTop: 6,
+          paddingBottom: 6,
+        }}
+      >
+       {(sec.lessons || []).map((lesson, idx) => (
 
-                              <li
-                                key={lesson._id || idx}
-                                className="list-group-item d-flex align-items-center"
-                                data-lesson-id={lesson._id}
-                                style={{
-                                  cursor: "pointer",
-                                  background: "rgba(255,255,255,0.85)",
-                                  color: "#212529",
-                                  transition:
-                                    "background 200ms ease, transform 120ms ease",
-                                  border: "1px solid rgba(0,0,0,0.04)",
-                                  margin: "6px 8px",
-                                  borderRadius: "10px",
-                                  paddingTop: "10px",
-                                  paddingBottom: "10px",
-                                }}
-                                onMouseEnter={(e) => {
-                                  e.currentTarget.style.background =
-                                    "rgba(255,255,255,0.95)";
-                                  e.currentTarget.style.transform =
-                                    "translateY(-1px)";
-                                }}
-                                onMouseLeave={(e) => {
-                                  e.currentTarget.style.background =
-                                    "rgba(255,255,255,0.85)";
-                                  e.currentTarget.style.transform =
-                                    "translateY(0)";
-                                }}
-                                onClick={() => {
-                                  sessionStorage.setItem(OPEN_KEY, sec._id);
-                                  sessionStorage.setItem(
-                                    LAST_LESSON_KEY,
-                                    lesson._id || ""
-                                  );
-                                  navigate(
-                                    `/course/${courseId}/section/${sec._id}/lesson/${lesson._id}`
-                                  );
-                                }}
-                              >
-                                <span className="me-2 text-muted">
-                                  {idx + 1}.
-                                </span>
-                                <span className="me-2 text-muted">▶</span>
-                                <span className="text-truncate">
-                                  {lesson.title}
-                                </span>
-                                {/* ---- Lesson delete button (stop li navigation) ---- */}
-                                <span
-                                  className="ms-auto"
-                                  onClick={(e) => e.stopPropagation()}
-                                >
-                                  <DeleteEntityButton
-                                    deleteType="lesson"
-                                    courseId={courseId}
-                                    sectionId={sec._id}
-                                    lessonId={lesson._id}
-                                    className="btn btn-sm btn-outline-danger"
-                                    onDeleted={() => navigate(0)}
-                                  >
-                                    Delete
-                                  </DeleteEntityButton>
-                                </span>
-                              </li>
-                            ))}
-                          </ul>
-                        ) : (
-                          <div
-                            className="list-group-item text-center text-muted"
-                            style={{
-                              ...glassInner,
-                              background: "rgba(255,255,255,0.85)",
-                            }}
-                          >
-                            No lessons
-                          </div>
-                        )}
+            <Draggable
+              key={`LESSON-${lesson._id}`}
+              draggableId={`LESSON-${lesson._id}`}
+              index={idx}
+            >
+              {(dragProvided) => (
+                <li
+                  ref={dragProvided.innerRef}
+                  {...dragProvided.draggableProps}
+                  {...dragProvided.dragHandleProps}
+                  className="list-group-item d-flex align-items-center"
+                  data-lesson-id={lesson._id}
+                  style={{
+                    ...dragProvided.draggableProps.style,
+                    cursor: "grab",
+                    background: "rgba(255,255,255,0.85)",
+                    color: "#212529",
+                    transition:
+                      "background 200ms ease, transform 120ms ease",
+                    border: "1px solid rgba(0,0,0,0.04)",
+                    margin: "6px 8px",
+                    borderRadius: "10px",
+                    paddingTop: "10px",
+                    paddingBottom: "10px",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background =
+                      "rgba(255,255,255,0.95)";
+                    e.currentTarget.style.transform =
+                      "translateY(-1px)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background =
+                      "rgba(255,255,255,0.85)";
+                    e.currentTarget.style.transform =
+                      "translateY(0)";
+                  }}
+                  onClick={() => {
+                    sessionStorage.setItem(OPEN_KEY, sec._id);
+                    sessionStorage.setItem(
+                      LAST_LESSON_KEY,
+                      lesson._id || ""
+                    );
+                    navigate(
+                      `/course/${courseId}/section/${sec._id}/lesson/${lesson._id}`
+                    );
+                  }}
+                >
+                  <span className="me-2 text-muted">
+                    {idx + 1}.
+                  </span>
+                  <span className="me-2 text-muted">▶</span>
+                  <span className="text-truncate">
+                    {lesson.title}
+                  </span>
+
+                  {/* ---- Lesson delete button ---- */}
+                  <span
+                    className="ms-auto"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <DeleteEntityButton
+                      deleteType="lesson"
+                      courseId={courseId}
+                      sectionId={sec._id}
+                      lessonId={lesson._id}
+                      className="btn btn-sm btn-outline-danger"
+                      onDeleted={() => navigate(0)}
+                    >
+                      Delete
+                    </DeleteEntityButton>
+                  </span>
+                </li>
+              )}
+            </Draggable>
+          ))}
+        {provided.placeholder}
+      </ul>
+    )}
+  </Droppable>
+) : (
+  <div
+    className="list-group-item text-center text-muted"
+    style={{
+      ...glassInner,
+      background: "rgba(255,255,255,0.85)",
+    }}
+  >
+    No lessons
+  </div>
+)}
+
 
                         <div
                           className="text-center py-3 border-top fw-bold"

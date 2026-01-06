@@ -1214,15 +1214,7 @@ export default function LessonPlayerPage() {
 if (!alive) return;
 
 // ✅ Sort lessons in each section by upload time (oldest first)
-if (Array.isArray(c.sections)) {
-  c.sections.forEach((sec) => {
-    if (Array.isArray(sec.lessons)) {
-      sec.lessons.sort(
-        (a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0)
-      );
-    }
-  });
-}
+
 
 setCourse(c);
 
@@ -1578,7 +1570,9 @@ const refreshCourseProgress = useCallback(async () => {
           </div>
 
           {/* player */}
-          <div className="card p-3 p-md-2 p-lg-3">
+          <div className="video-sticky-wrapper">
+  <div className="card p-3 p-md-2 p-lg-3">
+
             <div ref={wrapRef} className="lesson-overlay-wrap" style={{ position: "relative" }} tabIndex={-1}>
              {lc(lessonForRender.type) === "quiz" ? (
     <LessonRenderer 
@@ -1633,6 +1627,8 @@ const refreshCourseProgress = useCallback(async () => {
               </div>
             )}
           </div>
+          </div>   {/* video-sticky-wrapper */}
+
         </div>
 
         {/* Desktop sidebar */}

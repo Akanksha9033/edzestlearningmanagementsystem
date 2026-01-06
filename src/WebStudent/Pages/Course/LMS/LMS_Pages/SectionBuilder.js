@@ -20,6 +20,8 @@ const SectionBuilder = () => {
   const navigate = useNavigate();
 
   const [sections, setSections] = useState([]);
+  const [dirtySectionId, setDirtySectionId] = useState(null);
+
   const [showDrawer, setShowDrawer] = useState(false);
   const [selectedSectionId, setSelectedSectionId] = useState(null);
   const [lessonTitle, setLessonTitle] = useState("");
@@ -138,21 +140,77 @@ const SectionBuilder = () => {
     setSections(updated);
   };
 
-  const handleDragEnd = async (result) => {
-    if (!result.destination) return;
-    const reordered = Array.from(sections);
-    const [moved] = reordered.splice(result.source.index, 1);
-    reordered.splice(result.destination.index, 0, moved);
-    setSections(reordered);
+ const handleLessonDragEnd = async (result) => {
+  console.log("🔥 DRAG FIRED (PARENT)", result);
 
-    try {
-      await API.patch(`/api/courses/${courseId}/reorder-sections`, {
-        sectionIds: reordered.map((s) => s._id),
-      });
-    } catch (err) {
-      console.error("Failed to sync section order:", err);
+  const { source, destination, type } = result;
+  if (!destination) return;
+  if (type !== "LESSON") return;
+
+  const sectionId = source.droppableId.replace("LESSON-", "");
+
+  let reorderedLessons = [];
+
+  setSections((prev) =>
+    prev.map((sec) => {
+      if (String(sec._id) !== String(sectionId)) return sec;
+
+      const updated = Array.from(sec.lessons || []);
+      const [moved] = updated.splice(source.index, 1);
+      updated.splice(destination.index, 0, moved);
+      setDirtySectionId(sectionId);
+
+
+      // ✅ YAHI FINAL ORDER HAI
+      reorderedLessons = updated.map((l) => l._id);
+
+      return {
+        ...sec,
+        lessons: updated,
+      };
+    })
+    
+  );
+
+  // ✅ BACKEND SAVE — UI ORDER KE SAATH
+ 
+
+};
+const handleSaveOrder = async () => {
+  try {
+    if (!dirtySectionId) {
+      alert("Pehle drag karo, phir Save dabao");
+      return;
     }
-  };
+
+    const sec = sections.find(
+      (s) => String(s._id) === String(dirtySectionId)
+    );
+
+    if (!sec) {
+      alert("Section nahi mila");
+      return;
+    }
+
+    const orderedLessonIds = (sec.lessons || []).map(l => l._id);
+
+    console.log("🟢 FINAL SAVE ORDER:", dirtySectionId, orderedLessonIds);
+
+    await API.patch(
+      `/api/courses/${courseId}/section/${dirtySectionId}/reorder-lessons`,
+      { lessons: orderedLessonIds }
+    );
+
+    alert("Order saved ✅");
+    setDirtySectionId(null);
+  } catch (err) {
+    console.error("❌ Save failed", err?.response?.data || err);
+    alert("Save failed ❌");
+  }
+};
+
+
+
 
   const handleOpenDrawer = (sectionId) => {
     setSelectedSectionId(sectionId);
@@ -189,15 +247,30 @@ const SectionBuilder = () => {
       </button>
 
       <div className="d-flex justify-content-between align-items-center mb-3">
-        <h4 className="m-0">📚 Section Builder</h4>
-        <Link to={`/course/settings/${courseId}`}>
-          <button className="btn btn-outline-primary">Settings</button>
-        </Link>
-      </div>
+  <h4 className="m-0">📚 Section Builder</h4>
+
+  <div className="d-flex gap-2">
+    <button
+      className={`btn ${dirtySectionId ? "btn-success" : "btn-outline-success"}`}
+      onClick={handleSaveOrder}
+      type="button"
+    >
+      Save Order
+    </button>
+
+    <Link to={`/course/settings/${courseId}`}>
+      <button className="btn btn-outline-primary" type="button">
+        Settings
+      </button>
+    </Link>
+  </div>
+</div>
+
 
       <SectionBuilderUI
         sections={filteredSections}
-        onDragEnd={handleDragEnd}
+        onDragEnd={handleLessonDragEnd}
+
         onToggleExpand={handleToggleExpand}
         editingSectionId={editingSectionId}
         editingTitle={editingTitle}

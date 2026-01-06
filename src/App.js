@@ -114,6 +114,8 @@ import StudentBookshelf from "./WebAdmin/AdminModule/E-Books/Student/StudentBook
 import AdminEBookList from "./WebAdmin/AdminModule/E-Books/Admin/AdminEBookList"
 import Title from "./WebAdmin/AdminModule/E-Books/Admin/Title"
 import EBookSettings from "./WebAdmin/AdminModule/E-Books/Admin/EBookSettings"
+import AdminAddUser from "./WebAdmin/Dashboard/AdminAddUser";
+
 
 
 
@@ -248,6 +250,17 @@ const AppContent = () => {
 
 
         {/* ------------------ Admin Routes ------------------ */}
+
+        {/* 🔹 Admin – Add Users */}
+<Route
+  path="/admin/users/add"
+  element={
+    <ProtectedRoute allowedRoles={["admin", "SuperAdmin"]}>
+      <AdminAddUser />
+    </ProtectedRoute>
+  }
+/>
+
         <Route
           path="/admin/mocktests"
           element={
@@ -272,6 +285,8 @@ const AppContent = () => {
             </ProtectedRoute>
           }
         />
+
+        
 
         {/* <Route path="/admin/mocktests/editor/:mockTestId/questions" element={<AdminMockTestQuestionEditor />} />
 <Route

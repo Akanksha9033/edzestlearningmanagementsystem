@@ -42,6 +42,7 @@ const IS_PROD = process.env.NODE_ENV === "production";
 const DEFAULT_ALLOWED = IS_PROD
   ? "https://edzest.org,https://www.edzest.org"
   : "http://localhost:3000,http://127.0.0.1:3000,";
+  
 
 const allowedOrigins = new Set(
   (process.env.ALLOWED_ORIGINS || DEFAULT_ALLOWED)
@@ -191,6 +192,12 @@ app.use(
   )
 );
 
+app.use(
+  "/api/admin/users",
+  pickMiddleware(require("./middleware/authRoute")),
+  adminRoute,
+  pickMiddleware(require("./middleware/adminUsersRoute"))
+);
 
 
 /* -------------------- Student MockTests -------------------- */

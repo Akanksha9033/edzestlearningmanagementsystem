@@ -101,15 +101,6 @@ router.post(
       const normType = normalizeType(type);
       // ⭐ QUIZ CREATE HANDLER — no video/file needed
 if (normType === "quiz") {
-
-
-  // 🔥 HLS path auto-calc
-let hlsKey = "";
-if (videoKey && videoKey.endsWith(".mp4")) {
-  const base = videoKey.replace(".mp4", "");
-  hlsKey = `${base}/hls/${base.split("/").pop()}_720p.m3u8`;
-}
-
   const doc = await Lesson.create({
     _id: _idFromClient,
     courseId,
@@ -197,21 +188,23 @@ if (normType === "video" && videoKey) {
     .replace(/^raw\//, "")
     .replace(/\.mp4$/i, "");
 
-  // ✅ FULL & CORRECT HLS URL
+  const CLOUDFRONT_DOMAIN = process.env.CLOUDFRONT_DOMAIN;
+
   const hlsUrl =
-    `https://pratibha-edzest-video-hls-ap-south-1.s3.ap-south-1.amazonaws.com/${baseName}/${baseName}_hls.m3u8`;
+    `https://${CLOUDFRONT_DOMAIN}/${baseName}/${baseName}_hls.m3u8`;
 
   await Lesson.findByIdAndUpdate(
     doc._id,
     {
-      videoUrl: hlsUrl,   // ⭐ player directly use karega
-      videoKey: "",       // optional (raw ko hata do)
+      videoUrl: hlsUrl,   // ✅ CloudFront URL
+      videoKey: "",
     },
     { new: true }
   );
 
-  console.log("✅ HLS URL saved:", hlsUrl);
+  console.log("✅ CloudFront HLS URL saved:", hlsUrl);
 }
+
 
 
 
@@ -231,7 +224,8 @@ try {
         lessonId:  { S: doc._id.toString() },
         courseId:  { S: courseId },
         sectionId: { S: sectionId },
-       videoKey: { S: normType === "video" ? hlsKey : (videoKey || "") },
+       videoKey: { S: normType === "video" ? hlsUrl : (videoKey || "") },
+
 
         type:      { S: normType },
         createdAt: { S: new Date().toISOString() }
@@ -279,26 +273,11 @@ router.put(
   "fileKey",
   "fileUrl",
   "videoUrl",
-
-
-    "hlsKey",     // ✅ ADD THIS
-  "hlsUrl", 
-
-
-
   "questions",       // ⭐ added
   "explanation"      // ⭐ added
 ].forEach((f) => {
   if (body[f] !== undefined) $set[f] = body[f];
 });
-
-
-      // ⭐ AUTO CREATE hlsKey IF videoKey is mp4
-      if ($set.videoKey && $set.videoKey.endsWith(".mp4")) {
-        const base = $set.videoKey.replace(".mp4", "");
-        $set.hlsKey = `${base}/hls/${base.split("/").pop()}_720p.m3u8`;
-      }
-
 
       if ($set.type) $set.type = normalizeType($set.type);
 

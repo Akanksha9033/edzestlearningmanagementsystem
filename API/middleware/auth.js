@@ -1,8 +1,6 @@
 
 
 
-
-
 const { getUser, putUser } = require("../Services/aws/dynamo");
 const { verifyCognitoToken } = require("../Services/aws/jose");
 const { pickHighestRole } = require("../Services/roles");
