@@ -219,6 +219,16 @@ async function resolveSignedUrl(key) {
         const res = await API.get(`/api/courses/lesson/${lessonId}`);
         const lesson = res.data?.lesson || {};
         const lt = String(lesson.type || "").trim();
+        // ✅ HLS / CloudFront restore (EDIT MODE)
+if (
+  lt.toLowerCase() === "video" &&
+  !lesson.videoKey &&
+  lesson.videoUrl
+) {
+  setFileUrl(lesson.videoUrl);   // ✅ HLS playback restore
+  dbg("restored HLS videoUrl", lesson.videoUrl);
+}
+
         dbg("GET ok", { lesson });
 
         setLessonType(lt);
@@ -375,10 +385,18 @@ async function resolveSignedUrl(key) {
       } else {
         payload.fileKey = fileKey;
       }
-    } else if (isVideo) {
-      if (!videoKey) return alert("Please upload a video first.");
-      payload.videoKey = videoKey;
-    } else if (isPdf) {
+   } else if (isVideo) {
+  // ✅ allow edit when HLS video already exists
+  if (!videoKey && !fileUrl) {
+    return alert("Please upload a video first.");
+  }
+
+  // send videoKey only if user re-uploaded
+  if (videoKey) {
+    payload.videoKey = videoKey;
+  }
+}
+ else if (isPdf) {
       if (!fileKey) return alert("Please upload a PDF first.");
       payload.fileKey = fileKey;
     } else if (isOtherFile) {
@@ -459,6 +477,13 @@ if (["quiz", "section quiz"].includes(currentType.toLowerCase().trim())) {
 
   return (
     <div className="container py-4">
+          <button
+      className="btn btn-outline-secondary mb-3"
+      onClick={() => navigate(-1)}
+    >
+      ← Back
+    </button>
+
       <div className="d-flex justify-content-between align-items-center mb-3">
         <h5>{currentType} Lesson</h5>
         <div>
