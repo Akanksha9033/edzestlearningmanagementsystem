@@ -26,8 +26,11 @@ async function loadRazorpay() {
 /* resolve API base for both CRA and Vite builds */
 const API_BASE =
   (typeof import.meta !== "undefined" && import.meta.env?.VITE_API_BASE) ||
-  (typeof process !== "undefined" && process.env?.REACT_APP_API_BASE) ||
-  "http://localhost:5000";
+  (typeof process !== "undefined" && process.env?.REACT_APP_API_URL);
+
+if (!API_BASE) {
+  console.error("❌ API_BASE is not defined. Check frontend env variables.");
+}
 
 /**
  * PayNowButton (Shared)
@@ -35,34 +38,34 @@ const API_BASE =
  * Props:
  * - userId: string (required)
  * - productId: string (optional; useful if you sell multiple qbanks)
- * - productType: "QBANK" | "MOCKTEST" | "COURSE"  ⭐ NEW
- * - onSuccess: function() -> void  (optional; e.g. refresh list or navigate)
+ * - productType: "QBANK" | "MOCKTEST" | "COURSE"
+ * - onSuccess: function() -> void
  * - amountPaise: number (optional; default comes from backend env)
  * - label: string (optional; default "Pay Now")
- * - variant: "plain" | "mui"  (optional)
+ * - variant: "plain" | "mui"
  */
 export default function PayNowButton({
   userId,
   productId = "Edzest_QBank_Access",
 
-  /* ⭐ NEW — default to QBANK so old calls don't break */
+  /* ⭐ default to QBANK so old calls don't break */
   productType = "QBANK",
 
   onSuccess,
-  amountPaise, // not required; backend already uses env
+  amountPaise,
   label = "💳 Pay Now",
   variant = "plain",
 }) {
   const [loading, setLoading] = useState(false);
 
   /* ------------------------------------------------------------------
-      ⭐ FIX: ensure userId always uses Cognito `sub` if available
+      ensure userId always uses Cognito `sub` if available
   ------------------------------------------------------------------ */
   let safeUserId =
     userId ||
-    window?.__authUser?.sub ||        // fallback for LIVE Cognito
-    window?.__authUser?.id ||         // fallback for old login
-    window?.__authUser?.userId ||     // fallback for legacy code
+    window?.__authUser?.sub ||
+    window?.__authUser?.id ||
+    window?.__authUser?.userId ||
     null;
 
   if (!safeUserId) {
@@ -78,7 +81,6 @@ export default function PayNowButton({
       return;
     }
 
-    // Extra guard: only run in browser
     if (typeof window === "undefined" || typeof document === "undefined") {
       console.error("[PayNowButton] Payment flow can only run in a browser environment.");
       alert("Payment can only be done from a browser.");
@@ -93,15 +95,12 @@ export default function PayNowButton({
         return;
       }
 
-      // 1️⃣ Ask backend to create an order
+      // 1️⃣ Create order
       const { data } = await axios.post(`${API_BASE}/api/payments/create-order`, {
         userId: safeUserId,
         productId,
-
-        /* ⭐ NEW: tell backend which product type this is */
         productType,
-
-        amountPaise, // backend may ignore if it uses env
+        amountPaise,
       });
 
       if (!data?.orderId || !data?.key) {
@@ -109,21 +108,19 @@ export default function PayNowButton({
         return;
       }
 
-      // 2️⃣ Open Razorpay checkout
+      // 2️⃣ Open Razorpay
       const rzp = new window.Razorpay({
         key: data.key,
         amount: data.amount,
         currency: data.currency || "INR",
         name: "Edzest LMS",
-
-        /* ⭐ NEW: show correct product type in checkout description */
         description: `${productType} Purchase (${productId})`,
-
         order_id: data.orderId,
         theme: { color: "#4748ac" },
+
         handler: async (resp) => {
           try {
-            // 3️⃣ Verify payment with backend
+            // 3️⃣ Verify payment
             const verifyResponse = await axios.post(
               `${API_BASE}/api/payments/verify-payment`,
               {
@@ -132,8 +129,6 @@ export default function PayNowButton({
                 razorpay_signature: resp.razorpay_signature,
                 userId: safeUserId,
                 productId,
-
-                /* ⭐ NEW — must send again during verification */
                 productType,
               }
             );
@@ -150,6 +145,7 @@ export default function PayNowButton({
             alert("Error verifying payment. Check console for details.");
           }
         },
+
         modal: { ondismiss: () => setLoading(false) },
         prefill: {
           name: "Student",
@@ -167,7 +163,6 @@ export default function PayNowButton({
     }
   }, [safeUserId, productId, productType, onSuccess, amountPaise]);
 
-  // default style button
   return (
     <button
       onClick={handlePay}
