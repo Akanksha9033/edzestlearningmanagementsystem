@@ -802,6 +802,9 @@ import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import PlayArrowRoundedIcon from "@mui/icons-material/PlayArrowRounded";
 import MenuBookRoundedIcon from "@mui/icons-material/MenuBookRounded";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import Tooltip from "@mui/material/Tooltip";
+
 import { PROG_ENABLED, markLessonComplete, getCourseProgress, putLessonProgress }  from "../../../../../utils/ProgressApi";
 
 import API from '../../../../../LoginSystem/axios';
@@ -1546,10 +1549,26 @@ const refreshCourseProgress = useCallback(async () => {
         <div className={sidebarOpen ? "col-lg-8 col-12" : "col-12"}>
           {/* top bar */}
           <div className="lesson-topbar d-lg-flex justify-content-between align-items-center mb-2">
-            <div className="text-muted small type-label">
-              {String(lessonForRender?.type || "").toUpperCase()}
-              {section ? ` • ${section.title}` : ""}
-            </div>
+            <div className="text-muted small type-label d-flex align-items-center gap-2">
+
+  {/* 🔙 Back Button */}
+  <Tooltip title="Back">
+    <IconButton
+      size="small"
+      onClick={() => navigate(-1)}
+      aria-label="Back"
+    >
+      <ArrowBackIcon fontSize="small" />
+    </IconButton>
+  </Tooltip>
+
+  <span>
+    {String(lessonForRender?.type || "").toUpperCase()}
+    {section ? ` • ${section.title}` : ""}
+  </span>
+
+</div>
+
 
             <div className="actions">
               {isSmall && (
