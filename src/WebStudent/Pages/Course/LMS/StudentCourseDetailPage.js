@@ -235,6 +235,14 @@ useEffect(() => {
 
   return (
     <div className="container mt-4">
+       {/* 🔙 Back Button */}
+    <button
+      type="button"
+      className="btn btn-outline-secondary mb-2"
+      onClick={() => navigate(-1)}
+    >
+      ← Back
+    </button>
       <h2 className="fw-bold mb-1">{course.title}</h2>
       <div className="text-muted mb-3">
         {course.subtitle ? <span>{course.subtitle} • </span> : null}
