@@ -1,190 +1,190 @@
-console.log("🔥 StudentEnrollmentsRoute LOADED");
+// console.log("🔥 StudentEnrollmentsRoute LOADED");
 
-const express = require("express");
-const router = express.Router();
+// const express = require("express");
+// const router = express.Router();
 
-const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
-const {
-  DynamoDBDocumentClient,
-  QueryCommand,
-  PutCommand,
-} = require("@aws-sdk/lib-dynamodb");
+// const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
+// const {
+//   DynamoDBDocumentClient,
+//   QueryCommand,
+//   PutCommand,
+// } = require("@aws-sdk/lib-dynamodb");
 
-const { authAccess } = require("../../middleware/auth");
+// const { authAccess } = require("../../middleware/auth");
 
-const REGION = process.env.AWS_REGION || "ap-south-1";
-const ENROLLMENTS_TABLE = process.env.STUDENT_ENROLLMENTS_TABLE;
+// const REGION = process.env.AWS_REGION || "ap-south-1";
+// const ENROLLMENTS_TABLE = process.env.STUDENT_ENROLLMENTS_TABLE;
 
-const ddb = DynamoDBDocumentClient.from(
-  new DynamoDBClient({ region: REGION })
-);
+// const ddb = DynamoDBDocumentClient.from(
+//   new DynamoDBClient({ region: REGION })
+// );
 
-/* =========================================================
-   GET: STUDENT ENROLLMENTS (MY ENROLLMENTS)
-   (SAFE IMPROVEMENT: only enrollment records)
-   ========================================================= */
-router.get(
-  "/student/enrollments",
-  authAccess,
-  async (req, res) => {
-    try {
-      const studentSub = req.user?.sub;
+// /* =========================================================
+//    GET: STUDENT ENROLLMENTS (MY ENROLLMENTS)
+//    (SAFE IMPROVEMENT: only enrollment records)
+//    ========================================================= */
+// router.get(
+//   "/student/enrollments",
+//   authAccess,
+//   async (req, res) => {
+//     try {
+//       const studentSub = req.user?.sub;
 
-      console.log("🔥 Fetch enrollments for:", studentSub);
+//       console.log("🔥 Fetch enrollments for:", studentSub);
 
-      if (!studentSub) {
-        return res.status(401).json({ message: "Unauthorized" });
-      }
+//       if (!studentSub) {
+//         return res.status(401).json({ message: "Unauthorized" });
+//       }
 
-      const result = await ddb.send(
-        new QueryCommand({
-          TableName: ENROLLMENTS_TABLE,
-          KeyConditionExpression: "pk = :pk AND begins_with(sk, :sk)",
-          ExpressionAttributeValues: {
-            ":pk": `USER#${studentSub}`,
-            ":sk": "ENROLLMENT#",
-          },
-        })
-      );
+//       const result = await ddb.send(
+//         new QueryCommand({
+//           TableName: ENROLLMENTS_TABLE,
+//           KeyConditionExpression: "pk = :pk AND begins_with(sk, :sk)",
+//           ExpressionAttributeValues: {
+//             ":pk": `USER#${studentSub}`,
+//             ":sk": "ENROLLMENT#",
+//           },
+//         })
+//       );
 
-      return res.json({
-        enrollments: result.Items || [],
-      });
-    } catch (err) {
-      console.error("❌ Student enrollments failed", err);
-      return res.status(500).json({ message: "Failed to fetch enrollments" });
-    }
-  }
-);
+//       return res.json({
+//         enrollments: result.Items || [],
+//       });
+//     } catch (err) {
+//       console.error("❌ Student enrollments failed", err);
+//       return res.status(500).json({ message: "Failed to fetch enrollments" });
+//     }
+//   }
+// );
 
-/* =========================================================
-   POST: FREE ENROLL (EXISTING – UNCHANGED BEHAVIOR)
-   ========================================================= */
-router.post(
-  "/student/enroll/free",
-  authAccess,
-  async (req, res) => {
-    try {
-      const studentSub = req.user?.sub;
-      const { productId, productType } = req.body || {};
+// /* =========================================================
+//    POST: FREE ENROLL (EXISTING – UNCHANGED BEHAVIOR)
+//    ========================================================= */
+// router.post(
+//   "/student/enroll/free",
+//   authAccess,
+//   async (req, res) => {
+//     try {
+//       const studentSub = req.user?.sub;
+//       const { productId, productType } = req.body || {};
 
-      if (!studentSub) {
-        return res.status(401).json({ message: "Unauthorized" });
-      }
+//       if (!studentSub) {
+//         return res.status(401).json({ message: "Unauthorized" });
+//       }
 
-      if (!productId || !productType) {
-        return res
-          .status(400)
-          .json({ message: "productId & productType required" });
-      }
+//       if (!productId || !productType) {
+//         return res
+//           .status(400)
+//           .json({ message: "productId & productType required" });
+//       }
 
-      const nowIso = new Date().toISOString();
+//       const nowIso = new Date().toISOString();
 
-      await ddb.send(
-        new PutCommand({
-          TableName: ENROLLMENTS_TABLE,
-          Item: {
-            pk: `USER#${studentSub}`,
-            sk: `ENROLLMENT#${productType}#${productId}`,
+//       await ddb.send(
+//         new PutCommand({
+//           TableName: ENROLLMENTS_TABLE,
+//           Item: {
+//             pk: `USER#${studentSub}`,
+//             sk: `ENROLLMENT#${productType}#${productId}`,
 
-            productId,
-            productType, // "COURSE" | "QBANK" | "MOCKTEST" | "EBOOK"
+//             productId,
+//             productType, // "COURSE" | "QBANK" | "MOCKTEST" | "EBOOK"
 
-            accessSource: "free",
-            status: "ACTIVE",
+//             accessSource: "free",
+//             status: "ACTIVE",
 
-            expiry: null,
-            createdAt: nowIso,
-          },
-        })
-      );
+//             expiry: null,
+//             createdAt: nowIso,
+//           },
+//         })
+//       );
 
-      return res.json({ success: true });
-    } catch (err) {
-      console.error("❌ Free enroll failed", err);
-      return res.status(500).json({ message: "Failed to enroll (free)" });
-    }
-  }
-);
+//       return res.json({ success: true });
+//     } catch (err) {
+//       console.error("❌ Free enroll failed", err);
+//       return res.status(500).json({ message: "Failed to enroll (free)" });
+//     }
+//   }
+// );
 
-/* =========================================================
-   POST: UNIVERSAL ENROLL (NEW – SAFE ADDITION)
-   Used for: Free | Paid | Admin
-   ========================================================= */
-router.post(
-  "/student/enroll",
-  authAccess,
-  async (req, res) => {
-    try {
-      const studentSub = req.user?.sub;
-      const {
-        productId,
-        productType,
-        title,
-        thumbnailUrl,
-        accessSource = "free", // free | paid | admin
-        expiry = null,
-      } = req.body || {};
+// /* =========================================================
+//    POST: UNIVERSAL ENROLL (NEW – SAFE ADDITION)
+//    Used for: Free | Paid | Admin
+//    ========================================================= */
+// router.post(
+//   "/student/enroll",
+//   authAccess,
+//   async (req, res) => {
+//     try {
+//       const studentSub = req.user?.sub;
+//       const {
+//         productId,
+//         productType,
+//         title,
+//         thumbnailUrl,
+//         accessSource = "free", // free | paid | admin
+//         expiry = null,
+//       } = req.body || {};
 
-      if (!studentSub) {
-        return res.status(401).json({ message: "Unauthorized" });
-      }
+//       if (!studentSub) {
+//         return res.status(401).json({ message: "Unauthorized" });
+//       }
 
-      if (!productId || !productType) {
-        return res
-          .status(400)
-          .json({ message: "productId & productType required" });
-      }
+//       if (!productId || !productType) {
+//         return res
+//           .status(400)
+//           .json({ message: "productId & productType required" });
+//       }
 
-      const sk = `ENROLLMENT#${productType}#${productId}`;
+//       const sk = `ENROLLMENT#${productType}#${productId}`;
 
-      /* ✅ DUPLICATE PROTECTION (SAFE) */
-      const existing = await ddb.send(
-        new QueryCommand({
-          TableName: ENROLLMENTS_TABLE,
-          KeyConditionExpression: "pk = :pk AND sk = :sk",
-          ExpressionAttributeValues: {
-            ":pk": `USER#${studentSub}`,
-            ":sk": sk,
-          },
-        })
-      );
+//       /* ✅ DUPLICATE PROTECTION (SAFE) */
+//       const existing = await ddb.send(
+//         new QueryCommand({
+//           TableName: ENROLLMENTS_TABLE,
+//           KeyConditionExpression: "pk = :pk AND sk = :sk",
+//           ExpressionAttributeValues: {
+//             ":pk": `USER#${studentSub}`,
+//             ":sk": sk,
+//           },
+//         })
+//       );
 
-      if (existing.Items && existing.Items.length > 0) {
-        return res.json({ success: true, alreadyEnrolled: true });
-      }
+//       if (existing.Items && existing.Items.length > 0) {
+//         return res.json({ success: true, alreadyEnrolled: true });
+//       }
 
-      await ddb.send(
-        new PutCommand({
-          TableName: ENROLLMENTS_TABLE,
-          Item: {
-            pk: `USER#${studentSub}`,
-            sk,
+//       await ddb.send(
+//         new PutCommand({
+//           TableName: ENROLLMENTS_TABLE,
+//           Item: {
+//             pk: `USER#${studentSub}`,
+//             sk,
 
-            productId,
-            productType,
+//             productId,
+//             productType,
 
-            title: title || productType,
-            thumbnailUrl: thumbnailUrl || null,
+//             title: title || productType,
+//             thumbnailUrl: thumbnailUrl || null,
 
-            accessSource,
-            status: "ACTIVE",
+//             accessSource,
+//             status: "ACTIVE",
 
-            expiry,
-            createdAt: new Date().toISOString(),
-          },
-        })
-      );
+//             expiry,
+//             createdAt: new Date().toISOString(),
+//           },
+//         })
+//       );
 
-      return res.json({ success: true });
-    } catch (err) {
-      console.error("❌ Enroll failed", err);
-      return res.status(500).json({ message: "Failed to enroll" });
-    }
-  }
-);
+//       return res.json({ success: true });
+//     } catch (err) {
+//       console.error("❌ Enroll failed", err);
+//       return res.status(500).json({ message: "Failed to enroll" });
+//     }
+//   }
+// );
 
-module.exports = router;
+// module.exports = router;
 
 // console.log("🔥 StudentEnrollmentsRoute LOADED");
 
@@ -440,3 +440,176 @@ module.exports = router;
 // });
 
 // module.exports = router;
+
+console.log("🔥 StudentEnrollmentsRoute LOADED");
+
+const express = require("express");
+const router = express.Router();
+
+const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
+const {
+  DynamoDBDocumentClient,
+  QueryCommand,
+  PutCommand,
+} = require("@aws-sdk/lib-dynamodb");
+
+const { authAccess } = require("../../middleware/auth");
+
+const REGION = process.env.AWS_REGION || "ap-south-1";
+
+/* ✅ SAFE FALLBACK (THIS IS THE FIX) */
+const ENROLLMENTS_TABLE =
+  process.env.STUDENT_ENROLLMENTS_TABLE || "StudentEnrollments";
+
+const ddb = DynamoDBDocumentClient.from(
+  new DynamoDBClient({ region: REGION })
+);
+
+/* =========================================================
+   GET: STUDENT ENROLLMENTS (MY ENROLLMENTS)
+========================================================= */
+router.get("/student/enrollments", authAccess, async (req, res) => {
+  try {
+    const studentSub = req.user?.sub;
+
+    console.log("🔥 Fetch enrollments for:", studentSub);
+
+    if (!studentSub) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const result = await ddb.send(
+      new QueryCommand({
+        TableName: ENROLLMENTS_TABLE,
+        KeyConditionExpression: "pk = :pk AND begins_with(sk, :sk)",
+        ExpressionAttributeValues: {
+          ":pk": `USER#${studentSub}`,
+          ":sk": "ENROLLMENT#",
+        },
+      })
+    );
+
+    return res.json({
+      enrollments: result.Items || [],
+    });
+  } catch (err) {
+    console.error("❌ Student enrollments failed", err);
+    return res.status(500).json({ message: "Failed to fetch enrollments" });
+  }
+});
+
+/* =========================================================
+   POST: FREE ENROLL (UNCHANGED)
+========================================================= */
+router.post("/student/enroll/free", authAccess, async (req, res) => {
+  try {
+    const studentSub = req.user?.sub;
+    const { productId, productType } = req.body || {};
+
+    if (!studentSub) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    if (!productId || !productType) {
+      return res
+        .status(400)
+        .json({ message: "productId & productType required" });
+    }
+
+    const nowIso = new Date().toISOString();
+
+    await ddb.send(
+      new PutCommand({
+        TableName: ENROLLMENTS_TABLE,
+        Item: {
+          pk: `USER#${studentSub}`,
+          sk: `ENROLLMENT#${productType}#${productId}`,
+
+          productId,
+          productType,
+          accessSource: "free",
+          status: "ACTIVE",
+
+          expiry: null,
+          createdAt: nowIso,
+        },
+      })
+    );
+
+    return res.json({ success: true });
+  } catch (err) {
+    console.error("❌ Free enroll failed", err);
+    return res.status(500).json({ message: "Failed to enroll (free)" });
+  }
+});
+
+/* =========================================================
+   POST: UNIVERSAL ENROLL (UNCHANGED)
+========================================================= */
+router.post("/student/enroll", authAccess, async (req, res) => {
+  try {
+    const studentSub = req.user?.sub;
+    const {
+      productId,
+      productType,
+      title,
+      thumbnailUrl,
+      accessSource = "free",
+      expiry = null,
+    } = req.body || {};
+
+    if (!studentSub) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    if (!productId || !productType) {
+      return res
+        .status(400)
+        .json({ message: "productId & productType required" });
+    }
+
+    const sk = `ENROLLMENT#${productType}#${productId}`;
+
+    const existing = await ddb.send(
+      new QueryCommand({
+        TableName: ENROLLMENTS_TABLE,
+        KeyConditionExpression: "pk = :pk AND sk = :sk",
+        ExpressionAttributeValues: {
+          ":pk": `USER#${studentSub}`,
+          ":sk": sk,
+        },
+      })
+    );
+
+    if (existing.Items && existing.Items.length > 0) {
+      return res.json({ success: true, alreadyEnrolled: true });
+    }
+
+    await ddb.send(
+      new PutCommand({
+        TableName: ENROLLMENTS_TABLE,
+        Item: {
+          pk: `USER#${studentSub}`,
+          sk,
+
+          productId,
+          productType,
+          title: title || productType,
+          thumbnailUrl: thumbnailUrl || null,
+
+          accessSource,
+          status: "ACTIVE",
+          expiry,
+          createdAt: new Date().toISOString(),
+        },
+      })
+    );
+
+    return res.json({ success: true });
+  } catch (err) {
+    console.error("❌ Enroll failed", err);
+    return res.status(500).json({ message: "Failed to enroll" });
+  }
+});
+
+module.exports = router;
