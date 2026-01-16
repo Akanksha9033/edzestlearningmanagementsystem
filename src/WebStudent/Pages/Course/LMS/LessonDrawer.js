@@ -173,6 +173,7 @@ const LessonDrawer = ({
            
             "External Link",
                "Quiz",
+                   "Text",
           ].map((type) => (
             <div className="col-4" key={type}>
               <div

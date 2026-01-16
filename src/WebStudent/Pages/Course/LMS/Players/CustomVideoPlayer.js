@@ -16,6 +16,7 @@ export default function CustomVideoPlayer({
 }) {
   const videoRef = useRef(null);
   const hlsRef = useRef(null);
+  const wrapperRef = useRef(null); // ✅ ADD THIS LINE
 
   const [duration, setDuration] = useState(0);
   const [localPct, setLocalPct] = useState(0);
@@ -179,6 +180,19 @@ export default function CustomVideoPlayer({
       }
     }, 3000);
   }, [courseSlug, lessonId, onProgress]);
+// ⛶ Fullscreen toggle
+// ⛶ Fullscreen toggle (YouTube style)
+const toggleFullscreen = () => {
+  const wrapper = wrapperRef.current;
+  if (!wrapper) return;
+
+  if (!document.fullscreenElement) {
+    wrapper.requestFullscreen();
+  } else {
+    document.exitFullscreen();
+  }
+};
+
 
   /* ended → 100% */
   const handleEnded = useCallback(async () => {
@@ -217,16 +231,18 @@ export default function CustomVideoPlayer({
 
   return (
     <>
-      <div
-        style={{
-          position: "relative",
-          width: "100%",
-          aspectRatio: "16 / 9",
-          background: "#000",
-          borderRadius: 10,
-          overflow: "hidden",
-        }}
-      >
+     <div
+  ref={wrapperRef}
+  style={{
+    position: "relative",
+    width: "100%",
+    aspectRatio: "16 / 9",
+    background: "#000",
+    borderRadius: 10,
+    overflow: "hidden",
+  }}
+>
+
         <video
           ref={videoRef}
           poster={poster}
@@ -236,6 +252,17 @@ export default function CustomVideoPlayer({
           onLoadedMetadata={onLoaded}
           onTimeUpdate={handleTimeUpdate}
           onEnded={handleEnded}
+         onDoubleClick={() => {
+  const wrapper = wrapperRef.current;
+  if (!wrapper) return;
+
+  if (!document.fullscreenElement) {
+    wrapper.requestFullscreen();
+  } else {
+    document.exitFullscreen();
+  }
+}}
+
           style={{
             width: "100%",
             height: "100%",
@@ -243,6 +270,26 @@ export default function CustomVideoPlayer({
             backgroundColor: "#000",
           }}
         />
+{/* ⛶ Fullscreen Button */}
+<button
+  onClick={toggleFullscreen}
+  style={{
+    position: "absolute",
+    bottom: 12,
+    right: 12,
+    background: "rgba(0,0,0,0.6)",
+    border: "none",
+    color: "#fff",
+    padding: "6px 10px",
+    borderRadius: 6,
+    cursor: "pointer",
+      zIndex: 10,     
+    fontSize: 14,
+  }}
+  title="Fullscreen"
+>
+  ⛶
+</button>
 
         {resumeMsg && (
           <div

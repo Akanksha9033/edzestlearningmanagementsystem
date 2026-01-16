@@ -191,13 +191,33 @@ app.use(
     require("./Route/API_Admin/AdminModule/AdminMocktestRoute/deleteAdminMocktest")
   )
 );
+const adminAddUserRoute = require("./Route/API_Admin/AdminAddUserRoute");
+app.use("/api", adminAddUserRoute);
 
-app.use(
-  "/api/admin/users",
-  pickMiddleware(require("./middleware/authRoute")),
-  adminRoute,
-  pickMiddleware(require("./middleware/adminUsersRoute"))
+// app.use(
+//   "/api/admin/users",
+//   pickMiddleware(require("./middleware/authRoute")),
+//   adminRoute,
+//   pickMiddleware(require("./middleware/adminUsersRoute"))
+// );
+
+
+const adminAddProductRoute = require(
+  "./Route/API_Admin/AdminAddProductRoute"
 );
+
+app.use("/api", adminAddProductRoute);
+
+
+
+const adminProductsCatalogRoute = require("./Route/API_Admin/AdminAssignableProductsCatalogRoute");
+app.use("/api", adminProductsCatalogRoute);
+
+const studentEnrollmentsRoute =
+  require("./Route/API_Student/StudentEnrollmentsRoute");
+
+app.use("/api", studentEnrollmentsRoute);
+
 
 
 /* -------------------- Student MockTests -------------------- */

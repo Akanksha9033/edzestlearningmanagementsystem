@@ -19,11 +19,26 @@ const SectionBuilder = () => {
   const { courseId } = useParams();
   const navigate = useNavigate();
 
+  /* 🔥 ADD THIS EXACTLY HERE */
+const handleBack = () => {
+  if (dirtySectionId) {
+    const ok = window.confirm(
+      " ⚠️ Order has not been saved yet.\n\nIf you go back now, your changes will be lost.\n\nDo you want to continue?"
+    );
+    if (!ok) return;
+  }
+  navigate(-1);
+};
+
   const [sections, setSections] = useState([]);
   const [dirtySectionId, setDirtySectionId] = useState(null);
 
   const [showDrawer, setShowDrawer] = useState(false);
   const [selectedSectionId, setSelectedSectionId] = useState(null);
+  // 🔀 Move lesson modal state
+const [moveLessonData, setMoveLessonData] = useState(null);
+// shape: { lessonId, fromSectionId }
+
   const [lessonTitle, setLessonTitle] = useState("");
   const [lessonType, setLessonType] = useState("");
   const [uploadedUrl, setUploadedUrl] = useState("");
@@ -35,6 +50,24 @@ const SectionBuilder = () => {
 
   const [editingSectionId, setEditingSectionId] = useState(null);
   const [editingTitle, setEditingTitle] = useState("");
+  const [moveSectionMode, setMoveSectionMode] = useState(false);
+const [activeSectionMenu, setActiveSectionMenu] = useState(null);
+// ⚠️ Warn user before leaving page if order not saved
+useEffect(() => {
+  const handleBeforeUnload = (e) => {
+    if (dirtySectionId) {
+      e.preventDefault();
+      e.returnValue = ""; // browser default warning
+    }
+  };
+
+  window.addEventListener("beforeunload", handleBeforeUnload);
+
+  return () => {
+    window.removeEventListener("beforeunload", handleBeforeUnload);
+  };
+}, [dirtySectionId]);
+
 
   const sectionRefs = useRef({});
 
@@ -139,12 +172,112 @@ const SectionBuilder = () => {
     updated[index].expanded = !updated[index].expanded;
     setSections(updated);
   };
+  // 🔀 LESSON MOVE MENU CLICK HANDLER
+// 🔀 LESSON MOVE MENU CLICK HANDLER
+const handleMoveLessonClick = ({ lessonId, fromSectionId }) => {
+  console.log("🟡 Move lesson clicked:", lessonId, fromSectionId);
+
+  setMoveLessonData({
+    lessonId,
+    fromSectionId,
+  });
+};
+
+// 🔀 MOVE LESSON TO ANOTHER SECTION
+const moveLessonToSection = (toSectionId) => {
+  if (!moveLessonData) return;
+
+  const { lessonId, fromSectionId } = moveLessonData;
+
+  // 🟢 1️⃣ FRONTEND STATE UPDATE (UI move)
+  setSections((prev) => {
+    const updated = structuredClone(prev);
+
+    const fromSection = updated.find(
+      (s) => String(s._id) === String(fromSectionId)
+    );
+    const toSection = updated.find(
+      (s) => String(s._id) === String(toSectionId)
+    );
+
+    if (!fromSection || !toSection) return prev;
+
+    const idx = fromSection.lessons.findIndex(
+      (l) => String(l._id) === String(lessonId)
+    );
+    if (idx === -1) return prev;
+
+    const [lesson] = fromSection.lessons.splice(idx, 1);
+
+    // update sectionId on lesson
+    lesson.sectionId = toSectionId;
+
+    toSection.lessons.push(lesson);
+
+    return updated;
+  });
+
+  // 🟢 2️⃣ BACKEND MOVE (THIS FIXES "MOVE → WAPAS AA JANA")
+  API.post(`/api/courses/${courseId}/move-lesson`, {
+    lessonId,
+    fromSectionId,
+    toSectionId,
+  })
+    .then(() => {
+      console.log("✅ Backend lesson move saved");
+    })
+    .catch((err) => {
+      console.error(
+        "❌ Backend lesson move failed",
+        err?.response?.data || err
+      );
+      alert("Lesson backend me move nahi hua");
+    });
+
+  // 🟢 3️⃣ Mark dirty (optional, safe)
+  setDirtySectionId(toSectionId);
+
+  // 🟢 4️⃣ Close modal
+  setMoveLessonData(null);
+};
+
+
+
+
 
  const handleLessonDragEnd = async (result) => {
   console.log("🔥 DRAG FIRED (PARENT)", result);
 
   const { source, destination, type } = result;
   if (!destination) return;
+  if (type === "SECTION") {
+  if (!destination) return;
+
+  // 1️⃣ Sirf visible sections reorder karo
+  const reorderedVisible = Array.from(filteredSections);
+  const [moved] = reorderedVisible.splice(source.index, 1);
+  reorderedVisible.splice(destination.index, 0, moved);
+
+  // 2️⃣ Original sections ke saath merge karo (hidden safe rahe)
+  const merged = [];
+
+  reorderedVisible.forEach(vs => {
+    const full = sections.find(s => s._id === vs._id);
+    if (full) merged.push(full);
+  });
+
+  // 3️⃣ Jo visible nahi the (e.g. unassigned), unko end me rakho
+  sections.forEach(s => {
+    if (!merged.find(m => m._id === s._id)) {
+      merged.push(s);
+    }
+  });
+
+  setSections(merged);
+  setDirtySectionId("SECTION_ORDER");
+  return;
+}
+
   if (type !== "LESSON") return;
 
   const sectionId = source.droppableId.replace("LESSON-", "");
@@ -179,10 +312,31 @@ const SectionBuilder = () => {
 const handleSaveOrder = async () => {
   try {
     if (!dirtySectionId) {
-      alert("Pehle drag karo, phir Save dabao");
+      alert("First drag, then click Save.");
       return;
     }
 
+    /* =========================================================
+       🔵 CASE 1: SECTION ORDER SAVE
+       ========================================================= */
+    if (dirtySectionId === "SECTION_ORDER") {
+      const orderedSectionIds = sections.map((s) => s._id);
+
+      console.log("🟦 SAVING SECTION ORDER:", orderedSectionIds);
+
+      await API.patch(
+        `/api/courses/${courseId}/reorder-sections`,
+        { sections: orderedSectionIds }
+      );
+
+      alert("Section order saved ✅");
+      setDirtySectionId(null);
+      return;
+    }
+
+    /* =========================================================
+       🟢 CASE 2: LESSON ORDER SAVE (EXISTING LOGIC SAFE)
+       ========================================================= */
     const sec = sections.find(
       (s) => String(s._id) === String(dirtySectionId)
     );
@@ -192,22 +346,24 @@ const handleSaveOrder = async () => {
       return;
     }
 
-    const orderedLessonIds = (sec.lessons || []).map(l => l._id);
+    const orderedLessonIds = (sec.lessons || []).map((l) => l._id);
 
-    console.log("🟢 FINAL SAVE ORDER:", dirtySectionId, orderedLessonIds);
+    console.log("🟢 SAVING LESSON ORDER:", dirtySectionId, orderedLessonIds);
 
     await API.patch(
       `/api/courses/${courseId}/section/${dirtySectionId}/reorder-lessons`,
       { lessons: orderedLessonIds }
     );
 
-    alert("Order saved ✅");
+    alert("Lesson order saved ✅");
     setDirtySectionId(null);
+
   } catch (err) {
     console.error("❌ Save failed", err?.response?.data || err);
     alert("Save failed ❌");
   }
 };
+
 
 
 
@@ -239,12 +395,12 @@ const handleSaveOrder = async () => {
   return (
     <div className="container py-4">
         {/* 🔙 Back Button */}
-      <button
-        className="btn btn-outline-secondary mb-3"
-        onClick={() => navigate(-1)}
-      >
-        ← Back
-      </button>
+     <button
+  className="btn btn-outline-secondary mb-3"
+  onClick={handleBack}
+>
+  ← Back
+</button>
 
       <div className="d-flex justify-content-between align-items-center mb-3">
   <h4 className="m-0">📚 Section Builder</h4>
@@ -281,6 +437,12 @@ const handleSaveOrder = async () => {
         courseId={courseId}
         navigate={navigate}
         sectionRefs={sectionRefs}
+          // 🔥 NEW PROPS
+           onMoveLessonClick={handleMoveLessonClick}
+  moveSectionMode={moveSectionMode}
+  setMoveSectionMode={setMoveSectionMode}
+  activeSectionMenu={activeSectionMenu}
+  setActiveSectionMenu={setActiveSectionMenu}
       />
 
       <div
@@ -309,6 +471,37 @@ const handleSaveOrder = async () => {
           navigate={navigate}
         />
       )}
+      {/* 🔀 MOVE LESSON MODAL */}
+{moveLessonData && (
+  <div className="modal show d-block" tabIndex="-1">
+    <div className="modal-dialog modal-dialog-centered modal-sm">
+      <div className="modal-content">
+        <div className="modal-header">
+          <h5 className="modal-title">Move lesson to</h5>
+          <button
+            className="btn-close"
+            onClick={() => setMoveLessonData(null)}
+          />
+        </div>
+
+        <div className="modal-body">
+          {sections.map((sec) => (
+            <button
+              key={sec._id}
+              className="btn btn-outline-primary w-100 mb-2"
+              onClick={() =>
+                moveLessonToSection(sec._id)
+              }
+            >
+              {sec.title}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  </div>
+)}
+
 
       {showAddSectionDrawer && (
         <div

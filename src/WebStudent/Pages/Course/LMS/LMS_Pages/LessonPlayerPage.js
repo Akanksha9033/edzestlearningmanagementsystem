@@ -864,7 +864,14 @@ function resolvePlayableUrl(lesson = {}) {
     lesson?.meta?.fileUrl,
     lesson?.meta?.url,
   ].map(pick).find(Boolean);
-  if (direct) return withAuth(direct);
+ if (direct) {
+  // 🔥 DO NOT attach token for CloudFront HLS (.m3u8)
+  if (direct.includes(".m3u8")) {
+    return direct;
+  }
+  return withAuth(direct);
+}
+
 
   const preferSignedFirst = (keyVal) => (keyVal ? buildSignedUrlFromKey(keyVal) || buildStreamUrlFromKey(keyVal) : "");
 
