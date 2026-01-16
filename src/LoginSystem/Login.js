@@ -4,6 +4,19 @@ import { useAuth } from "./context/AuthContext";
 import { FiEye, FiEyeOff } from "react-icons/fi"; // 👁️ icons
 
 // map role -> route (unchanged)
+// const roleToPath = (role) => {
+//   switch ((role || "").toLowerCase()) {
+//     case "superadmin":
+//       return "/superadmin/dashboard";
+//     case "admin":
+//       return "/admin/dashboard";
+//     case "teacher":
+//       return "/teacher/dashboard";
+//     default:
+//       return "/student/dashboard";
+//   }
+// };
+
 const roleToPath = (role) => {
   switch ((role || "").toLowerCase()) {
     case "superadmin":
@@ -12,10 +25,13 @@ const roleToPath = (role) => {
       return "/admin/dashboard";
     case "teacher":
       return "/teacher/dashboard";
+    case "student":
+      return "/student/enrollments"; // ✅ ONLY STUDENT CHANGE
     default:
       return "/student/dashboard";
   }
 };
+
 
 export default function Login() {
   const { login, user, ready } = useAuth();  // ✅ keep as-is

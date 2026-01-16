@@ -1,368 +1,981 @@
 // import React, { useEffect, useState } from "react";
-// import API from "../../LoginSystem/axios"; // apne project path ke according adjust
+// import {
+//   Box,
+//   Typography,
+//   Button,
+//   TextField,
+//   Stack,
+//   Paper,
+//   Table,
+//   TableBody,
+//   TableCell,
+//   TableContainer,
+//   TableHead,
+//   TableRow,
+//   Chip,
+//   IconButton,
+//   CircularProgress,
+// } from "@mui/material";
+// import MoreVertIcon from "@mui/icons-material/MoreVert";
+// import FilterListIcon from "@mui/icons-material/FilterList";
+// import ViewColumnIcon from "@mui/icons-material/ViewColumn";
+// import DownloadIcon from "@mui/icons-material/Download";
+// import EmailIcon from "@mui/icons-material/Email";
+// import AddIcon from "@mui/icons-material/Add";
+// import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 // import { useNavigate } from "react-router-dom";
+// import API from "../../LoginSystem/axios";
 
-// export default function AdminAddUser() {
+// export default function AdminUsers() {
 //   const navigate = useNavigate();
 
-//   const [name, setName] = useState("");
-//   const [email, setEmail] = useState("");
+//   const [learners, setLearners] = useState([]);
+//   const [loading, setLoading] = useState(true);
+//   const [search, setSearch] = useState("");
 
-//   // products
-//   const [enableQBank, setEnableQBank] = useState(false);
-//   const [enableMocktest, setEnableMocktest] = useState(false);
-//   const [enableEbooks, setEnableEbooks] = useState(false);
-
-//   // courses list + selected
-//   const [allCourses, setAllCourses] = useState([]);
-//   const [selectedCourseIds, setSelectedCourseIds] = useState([]);
-
-//   const [loading, setLoading] = useState(false);
-
-//   // load courses (published/all)
-//   useEffect(() => {
-//     (async () => {
-//       try {
-//         const res = await API.get("/api/courses");
-//         setAllCourses(res.data?.courses || []);
-//       } catch (e) {
-//         console.error("Courses load failed", e);
-//         setAllCourses([]);
-//       }
-//     })();
-//   }, []);
-
-//   const toggleCourse = (courseId) => {
-//     setSelectedCourseIds((prev) =>
-//       prev.includes(courseId)
-//         ? prev.filter((x) => x !== courseId)
-//         : [...prev, courseId]
-//     );
-//   };
-
-//   const handleSubmit = async (e) => {
-//     e.preventDefault();
-//     setLoading(true);
-
+//   const fetchUsers = async () => {
 //     try {
-//       const payload = {
-//         name,
-//         email,
-//         role: "Student",
-//         access: {
-//           courses: selectedCourseIds,
-//           qbank: enableQBank,
-//           mocktest: enableMocktest,
-//           ebooks: enableEbooks,
-//         },
-//       };
-
-//       await API.post("/api/admin/users/students", payload);
-//       alert("✅ Student invited successfully!");
-//       navigate("/admin/dashboard");
+//       const res = await API.get("/api/admin/users");
+//       setLearners(res.data.users || []);
 //     } catch (err) {
-//       console.error(err);
-//       alert(err?.response?.data?.message || "❌ Failed to add user");
+//       console.error("Failed to fetch users", err);
 //     } finally {
 //       setLoading(false);
 //     }
 //   };
 
+//   useEffect(() => {
+//     fetchUsers();
+//   }, []);
+
+//   const filteredLearners = learners.filter((u) =>
+//     u.email?.toLowerCase().includes(search.toLowerCase())
+//   );
+
 //   return (
-//     <div className="container py-4">
+//     <Box p={3}>
 
-//       {/* 🔙 HEADER WITH BACK BUTTON */}
-//       <div className="d-flex align-items-center justify-content-between mb-3">
-//         <h3 className="fw-bold mb-0">Add User</h3>
+//       {/* 🔙 BACK BUTTON (ADDED – NO LOGIC CHANGE) */}
+//       <Button
+//         startIcon={<ArrowBackIcon />}
+//         onClick={() => navigate("/admin/dashboard")}
+//         sx={{ mb: 2, textTransform: "none" }}
+//       >
+//         Back to Dashboard
+//       </Button>
 
-//         <button
-//           type="button"
-//           className="btn btn-outline-secondary"
-//           onClick={() => navigate(-1)}
+//       {/* ================= HEADER ================= */}
+//       <Stack
+//         direction="row"
+//         justifyContent="space-between"
+//         alignItems="center"
+//         mb={3}
+//       >
+//         <Typography variant="h5" fontWeight={600}>
+//           All Learners
+//         </Typography>
+
+//         <Stack direction="row" spacing={1}>
+//           <Button variant="outlined" startIcon={<MoreVertIcon />}>
+//             MORE
+//           </Button>
+//           <Button variant="outlined" startIcon={<EmailIcon />}>
+//             SEND MESSAGE
+//           </Button>
+//           <Button
+//             variant="contained"
+//             color="success"
+//             startIcon={<AddIcon />}
+//             onClick={() => navigate("/admin/users/add")}
+//           >
+//             ADD
+//           </Button>
+//         </Stack>
+//       </Stack>
+
+//       {/* ================= SEARCH + ACTIONS ================= */}
+//       <Stack
+//         direction="row"
+//         justifyContent="space-between"
+//         alignItems="center"
+//         mb={2}
+//       >
+//         <TextField
+//           placeholder="Search by Email"
+//           size="small"
+//           value={search}
+//           onChange={(e) => setSearch(e.target.value)}
+//           sx={{ width: 300 }}
+//         />
+
+//         <Stack direction="row" spacing={1}>
+//           <Button size="small" variant="outlined" startIcon={<FilterListIcon />}>
+//             FILTERS
+//           </Button>
+//           <Button size="small" variant="outlined" startIcon={<ViewColumnIcon />}>
+//             COLUMNS
+//           </Button>
+//           <Button size="small" variant="outlined" startIcon={<DownloadIcon />}>
+//             EXPORT
+//           </Button>
+//         </Stack>
+//       </Stack>
+
+//       {/* ================= TABLE ================= */}
+//       <TableContainer component={Paper}>
+//         <Table>
+//           <TableHead>
+//             <TableRow sx={{ backgroundColor: "#f5f7fa" }}>
+//               <TableCell><b>Learner Details</b></TableCell>
+//               <TableCell><b>Email Status</b></TableCell>
+//               <TableCell><b>Last Login</b></TableCell>
+//               <TableCell><b>Total Spent</b></TableCell>
+//               <TableCell><b>Active Devices</b></TableCell>
+//               <TableCell align="right"><b>Actions</b></TableCell>
+//             </TableRow>
+//           </TableHead>
+
+//           <TableBody>
+//             {loading ? (
+//               <TableRow>
+//                 <TableCell colSpan={6} align="center">
+//                   <CircularProgress size={24} />
+//                 </TableCell>
+//               </TableRow>
+//             ) : filteredLearners.length === 0 ? (
+//               <TableRow>
+//                 <TableCell colSpan={6} align="center">
+//                   No learners found
+//                 </TableCell>
+//               </TableRow>
+//             ) : (
+//               filteredLearners.map((user, idx) => (
+//                 <TableRow
+//   key={idx}
+//   hover
+//   sx={{ cursor: "pointer" }}
+//   onClick={() => navigate(`/admin/users/${user.sub}`)}
+// >
+
+//                   <TableCell>
+//                     <Typography fontWeight={600}>
+//                       {user.name || "-"}
+//                     </Typography>
+//                     <Typography variant="body2" color="text.secondary">
+//                       {user.email}
+//                     </Typography>
+//                   </TableCell>
+
+//                   <TableCell>
+//                     <Chip
+//                       label={user.emailVerified ? "Verified" : "Unverified"}
+//                       color={user.emailVerified ? "success" : "error"}
+//                       size="small"
+//                       variant="outlined"
+//                     />
+//                   </TableCell>
+
+//                   <TableCell>
+//                     {user.lastLogin
+//                       ? new Date(user.lastLogin).toLocaleDateString()
+//                       : "-"}
+//                   </TableCell>
+
+//                   <TableCell>
+//                     {user.totalSpent ? `₹ ${user.totalSpent}` : "-"}
+//                   </TableCell>
+
+//                   <TableCell>{user.activeDevices || 0}</TableCell>
+
+//                   <TableCell align="right">
+//                     <IconButton>
+//                       <MoreVertIcon />
+//                     </IconButton>
+//                   </TableCell>
+//                 </TableRow>
+//               ))
+//             )}
+//           </TableBody>
+//         </Table>
+//       </TableContainer>
+//     </Box>
+//   );
+// }
+
+
+// import React, { useEffect, useState } from "react";
+// import {
+//   Box,
+//   Typography,
+//   Button,
+//   TextField,
+//   Stack,
+//   Paper,
+//   Table,
+//   TableBody,
+//   TableCell,
+//   TableContainer,
+//   TableHead,
+//   TableRow,
+//   Chip,
+//   IconButton,
+//   CircularProgress,
+//   Menu,
+//   MenuItem,
+// } from "@mui/material";
+// import MoreVertIcon from "@mui/icons-material/MoreVert";
+// // import FilterListIcon from "@mui/icons-material/FilterList";   // ❌ COMMENTED
+// // import ViewColumnIcon from "@mui/icons-material/ViewColumn";   // ❌ COMMENTED
+// // import DownloadIcon from "@mui/icons-material/Download";       // ❌ COMMENTED
+// // import EmailIcon from "@mui/icons-material/Email";             // ❌ COMMENTED
+// import AddIcon from "@mui/icons-material/Add";
+// import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+// import { useNavigate } from "react-router-dom";
+// import API from "../../LoginSystem/axios";
+
+// export default function AdminUsers() {
+//   const navigate = useNavigate();
+
+//   const [learners, setLearners] = useState([]);
+//   const [loading, setLoading] = useState(true);
+//   const [search, setSearch] = useState("");
+
+//   // ✅ ADD DROPDOWN STATE
+//   const [anchorEl, setAnchorEl] = useState(null);
+//   const open = Boolean(anchorEl);
+
+//   const fetchUsers = async () => {
+//     try {
+//       const res = await API.get("/api/admin/users");
+//       setLearners(res.data.users || []);
+//     } catch (err) {
+//       console.error("Failed to fetch users", err);
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+
+//   useEffect(() => {
+//     fetchUsers();
+//   }, []);
+
+//   const filteredLearners = learners.filter((u) =>
+//     u.email?.toLowerCase().includes(search.toLowerCase())
+//   );
+
+//   return (
+//     <Box p={3}>
+//       {/* 🔙 BACK */}
+//       <Button
+//         startIcon={<ArrowBackIcon />}
+//         onClick={() => navigate("/admin/dashboard")}
+//         sx={{ mb: 2, textTransform: "none" }}
+//       >
+//         Back to Dashboard
+//       </Button>
+
+//       {/* ================= HEADER ================= */}
+//       <Stack
+//         direction="row"
+//         justifyContent="space-between"
+//         alignItems="center"
+//         mb={3}
+//       >
+//         <Typography variant="h5" fontWeight={600}>
+//           All Learners
+//         </Typography>
+
+//         {/* ❌ COMMENTED BUTTONS */}
+//         {/*
+//         <Stack direction="row" spacing={1}>
+//           <Button variant="outlined">MORE</Button>
+//           <Button variant="outlined">SEND MESSAGE</Button>
+//         </Stack>
+//         */}
+
+//         {/* ✅ ADD DROPDOWN */}
+//         <Button
+//           variant="contained"
+//           color="success"
+//           startIcon={<AddIcon />}
+//           onClick={(e) => setAnchorEl(e.currentTarget)}
 //         >
-//           ← Back
-//         </button>
-//       </div>
+//           ADD
+//         </Button>
 
-//       <form onSubmit={handleSubmit} className="card p-3 shadow-sm">
-//         <div className="mb-3">
-//           <label className="form-label">Name</label>
-//           <input
-//             className="form-control"
-//             value={name}
-//             onChange={(e) => setName(e.target.value)}
-//             required
-//           />
-//         </div>
+//         <Menu
+//           anchorEl={anchorEl}
+//           open={open}
+//           onClose={() => setAnchorEl(null)}
+//         >
+//           <MenuItem
+//             onClick={() => {
+//               setAnchorEl(null);
+//               navigate("/admin/users/add"); // 👈 existing ADD link
+//             }}
+//           >
+//             Create Individual
+//           </MenuItem>
 
-//         <div className="mb-3">
-//           <label className="form-label">Email</label>
-//           <input
-//             className="form-control"
-//             value={email}
-//             onChange={(e) => setEmail(e.target.value)}
-//             required
-//           />
-//         </div>
+//           <MenuItem
+//             onClick={() => {
+//               setAnchorEl(null);
+//               navigate("/admin/users/bulk-create"); // 👈 bulk create
+//             }}
+//           >
+//             Bulk Create
+//           </MenuItem>
+//         </Menu>
+//       </Stack>
 
-//         <hr />
+//       {/* ================= SEARCH ================= */}
+//       <Stack
+//         direction="row"
+//         justifyContent="space-between"
+//         alignItems="center"
+//         mb={2}
+//       >
+//         <TextField
+//           placeholder="Search by Email"
+//           size="small"
+//           value={search}
+//           onChange={(e) => setSearch(e.target.value)}
+//           sx={{ width: 300 }}
+//         />
 
-//         <h6 className="fw-bold">Product Access</h6>
+//         {/* ❌ COMMENTED FILTER / COLUMN / EXPORT */}
+//         {/*
+//         <Stack direction="row" spacing={1}>
+//           <Button size="small" variant="outlined">FILTERS</Button>
+//           <Button size="small" variant="outlined">COLUMNS</Button>
+//           <Button size="small" variant="outlined">EXPORT</Button>
+//         </Stack>
+//         */}
+//       </Stack>
 
-//         <div className="form-check">
-//           <input
-//             className="form-check-input"
-//             type="checkbox"
-//             checked={enableQBank}
-//             onChange={(e) => setEnableQBank(e.target.checked)}
-//           />
-//           <label className="form-check-label">Q-Bank</label>
-//         </div>
+//       {/* ================= TABLE ================= */}
+//       <TableContainer component={Paper}>
+//         <Table>
+//           <TableHead>
+//             <TableRow sx={{ backgroundColor: "#f5f7fa" }}>
+//               <TableCell><b>Learner Details</b></TableCell>
+//               <TableCell><b>Email Status</b></TableCell>
+//               <TableCell><b>Last Login</b></TableCell>
+//               <TableCell><b>Total Spent</b></TableCell>
+//               <TableCell><b>Active Devices</b></TableCell>
+//               <TableCell align="right"><b>Actions</b></TableCell>
+//             </TableRow>
+//           </TableHead>
 
-//         <div className="form-check">
-//           <input
-//             className="form-check-input"
-//             type="checkbox"
-//             checked={enableMocktest}
-//             onChange={(e) => setEnableMocktest(e.target.checked)}
-//           />
-//           <label className="form-check-label">MockTests</label>
-//         </div>
+//           <TableBody>
+//             {loading ? (
+//               <TableRow>
+//                 <TableCell colSpan={6} align="center">
+//                   <CircularProgress size={24} />
+//                 </TableCell>
+//               </TableRow>
+//             ) : filteredLearners.length === 0 ? (
+//               <TableRow>
+//                 <TableCell colSpan={6} align="center">
+//                   No learners found
+//                 </TableCell>
+//               </TableRow>
+//             ) : (
+//               filteredLearners.map((user, idx) => (
+//                 <TableRow
+//                   key={idx}
+//                   hover
+//                   sx={{ cursor: "pointer" }}
+//                   onClick={() => navigate(`/admin/users/${user.sub}`)}
+//                 >
+//                   <TableCell>
+//                     <Typography fontWeight={600}>
+//                       {user.name || "-"}
+//                     </Typography>
+//                     <Typography variant="body2" color="text.secondary">
+//                       {user.email}
+//                     </Typography>
+//                   </TableCell>
 
-//         <div className="form-check mb-3">
-//           <input
-//             className="form-check-input"
-//             type="checkbox"
-//             checked={enableEbooks}
-//             onChange={(e) => setEnableEbooks(e.target.checked)}
-//           />
-//           <label className="form-check-label">E-Books</label>
-//         </div>
+//                   <TableCell>
+//                     <Chip
+//                       label={user.emailVerified ? "Verified" : "Unverified"}
+//                       color={user.emailVerified ? "success" : "error"}
+//                       size="small"
+//                       variant="outlined"
+//                     />
+//                   </TableCell>
 
-//         <hr />
+//                   <TableCell>
+//                     {user.lastLogin
+//                       ? new Date(user.lastLogin).toLocaleDateString()
+//                       : "-"}
+//                   </TableCell>
 
-//         <h6 className="fw-bold">Course Access</h6>
+//                   <TableCell>
+//                     {user.totalSpent ? `₹ ${user.totalSpent}` : "-"}
+//                   </TableCell>
 
-//         <div className="row">
-//           {(allCourses || []).map((c) => (
-//             <div key={c._id} className="col-12 col-md-6">
-//               <div className="form-check">
-//                 <input
-//                   className="form-check-input"
-//                   type="checkbox"
-//                   checked={selectedCourseIds.includes(String(c._id))}
-//                   onChange={() => toggleCourse(String(c._id))}
-//                 />
-//                 <label className="form-check-label">{c.title}</label>
-//               </div>
-//             </div>
-//           ))}
-//         </div>
+//                   <TableCell>{user.activeDevices || 0}</TableCell>
 
-//         <button disabled={loading} className="btn btn-primary mt-3">
-//           {loading ? "Adding..." : "Add User"}
-//         </button>
-//       </form>
-//     </div>
+//                   <TableCell align="right">
+//                     <IconButton>
+//                       <MoreVertIcon />
+//                     </IconButton>
+//                   </TableCell>
+//                 </TableRow>
+//               ))
+//             )}
+//           </TableBody>
+//         </Table>
+//       </TableContainer>
+//     </Box>
+//   );
+// }
+
+// import React, { useEffect, useState } from "react";
+// import {
+//   Box,
+//   Typography,
+//   TextField,
+//   Stack,
+//   Paper,
+//   Table,
+//   TableBody,
+//   TableCell,
+//   TableContainer,
+//   TableHead,
+//   TableRow,
+//   Chip,
+//   CircularProgress,
+//   Button,
+//   Menu,
+//   MenuItem,
+// } from "@mui/material";
+// import AddIcon from "@mui/icons-material/Add";
+// import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+// import DeleteIcon from "@mui/icons-material/Delete";
+// import IconButton from "@mui/material/IconButton";
+// import { useNavigate } from "react-router-dom";
+// import API from "../../LoginSystem/axios";
+// import Checkbox from "@mui/material/Checkbox";
+
+// export default function AdminUsers() {
+//   const navigate = useNavigate();
+
+//   const [learners, setLearners] = useState([]);
+//   const [loading, setLoading] = useState(true);
+//   const [search, setSearch] = useState("");
+//   const [selectedUsers, setSelectedUsers] = useState([]);
+
+
+//   // ✅ ADD DROPDOWN STATE
+//   const [anchorEl, setAnchorEl] = useState(null);
+//   const open = Boolean(anchorEl);
+
+//   const fetchUsers = async () => {
+//     try {
+//       const res = await API.get("/api/admin/users");
+//       setLearners(res.data.users || []);
+//     } catch (err) {
+//       console.error("Failed to fetch users", err);
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+
+//   useEffect(() => {
+//     fetchUsers();
+//   }, []);
+
+// // ✅ STEP 3: handle single checkbox select
+// const handleSelectUser = (sub) => {
+//   setSelectedUsers((prev) =>
+//     prev.includes(sub)
+//       ? prev.filter((id) => id !== sub)
+//       : [...prev, sub]
+//   );
+// };
+
+// // ✅ STEP 4: bulk delete handler
+// const handleBulkDelete = async () => {
+//   if (selectedUsers.length === 0) {
+//     alert("Please select at least one user");
+//     return;
+//   }
+
+//   const confirmDelete = window.confirm(
+//     `Are you sure you want to delete ${selectedUsers.length} users?`
+//   );
+//   if (!confirmDelete) return;
+
+//   try {
+//     await API.post("/api/admin/users/bulk-delete", {
+//       subs: selectedUsers,
+//     });
+
+//     alert("✅ Selected users deleted");
+//     setSelectedUsers([]);
+//     fetchUsers();
+//   } catch (err) {
+//     console.error(err);
+//     alert("❌ Failed to delete users");
+//   }
+// };
+
+
+//   const handleDelete = async (sub, email) => {
+//   const confirmDelete = window.confirm(
+//     `Are you sure you want to delete ${email}?`
+//   );
+//   if (!confirmDelete) return;
+
+//   try {
+//     await API.delete(`/api/admin/users/${sub}`);
+//     alert("✅ User deleted successfully");
+//     fetchUsers(); // list refresh
+//   } catch (err) {
+//     console.error(err);
+//     alert("❌ Failed to delete user");
+//   }
+// };
+
+//   const filteredLearners = learners.filter((u) =>
+//     u.email?.toLowerCase().includes(search.toLowerCase())
+//   );
+
+//   return (
+//     <Box p={3}>
+//       {/* 🔙 Back */}
+//       <Button
+//         startIcon={<ArrowBackIcon />}
+//         onClick={() => navigate("/admin/dashboard")}
+//         sx={{ mb: 2, textTransform: "none" }}
+//       >
+//         Back to Dashboard
+//       </Button>
+
+//       {/* ================= HEADER + ADD DROPDOWN ================= */}
+//       <Stack
+//         direction="row"
+//         justifyContent="space-between"
+//         alignItems="center"
+//         mb={3}
+//       >
+//         <Typography variant="h5" fontWeight={600}>
+//           All Learners
+//         </Typography>
+
+//         {/* ✅ ADD DROPDOWN */}
+//         <Button
+//           variant="contained"
+//           color="success"
+//           startIcon={<AddIcon />}
+//           onClick={(e) => setAnchorEl(e.currentTarget)}
+//         >
+//           ADD
+//         </Button>
+
+//         <Menu
+//           anchorEl={anchorEl}
+//           open={open}
+//           onClose={() => setAnchorEl(null)}
+//         >
+//           <MenuItem
+//             onClick={() => {
+//               setAnchorEl(null);
+//               navigate("/admin/users/add");
+//             }}
+//           >
+//             Create Individual
+//           </MenuItem>
+
+//           <MenuItem
+//             onClick={() => {
+//               setAnchorEl(null);
+//               navigate("/admin/users/bulk-create");
+//             }}
+//           >
+//             Bulk Create
+//           </MenuItem>
+//         </Menu>
+//       </Stack>
+
+//       {/* ================= SEARCH + TOTAL COUNT ================= */}
+//       <Stack
+//         direction="row"
+//         justifyContent="space-between"
+//         alignItems="center"
+//         mb={2}
+//       >
+//         <TextField
+//           placeholder="Search by Email"
+//           size="small"
+//           value={search}
+//           onChange={(e) => setSearch(e.target.value)}
+//           sx={{ width: 300 }}
+//         />
+
+//         <Typography fontWeight={600} color="text.secondary">
+//           Total Learners: {learners.length}
+//         </Typography>
+//       </Stack>
+
+//       {/* ================= TABLE ================= */}
+//       <TableContainer component={Paper}>
+//         <Table>
+//           <TableHead>
+//             <TableRow sx={{ backgroundColor: "#f5f7fa" }}>
+//               <TableCell>
+//                 <b>Learner Details</b>
+//               </TableCell>
+//               <TableCell>
+//                 <b>Email Status</b>
+//               </TableCell>
+
+//               <TableCell align="center">
+//   <b>Delete</b>
+// </TableCell>
+
+
+//               {/* ❌ COMMENTED HEADERS */}
+//               {/*
+//               <TableCell><b>Last Login</b></TableCell>
+//               <TableCell><b>Total Spent</b></TableCell>
+//               <TableCell><b>Active Devices</b></TableCell>
+//               <TableCell align="right"><b>Actions</b></TableCell>
+//               */}
+//             </TableRow>
+//           </TableHead>
+
+//           <TableBody>
+//             {loading ? (
+//               <TableRow>
+//                 <TableCell colSpan={2} align="center">
+//                   <CircularProgress size={24} />
+//                 </TableCell>
+//               </TableRow>
+//             ) : filteredLearners.length === 0 ? (
+//               <TableRow>
+//                 <TableCell colSpan={2} align="center">
+//                   No learners found
+//                 </TableCell>
+//               </TableRow>
+//             ) : (
+//               filteredLearners.map((user, idx) => (
+//                 <TableRow
+//                   key={idx}
+//                   hover
+//                   sx={{ cursor: "pointer" }}
+//                   onClick={() => navigate(`/admin/users/${user.sub}`)}
+//                 >
+//                   <TableCell>
+//                     <Typography fontWeight={600}>
+//                       {user.name || "-"}
+//                     </Typography>
+//                     <Typography variant="body2" color="text.secondary">
+//                       {user.email}
+//                     </Typography>
+//                   </TableCell>
+
+//                   <TableCell>
+//                     <Chip
+//                       label={user.emailVerified ? "Verified" : "Unverified"}
+//                       color={user.emailVerified ? "success" : "error"}
+//                       size="small"
+//                       variant="outlined"
+//                     />
+//                   </TableCell>
+
+//                   <TableCell align="center">
+//   <IconButton
+//     color="error"
+//     onClick={(e) => {
+//       e.stopPropagation(); // row click se bachata hai
+//       handleDelete(user.sub, user.email);
+//     }}
+//   >
+//     <DeleteIcon />
+//   </IconButton>
+// </TableCell>
+
+
+//                   {/* ❌ COMMENTED ROW DATA */}
+//                   {/*
+//                   <TableCell>-</TableCell>
+//                   <TableCell>-</TableCell>
+//                   <TableCell>0</TableCell>
+//                   <TableCell align="right">...</TableCell>
+//                   */}
+//                 </TableRow>
+//               ))
+//             )}
+//           </TableBody>
+//         </Table>
+//       </TableContainer>
+//     </Box>
 //   );
 // }
 
 import React, { useEffect, useState } from "react";
-import API from "../../LoginSystem/axios"; // apne project path ke according adjust
+import {
+  Box,
+  Typography,
+  TextField,
+  Stack,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Chip,
+  CircularProgress,
+  Button,
+  Menu,
+  MenuItem,
+  Checkbox,
+  IconButton,
+} from "@mui/material";
+import AddIcon from "@mui/icons-material/Add";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import DeleteIcon from "@mui/icons-material/Delete";
 import { useNavigate } from "react-router-dom";
+import API from "../../LoginSystem/axios";
 
-export default function AdminAddUser() {
+export default function AdminUsers() {
   const navigate = useNavigate();
 
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
+  const [learners, setLearners] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [selectedUsers, setSelectedUsers] = useState([]);
 
-  // products
-  const [enableQBank, setEnableQBank] = useState(false);
-  const [enableMocktest, setEnableMocktest] = useState(false);
-  const [enableEbooks, setEnableEbooks] = useState(false);
+  // ADD dropdown
+  const [anchorEl, setAnchorEl] = useState(null);
+  const open = Boolean(anchorEl);
 
-  // courses list + selected
-  const [allCourses, setAllCourses] = useState([]);
-  const [selectedCourseIds, setSelectedCourseIds] = useState([]);
-
-  const [loading, setLoading] = useState(false);
-
-  /* ---------------------------------------
-     Load courses
-  --------------------------------------- */
-  useEffect(() => {
-    (async () => {
-      try {
-        const res = await API.get("/api/courses");
-        setAllCourses(res.data?.courses || []);
-      } catch (e) {
-        console.error("Courses load failed", e);
-        setAllCourses([]);
-      }
-    })();
-  }, []);
-
-  const toggleCourse = (courseId) => {
-    setSelectedCourseIds((prev) =>
-      prev.includes(courseId)
-        ? prev.filter((x) => x !== courseId)
-        : [...prev, courseId]
-    );
-  };
-
-  /* ---------------------------------------
-     Submit handler
-  --------------------------------------- */
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-
+  const fetchUsers = async () => {
     try {
-      const payload = {
-        name,
-        email,
-        role: "Student",
-        access: {
-          courses: selectedCourseIds,
-          qbank: enableQBank,
-          mocktest: enableMocktest,
-          ebooks: enableEbooks,
-        },
-      };
-
-      await API.post("/api/admin/users/students", payload);
-
-      alert("✅ Student invited successfully!");
-      navigate("/admin/dashboard");
-
+      const res = await API.get("/api/admin/users");
+      setLearners(res.data.users || []);
     } catch (err) {
-      console.error("ADD USER ERROR =", err);
-
-      const apiStatus = err?.response?.status;
-      const apiCode = err?.response?.data?.code;
-      const apiMessage = err?.response?.data?.message;
-
-      // ✅ USER ALREADY EXISTS
-      if (
-        apiCode === "USER_ALREADY_EXISTS" ||
-        apiMessage === "User already exists"
-      ) {
-        alert("⚠️ User already exists");
-        return;
-      }
-
-      // ✅ SESSION / AUTH ISSUE
-      if (apiStatus === 401) {
-        alert("⚠️ Session expired. Please login again.");
-        return;
-      }
-
-      // ❌ FALLBACK
-      alert(apiMessage || "❌ Something went wrong. Please try again.");
+      console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
-  /* ---------------------------------------
-     UI
-  --------------------------------------- */
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  // single checkbox toggle
+  const handleSelectUser = (sub) => {
+    setSelectedUsers((prev) =>
+      prev.includes(sub)
+        ? prev.filter((id) => id !== sub)
+        : [...prev, sub]
+    );
+  };
+
+  // bulk delete
+  const handleBulkDelete = async () => {
+    if (selectedUsers.length === 0) {
+      alert("Please select at least one user");
+      return;
+    }
+
+    if (!window.confirm(`Delete ${selectedUsers.length} users?`)) return;
+
+    try {
+      await API.post("/api/admin/users/bulk-delete", {
+        subs: selectedUsers,
+      });
+      alert("✅ Selected users deleted");
+      setSelectedUsers([]);
+      fetchUsers();
+    } catch (err) {
+      console.error(err);
+      alert("❌ Failed to delete users");
+    }
+  };
+
+  // single delete
+  const handleDelete = async (sub, email) => {
+    if (!window.confirm(`Delete ${email}?`)) return;
+
+    try {
+      await API.delete(`/api/admin/users/${sub}`);
+      fetchUsers();
+    } catch (err) {
+      console.error(err);
+      alert("❌ Failed to delete user");
+    }
+  };
+
+  const filteredLearners = learners.filter((u) =>
+    u.email?.toLowerCase().includes(search.toLowerCase())
+  );
+
   return (
-    <div className="container py-4">
+    <Box p={3}>
+      {/* Back */}
+      <Button
+        startIcon={<ArrowBackIcon />}
+        onClick={() => navigate("/admin/dashboard")}
+        sx={{ mb: 2 }}
+      >
+        Back to Dashboard
+      </Button>
 
-      {/* 🔙 HEADER WITH BACK BUTTON */}
-      <div className="d-flex align-items-center justify-content-between mb-3">
-        <h3 className="fw-bold mb-0">Add User</h3>
+      {/* Header */}
+      <Stack direction="row" justifyContent="space-between" mb={3}>
+        <Typography variant="h5" fontWeight={600}>
+          All Learners
+        </Typography>
 
-        <button
-          type="button"
-          className="btn btn-outline-secondary"
-          onClick={() => navigate(-1)}
+        <Button
+          variant="contained"
+          color="success"
+          startIcon={<AddIcon />}
+          onClick={(e) => setAnchorEl(e.currentTarget)}
         >
-          ← Back
-        </button>
-      </div>
+          ADD
+        </Button>
 
-      <form onSubmit={handleSubmit} className="card p-3 shadow-sm">
-        <div className="mb-3">
-          <label className="form-label">Name</label>
-          <input
-            className="form-control"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-          />
-        </div>
+        <Menu anchorEl={anchorEl} open={open} onClose={() => setAnchorEl(null)}>
+          <MenuItem onClick={() => navigate("/admin/users/add")}>
+            Create Individual
+          </MenuItem>
+          <MenuItem onClick={() => navigate("/admin/users/bulk-create")}>
+            Bulk Create
+          </MenuItem>
+        </Menu>
+      </Stack>
 
-        <div className="mb-3">
-          <label className="form-label">Email</label>
-          <input
-            className="form-control"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-        </div>
+      {/* Search + count */}
+      <Stack direction="row" justifyContent="space-between" mb={2}>
+        <TextField
+          placeholder="Search by Email"
+          size="small"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          sx={{ width: 300 }}
+        />
 
-        <hr />
+        <Typography fontWeight={600}>
+          Total Learners: {learners.length}
+        </Typography>
+      </Stack>
 
-        <h6 className="fw-bold">Product Access</h6>
+      {/* Bulk delete button */}
+      {selectedUsers.length > 0 && (
+        <Stack direction="row" justifyContent="flex-end" mb={2}>
+          <Button color="error" variant="contained" onClick={handleBulkDelete}>
+            Delete Selected ({selectedUsers.length})
+          </Button>
+        </Stack>
+      )}
 
-        <div className="form-check">
-          <input
-            className="form-check-input"
-            type="checkbox"
-            checked={enableQBank}
-            onChange={(e) => setEnableQBank(e.target.checked)}
-          />
-          <label className="form-check-label">Q-Bank</label>
-        </div>
-
-        <div className="form-check">
-          <input
-            className="form-check-input"
-            type="checkbox"
-            checked={enableMocktest}
-            onChange={(e) => setEnableMocktest(e.target.checked)}
-          />
-          <label className="form-check-label">MockTests</label>
-        </div>
-
-        <div className="form-check mb-3">
-          <input
-            className="form-check-input"
-            type="checkbox"
-            checked={enableEbooks}
-            onChange={(e) => setEnableEbooks(e.target.checked)}
-          />
-          <label className="form-check-label">E-Books</label>
-        </div>
-
-        <hr />
-
-        <h6 className="fw-bold">Course Access</h6>
-
-        <div className="row">
-          {(allCourses || []).map((c) => (
-            <div key={c._id} className="col-12 col-md-6">
-              <div className="form-check">
-                <input
-                  className="form-check-input"
-                  type="checkbox"
-                  checked={selectedCourseIds.includes(String(c._id))}
-                  onChange={() => toggleCourse(String(c._id))}
+      {/* Table */}
+      <TableContainer component={Paper}>
+        <Table>
+          <TableHead>
+            <TableRow sx={{ backgroundColor: "#f5f7fa" }}>
+              {/* Select all */}
+              <TableCell padding="checkbox">
+                <Checkbox
+                  indeterminate={
+                    selectedUsers.length > 0 &&
+                    selectedUsers.length < filteredLearners.length
+                  }
+                  checked={
+                    filteredLearners.length > 0 &&
+                    selectedUsers.length === filteredLearners.length
+                  }
+                  onChange={(e) =>
+                    setSelectedUsers(
+                      e.target.checked
+                        ? filteredLearners.map((u) => u.sub)
+                        : []
+                    )
+                  }
                 />
-                <label className="form-check-label">{c.title}</label>
-              </div>
-            </div>
-          ))}
-        </div>
+              </TableCell>
 
-        <button disabled={loading} className="btn btn-primary mt-3">
-          {loading ? "Adding..." : "Add User"}
-        </button>
-      </form>
-    </div>
+              <TableCell><b>Learner Details</b></TableCell>
+              <TableCell><b>Email Status</b></TableCell>
+              <TableCell align="center"><b>Delete</b></TableCell>
+            </TableRow>
+          </TableHead>
+
+          <TableBody>
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={4} align="center">
+                  <CircularProgress size={24} />
+                </TableCell>
+              </TableRow>
+            ) : filteredLearners.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={4} align="center">
+                  No learners found
+                </TableCell>
+              </TableRow>
+            ) : (
+              filteredLearners.map((user) => (
+                <TableRow
+                  key={user.sub}
+                  hover
+                  onClick={() => navigate(`/admin/users/${user.sub}`)}
+                >
+                  {/* checkbox */}
+                  <TableCell padding="checkbox">
+                    <Checkbox
+                      checked={selectedUsers.includes(user.sub)}
+                      onChange={() => handleSelectUser(user.sub)}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </TableCell>
+
+                  {/* details */}
+                  <TableCell>
+                    <Typography fontWeight={600}>{user.name}</Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {user.email}
+                    </Typography>
+                  </TableCell>
+
+                  {/* status */}
+                  <TableCell>
+                    <Chip
+                      label={user.emailVerified ? "Verified" : "Unverified"}
+                      color={user.emailVerified ? "success" : "error"}
+                      size="small"
+                      variant="outlined"
+                    />
+                  </TableCell>
+
+                  {/* delete */}
+                  <TableCell align="center">
+                    <IconButton
+                      color="error"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(user.sub, user.email);
+                      }}
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </TableContainer>
+    </Box>
   );
 }

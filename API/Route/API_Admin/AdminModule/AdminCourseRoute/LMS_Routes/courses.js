@@ -924,6 +924,51 @@ router.delete("/:courseId/section/:sectionId", authAccess, requireRoles(["Admin"
     res.status(500).json({ message: "Server error" });
   }
 });
+/* ===============================
+   🔀 Reorder SECTIONS in course
+=============================== */
+router.patch(
+  "/:courseId/reorder-sections",
+  authAccess,
+  requireRoles(["Admin", "Teacher"]),
+  async (req, res) => {
+    try {
+      const { courseId } = req.params;
+      const { sections } = req.body;
+
+      if (!Array.isArray(sections)) {
+        return res
+          .status(400)
+          .json({ message: "sections array required" });
+      }
+
+      const course = await Courses.findById(courseId);
+      if (!course) {
+        return res.status(404).json({ message: "Course not found" });
+      }
+
+      // 🔁 reorder sections by id order
+      const map = {};
+      (course.sections || []).forEach((s) => {
+        map[String(s._id)] = s;
+      });
+
+      course.sections = sections
+        .map((id) => map[String(id)])
+        .filter(Boolean);
+
+      await course.save();
+
+      res.json({
+        message: "Section order updated",
+        sections: course.sections.map((s) => s._id),
+      });
+    } catch (err) {
+      console.error("❌ Section reorder error:", err);
+      res.status(500).json({ message: "Server error" });
+    }
+  }
+);
 
 /* ===============================
    🔁 Reorder lessons inside section
@@ -965,6 +1010,69 @@ router.patch(
     } catch (err) {
       console.error("❌ Lesson reorder error:", err);
       res.status(500).json({ message: "Server error" });
+    }
+  }
+);
+/* ===============================
+   🔀 MOVE LESSON BETWEEN SECTIONS
+=============================== */
+router.post(
+  "/:courseId/move-lesson",
+  authAccess,
+  requireRoles(["Admin", "Teacher"]),
+  async (req, res) => {
+    try {
+      const { courseId } = req.params;
+      const { lessonId, fromSectionId, toSectionId } = req.body;
+
+      if (!lessonId || !fromSectionId || !toSectionId) {
+        return res.status(400).json({
+          message: "lessonId, fromSectionId, toSectionId required",
+        });
+      }
+
+      // 1️⃣ update lesson table (DynamoDB)
+      if (Lesson && typeof Lesson.findByIdAndUpdate === "function") {
+        await Lesson.findByIdAndUpdate(lessonId, {
+          $set: { sectionId: toSectionId },
+        });
+      }
+
+      // 2️⃣ update course.sections (embedded order reference)
+      const course = await Courses.findById(courseId);
+      if (!course) {
+        return res.status(404).json({ message: "Course not found" });
+      }
+
+      // remove lesson from old section
+      const fromSection = course.sections.find(
+        (s) => String(s._id) === String(fromSectionId)
+      );
+      if (fromSection) {
+        fromSection.lessons = (fromSection.lessons || []).filter(
+          (id) => String(id) !== String(lessonId)
+        );
+      }
+
+      // add lesson to new section
+      const toSection = course.sections.find(
+        (s) => String(s._id) === String(toSectionId)
+      );
+      if (toSection) {
+        toSection.lessons = Array.isArray(toSection.lessons)
+          ? [...toSection.lessons, lessonId]
+          : [lessonId];
+      }
+
+      await course.save();
+
+      return res.json({ success: true });
+    } catch (err) {
+      console.error("❌ move-lesson error:", err);
+      return res.status(500).json({
+        message: "Lesson move failed",
+        detail: err.message,
+      });
     }
   }
 );

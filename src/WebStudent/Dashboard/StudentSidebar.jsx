@@ -7,6 +7,7 @@ import {
 } from "react-icons/fa";
 import { useAuth } from "../../LoginSystem/context/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
+import { FaClipboardList } from "react-icons/fa";
 
 /* ======================================================
    ✅ Student Sidebar Menu Configuration
@@ -17,6 +18,12 @@ const menuItems = [
     icon: <FaTachometerAlt />,
     label: "Dashboard",
     path: "/student/dashboard",
+  },
+  {
+    id: "enrollments",
+    icon: <FaClipboardList />,
+    label: "My Enrollments",
+    path: "/student/enrollments",
   },
   {
     id: "mocktest",
@@ -36,13 +43,13 @@ const menuItems = [
     label: "Course",
     path: "/student/courses",
   },
-  {
-    id: "e-book",
-    icon: <FaUserCircle />,
-    label: "E-Book",
-    path: "/ebooks",
-  },
-];
+//   {
+//     id: "e-book",
+//     icon: <FaUserCircle />,
+//     label: "E-Book",
+//     path: "/ebooks",
+//   },
+ ];
 
 export default function StudentSidebar({ isCollapsed, toggleSidebar }) {
   const { logout } = useAuth();

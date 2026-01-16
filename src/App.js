@@ -110,13 +110,18 @@ import LessonPreviewWrapper from "./WebStudent/Pages/Course/LMS/LessonPreviewWra
 
 import EBookEditor from "./WebAdmin/AdminModule/E-Books/Admin/EBookEditor"
 import EBookReader from "./WebAdmin/AdminModule/E-Books/Student/EBookReader"
-import StudentBookshelf from "./WebAdmin/AdminModule/E-Books/Student/StudentBookshelf"
+import StudentBookshelf from "./WebStudent/StudentModule/E-book/Student/StudentBookshelf";
+
 import AdminEBookList from "./WebAdmin/AdminModule/E-Books/Admin/AdminEBookList"
 import Title from "./WebAdmin/AdminModule/E-Books/Admin/Title"
 import EBookSettings from "./WebAdmin/AdminModule/E-Books/Admin/EBookSettings"
+
 import AdminAddUser from "./WebAdmin/Dashboard/AdminAddUser";
-
-
+import AddUser from "./WebAdmin/Dashboard/AddUser";
+import AdminLearnerProfile from "./WebStudent/Pages/AdminLearnerProfile";
+import MyEnrollments from "./WebStudent/Pages/MyEnrollments";
+import AdminAddProduct from "./WebAdmin/AdminModule/AdminAddProduct";
+import BulkCreateUsers from "./WebAdmin/Dashboard/BulkCreateUsers";
 
 
 const AppContent = () => {
@@ -238,6 +243,15 @@ const AppContent = () => {
             </ProtectedRoute>
           }
         />
+
+        <Route
+  path="/student/enrollments"
+  element={
+    <ProtectedRoute allowedRoles={["student"]}>
+      <MyEnrollments />
+    </ProtectedRoute>
+  }
+/>
         <Route
           path="/teacher/dashboard"
           element={
@@ -250,17 +264,6 @@ const AppContent = () => {
 
 
         {/* ------------------ Admin Routes ------------------ */}
-
-        {/* 🔹 Admin – Add Users */}
-<Route
-  path="/admin/users/add"
-  element={
-    <ProtectedRoute allowedRoles={["admin", "SuperAdmin"]}>
-      <AdminAddUser />
-    </ProtectedRoute>
-  }
-/>
-
         <Route
           path="/admin/mocktests"
           element={
@@ -285,8 +288,6 @@ const AppContent = () => {
             </ProtectedRoute>
           }
         />
-
-        
 
         {/* <Route path="/admin/mocktests/editor/:mockTestId/questions" element={<AdminMockTestQuestionEditor />} />
 <Route
@@ -461,7 +462,51 @@ const AppContent = () => {
   element={<StudentQBankSolutions />}
 />
 
+<Route
+  path="/admin/users"
+  element={
+    <ProtectedRoute allowedRoles={["admin", "SuperAdmin"]}>
+      <AdminAddUser />
+    </ProtectedRoute>
+  }
+/>
 
+
+<Route
+  path="/admin/users/add"
+  element={
+    <ProtectedRoute allowedRoles={["admin", "SuperAdmin"]}>
+      <AddUser />
+    </ProtectedRoute>
+  }
+/>
+<Route
+  path="/admin/users/:sub"
+  element={
+    <ProtectedRoute allowedRoles={["admin", "SuperAdmin"]}>
+      <AdminLearnerProfile />
+    </ProtectedRoute>
+  }
+/>
+
+
+<Route
+  path="/admin/users/:sub/add-product"
+  element={
+    <ProtectedRoute allowedRoles={["admin", "SuperAdmin"]}>
+      <AdminAddProduct />
+    </ProtectedRoute>
+  }
+/>
+
+<Route
+  path="/admin/users/bulk-create"
+  element={
+    <ProtectedRoute allowedRoles={["admin", "SuperAdmin"]}>
+      <BulkCreateUsers />
+    </ProtectedRoute>
+  }
+/>
 
 {/* =================== E-BOOK ROUTES (added) =================== */}
         {/* Settings */}

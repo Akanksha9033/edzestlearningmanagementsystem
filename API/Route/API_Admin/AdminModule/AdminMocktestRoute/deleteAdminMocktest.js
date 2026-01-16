@@ -8,7 +8,7 @@ const router = express.Router();
 const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
 const { DynamoDBDocumentClient, DeleteCommand } = require("@aws-sdk/lib-dynamodb");
 
-const {
+const { 
   S3Client,
   ListObjectsV2Command,
   DeleteObjectCommand

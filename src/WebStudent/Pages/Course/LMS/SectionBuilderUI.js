@@ -6,6 +6,8 @@
 import React, { useEffect, useRef } from "react";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import DeleteEntityButton from "./DeleteSectionButton";
+import ReactDOM from "react-dom";
+
 
 
 const SectionBuilderUI = ({
@@ -21,7 +23,22 @@ const SectionBuilderUI = ({
   courseId,
   navigate,
   sectionRefs,
+   onMoveLessonClick,   // ✅ ADD THIS
 }) => {
+  const [activeSectionMenu, setActiveSectionMenu] = React.useState(null);
+const [moveSectionMode, setMoveSectionMode] = React.useState(false);
+const [activeLessonMenu, setActiveLessonMenu] = React.useState(null);
+
+const menuBtn = {
+  width: "100%",
+  padding: "10px 14px",
+  background: "transparent",
+  border: "none",
+  textAlign: "left",
+  cursor: "pointer",
+  fontSize: 14,
+};
+
   // Reusable glassy tokens
   const glassCard = {
     borderRadius: "16px",
@@ -180,7 +197,8 @@ const SectionBuilderUI = ({
 
 >
 
-      <Droppable droppableId="sectionList">
+      <Droppable droppableId="sectionList" type="SECTION">
+
         {(provided) => (
           <ul
             className="list-group"
@@ -212,7 +230,13 @@ const SectionBuilderUI = ({
             )}
 
             {sections.map((sec, index) => (
-              <Draggable key={sec._id} draggableId={sec._id} index={index}>
+              <Draggable
+  key={sec._id}
+  draggableId={sec._id}
+  index={index}
+  isDragDisabled={!moveSectionMode}
+>
+
                 {(provided) => (
                   <li
                     className="list-group-item p-0 mb-3"
@@ -221,10 +245,13 @@ const SectionBuilderUI = ({
                       sectionRefs.current[sec._id] = el;
                     }}
                     {...provided.draggableProps}
-                    {...provided.dragHandleProps}
+
+
                     style={{
                       ...provided.draggableProps.style,
                       ...glassCard,
+                      overflow: "visible",     // ✅ dropdown ko bahar nikalne dega
+                       position: "relative",   // ✅ dropdown ka reference parent
                     }}
                     onMouseEnter={(e) => hoverElevate(e.currentTarget, true)}
                     onMouseLeave={(e) => hoverElevate(e.currentTarget, false)}
@@ -234,6 +261,7 @@ const SectionBuilderUI = ({
                       style={{
                         cursor: "pointer",
                         userSelect: "none",
+                        overflow: "visible",   // ✅ ADD THIS LINE
                         borderBottom: "1px solid rgba(0,0,0,0.06)",
                         borderTopLeftRadius: "16px",
                         borderTopRightRadius: "16px",
@@ -242,20 +270,18 @@ const SectionBuilderUI = ({
                       }}
                     >
                       <div
-                        onClick={() => {
-                          if (sec.expanded) {
-                            sessionStorage.removeItem(OPEN_KEY);
-                            onToggleExpand(index); // collapse current
-                          } else {
-                            sessionStorage.setItem(OPEN_KEY, sec._id);
-                            openOnlyThisSection(index); // open this, close others
-                          }
-                          // Defer height sync to next frame for smoothness
-                          requestAnimationFrame(() => syncSectionHeight(sec));
-                        }}
-                        className="d-flex align-items-center"
-                        style={{ gap: "0.5rem" }}
-                      >
+  onClick={() => {
+    if (sec.expanded) {
+      sessionStorage.removeItem(OPEN_KEY);
+      onToggleExpand(index);
+    } else {
+      sessionStorage.setItem(OPEN_KEY, sec._id);
+      openOnlyThisSection(index);
+    }
+  }}
+  className="d-flex align-items-center"
+>
+
                         <span
                           className="fs-5"
                           style={{
@@ -318,13 +344,112 @@ const SectionBuilderUI = ({
                           }}
                           title="Edit title"
                         />
+                        {/* ⠿ Drag Handle (always present) */}
+<span
+  {...provided.dragHandleProps}
+  style={{
+    cursor: moveSectionMode ? "grab" : "not-allowed",
+    opacity: moveSectionMode ? 1 : 0.3,
+    padding: "4px 6px",
+    marginRight: 6,
+    userSelect: "none",
+    fontSize: 18,
+  }}
+  onClick={(e) => e.stopPropagation()}
+  title={
+    moveSectionMode
+      ? "Drag to move section"
+      : "Enable 'Move section' from menu"
+  }
+>
+  ≡
+</span>
+<span
+  style={{
+    cursor: "pointer",
+    fontSize: "16px",
+    color: "#0d6efd",
+    marginRight: 8,
+    userSelect: "none",
+  }}
+  onClick={(e) => {
+    e.stopPropagation(); // 🔥 very important (expand toggle se bachaata hai)
+    setEditingSectionId(sec._id);
+    setEditingTitle(sec.title);
+  }}
+  title="Edit section"
+>
+  ✏️
+</span>
+
+
                         <DeleteEntityButton
-   deleteType="section"
-   courseId={courseId}
-   sectionId={sec._id}
-   className="btn btn-sm btn-outline-danger"
-   onDeleted={() => navigate(0)}
- />
+  deleteType="section"
+  courseId={courseId}
+  sectionId={sec._id}
+  className="btn btn-sm btn-outline-danger"
+  onDeleted={() => navigate(0)}
+/>
+
+<div style={{ position: "relative", marginLeft: 8 }}>
+ <button
+  className="btn btn-sm btn-outline-secondary"
+  onClick={(e) => {
+    e.stopPropagation(); // 🔥 THIS IS THE KEY
+    setActiveSectionMenu(
+      activeSectionMenu === sec._id ? null : sec._id
+    );
+  }}
+>
+  ⋮
+</button>
+
+
+ {activeSectionMenu === sec._id &&
+  ReactDOM.createPortal(
+    <div
+      style={{
+        position: "fixed",
+        top:
+          sectionRefs.current[sec._id]
+            ?.getBoundingClientRect().top + 42,
+        right: 40,
+        background: "#fff",
+        border: "1px solid #ddd",
+        borderRadius: 8,
+        minWidth: 160,
+        boxShadow: "0 8px 24px rgba(0,0,0,0.18)",
+        zIndex: 99999,
+      }}
+      onClick={(e) => e.stopPropagation()}
+    >
+      <button
+          style={{ ...menuBtn, color: "#dc3545" }}
+        onClick={() => {
+          setMoveSectionMode(true);
+          setActiveSectionMenu(null);
+        }}
+      >
+        🔀 Move section
+      </button>
+
+      {moveSectionMode && (
+        <button
+          style={{ ...menuBtn, color: "#dc3545" }}
+          onClick={() => {
+            setMoveSectionMode(false);
+            setActiveSectionMenu(null);
+          }}
+        >
+          ✖ Stop moving
+        </button>
+      )}
+    </div>,
+    document.body
+  )}
+
+</div>
+
                       </div>
                     </div>
 
@@ -412,10 +537,32 @@ const SectionBuilderUI = ({
                   <span className="me-2 text-muted">
                     {idx + 1}.
                   </span>
-                  <span className="me-2 text-muted">▶</span>
-                  <span className="text-truncate">
+                  
+                  {/* ⋮ Lesson menu */}
+
+
+                 <span className="text-truncate flex-grow-1">
                     {lesson.title}
                   </span>
+                
+
+{/* ⋮ Lesson menu */}
+<div
+  className="me-2"
+  onClick={(e) => e.stopPropagation()}
+>
+  <button
+    className="btn btn-sm btn-outline-secondary"
+    onClick={() =>
+      setActiveLessonMenu(
+        activeLessonMenu === lesson._id ? null : lesson._id
+      )
+    }
+  >
+    ⋮
+  </button>
+</div>
+
 
                   {/* ---- Lesson delete button ---- */}
                   <span
@@ -433,6 +580,38 @@ const SectionBuilderUI = ({
                       Delete
                     </DeleteEntityButton>
                   </span>
+                  {activeLessonMenu === lesson._id &&
+  ReactDOM.createPortal(
+    <div
+      style={{
+        position: "fixed",
+        top: dragProvided.innerRef?.getBoundingClientRect?.().top ?? 200,
+        right: 60,
+        background: "#fff",
+        border: "1px solid #ddd",
+        borderRadius: 8,
+        minWidth: 180,
+        boxShadow: "0 8px 24px rgba(0,0,0,0.18)",
+        zIndex: 99999,
+      }}
+      onClick={(e) => e.stopPropagation()}
+    >
+      <button
+        style={menuBtn}
+        onClick={() => {
+          onMoveLessonClick({
+            lessonId: lesson._id,
+            fromSectionId: sec._id,
+          });
+          setActiveLessonMenu(null);
+        }}
+      >
+        🔀 Move lesson
+      </button>
+    </div>,
+    document.body
+  )}
+
                 </li>
               )}
             </Draggable>

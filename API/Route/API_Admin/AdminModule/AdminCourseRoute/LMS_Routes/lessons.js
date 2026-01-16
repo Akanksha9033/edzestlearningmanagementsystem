@@ -6,6 +6,28 @@ const axios = require("axios");
 const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
 
 const Lesson = require("../../models/Lesson");
+const Courses = require("../../models/Courses"); // ✅ ADD THIS
+async function attachLessonToSection(courseId, sectionId, lessonId) {
+  const course = await Courses.findById(courseId);
+  if (!course) return;
+
+  const section = course.sections.find(
+    (s) => String(s._id) === String(sectionId)
+  );
+  if (!section) return;
+
+  if (!Array.isArray(section.lessons)) {
+    section.lessons = [];
+  }
+
+  const lid = String(lessonId);
+  if (!section.lessons.map(String).includes(lid)) {
+    section.lessons.push(lid);
+  }
+
+  await course.save();
+}
+
 
 const { authAccess, requireRoles } =
   require("../../../../../middleware/auth");
@@ -113,8 +135,11 @@ if (normType === "quiz") {
     status: status || "draft",
   });
 
+  await attachLessonToSection(courseId, sectionId, doc._id); // ✅ FIX
+
   return res.status(201).json({ ok: true, lesson: doc });
 }
+
 
       const folder = `courses/${courseId}/sections/${sectionId}`;
 
@@ -170,6 +195,9 @@ if (normType === "quiz") {
         duration: Number(duration) || 0,
         status: status || "draft",
       });
+
+      await attachLessonToSection(courseId, sectionId, doc._id); // ✅ FIX
+
       // =======================
 // ✅ FINAL HLS FIX (DO NOT CHANGE ANY OTHER LOGIC)
 // =======================
@@ -197,7 +225,8 @@ if (normType === "video" && videoKey) {
     doc._id,
     {
       videoUrl: hlsUrl,   // ✅ CloudFront URL
-      videoKey: "",
+     videoKey: videoKey,
+
     },
     { new: true }
   );
@@ -212,32 +241,7 @@ if (normType === "video" && videoKey) {
 
 
       // ⭐ SAVE UPLOADED VIDEO INFO TO NEW DYNAMODB TABLE
-try {
-  const { DynamoDBClient, PutItemCommand } = require("@aws-sdk/client-dynamodb");
 
-  const ddb = new DynamoDBClient({ region: process.env.AWS_REGION });
-
-  await ddb.send(
-    new PutItemCommand({
-      TableName: "EdzestVideoTable",
-      Item: {
-        lessonId:  { S: doc._id.toString() },
-        courseId:  { S: courseId },
-        sectionId: { S: sectionId },
-       videoKey: { S: normType === "video" ? hlsUrl : (videoKey || "") },
-
-
-        type:      { S: normType },
-        createdAt: { S: new Date().toISOString() }
-      }
-    })
-  );
-
-  console.log("🔥 UI Upload Saved to EdzestVideoTable");
-
-} catch (e) {
-  console.error("❌ Dynamo Insert Failed:", e);
-}
 
 
       res.status(201).json({ ok: true, lesson: doc });

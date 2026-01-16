@@ -232,9 +232,21 @@ useEffect(() => {
   // ✅ quick helper to know if lesson is completed for the current user
   const isCompleted = (lessonId) =>
     progress?.completedLessonIds?.includes(String(lessonId));
+// 🚫 Hide backend-generated "Unassigned" section from students
+const visibleSections = (course.sections || []).filter(
+  (s) => !String(s._id || "").startsWith("unassigned-")
+);
 
   return (
     <div className="container mt-4">
+       {/* 🔙 Back Button */}
+    <button
+      type="button"
+      className="btn btn-outline-secondary mb-2"
+      onClick={() => navigate(-1)}
+    >
+      ← Back
+    </button>
       <h2 className="fw-bold mb-1">{course.title}</h2>
       <div className="text-muted mb-3">
         {course.subtitle ? <span>{course.subtitle} • </span> : null}
@@ -267,7 +279,9 @@ useEffect(() => {
   </div>
 </div>
 
-      {course.sections?.map((section, idx) => (
+     
+      {visibleSections.map((section, idx) => (
+
         <div key={section._id} className="mb-3 border rounded">
           <div
             className="d-flex justify-content-between align-items-center bg-light px-3 py-2"

@@ -302,13 +302,13 @@ export default function StudentAttempts() {
       <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" alignItems="center" mb={2}>
         <Stack direction="row" alignItems="center">
 
-          <IconButton
+          {/* <IconButton
   onClick={() => nav("/student/mocktests")}
   size="small"
   sx={{ mr: 0.25 }}
 >
   <ArrowBackIcon />
-</IconButton>
+</IconButton> */}
 
           <IconButton onClick={() => nav(-1)} size="small" sx={{ mr: 0.25 }}>
             <ArrowBackIcon />
@@ -359,7 +359,7 @@ export default function StudentAttempts() {
                   <TableCell><b>Status</b></TableCell>
                   <TableCell><b>Created</b></TableCell>
                   <TableCell><b>Submitted</b></TableCell>
-                  <TableCell align="right"><b>Duration</b></TableCell>
+                  {/* <TableCell align="right"><b>Duration</b></TableCell> */}
                   <TableCell align="center"><b>Action</b></TableCell>
                 </TableRow>
               </TableHead>
@@ -420,7 +420,7 @@ export default function StudentAttempts() {
                       <TableCell>{fmtEpoch(row.createdAtEpoch)}</TableCell>
                       <TableCell>{fmtEpoch(row.submittedAtEpoch)}</TableCell>
 
-                      <TableCell align="right">{fmtHMS(row.durationSec)}</TableCell>
+                      {/* <TableCell align="right">{fmtHMS(row.durationSec)}</TableCell> */}
 
                       {/* ACTION COLUMN */}
                       <TableCell align="center">
@@ -478,7 +478,7 @@ export default function StudentAttempts() {
 
                 <Typography variant="body2">Created: {fmtEpoch(row.createdAtEpoch)}</Typography>
                 <Typography variant="body2">Submitted: {fmtEpoch(row.submittedAtEpoch)}</Typography>
-                <Typography variant="body2">Duration: {fmtHMS(row.durationSec)}</Typography>
+                {/* <Typography variant="body2">Duration: {fmtHMS(row.durationSec)}</Typography> */}
 
                 <Stack direction="row" justifyContent="flex-end" spacing={1} mt={2}>
 
