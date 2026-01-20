@@ -10,9 +10,12 @@ console.log("🔥 CF ENV AT BUILD =", process.env.REACT_APP_CLOUDFRONT_DOMAIN);
 /* =====================================================
    ✅ CRA-safe CloudFront base
    ===================================================== */
-const CLOUDFRONT_BASE =
-  (process.env.REACT_APP_CLOUDFRONT_DOMAIN ||
-   "d3gvlfug24vd2e.cloudfront.net").trim();
+const RAW_CF = process.env.REACT_APP_CLOUDFRONT_DOMAIN;
+
+const CLOUDFRONT_BASE = RAW_CF
+  ? (RAW_CF.startsWith("http") ? RAW_CF : `https://${RAW_CF}`)
+  : "https://d3gvlfug24vd2e.cloudfront.net";
+
 
 
 export default function CustomVideoPlayer({
