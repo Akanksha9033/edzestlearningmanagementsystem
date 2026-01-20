@@ -4,6 +4,9 @@ import {
   putLessonProgress,
   getLessonProgress,
 } from "../../../../../utils/ProgressApi";
+// ✅ CloudFront domain (Vite + CRA compatible)
+const CLOUDFRONT_DOMAIN = process.env.REACT_APP_CLOUDFRONT_DOMAIN;
+
 
 export default function CustomVideoPlayer({
   src,
@@ -33,23 +36,40 @@ export default function CustomVideoPlayer({
     const video = videoRef.current;
     if (!video || !src) return;
  console.log("🎥 [CustomVideoPlayer] src received:", src);
+ // ✅ Build FINAL playable URL
+let finalSrc = src;
+
+if (src && !src.startsWith("http")) {
+  if (!CLOUDFRONT_DOMAIN) {
+    console.error("❌ CloudFront domain missing");
+    return;
+  }
+
+  finalSrc = `https://${CLOUDFRONT_DOMAIN}/${src}/index.m3u8`;
+}
+
+console.log("🎬 FINAL HLS URL:", finalSrc);
+
     let hls;
 
     // ⭐ FIXED HLS DETECTION
-    const isHls = src.includes(".m3u8");
+    const isHls = finalSrc.includes(".m3u8");
+
 
    if (Hls.isSupported() && isHls) {
   const hlsInstance = new Hls({
     autoStartLoad: true,
   });
 
-  hlsInstance.loadSource(src);
+  hlsInstance.loadSource(finalSrc);
+
   hlsInstance.attachMedia(video);
 
   hlsRef.current = hlsInstance;
 
   console.log("✅ HLS.js ATTACHED to video element");
-  console.log("🎬 HLS Source URL:", src);
+  console.log("🎬 HLS Source URL:", finalSrc);
+
 
   // 🔴 HLS ERROR DEBUG (VERY IMPORTANT)
  hlsInstance.on(Hls.Events.ERROR, (event, data) => {
@@ -65,7 +85,8 @@ export default function CustomVideoPlayer({
 } else {
   console.log("⚠️ HLS NOT SUPPORTED, playing normally:", src);
 
-  video.src = src;
+  video.src = finalSrc;
+
   video.load();
 }
 
