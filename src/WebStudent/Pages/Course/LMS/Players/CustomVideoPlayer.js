@@ -1,22 +1,9 @@
-
-
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import Hls from "hls.js";
 import {
   putLessonProgress,
   getLessonProgress,
 } from "../../../../../utils/ProgressApi";
-console.log("🔥 CF ENV AT BUILD =", process.env.REACT_APP_CLOUDFRONT_DOMAIN);
-/* =====================================================
-   ✅ CRA-safe CloudFront base
-   ===================================================== */
-const RAW_CF = process.env.REACT_APP_CLOUDFRONT_DOMAIN;
-
-const CLOUDFRONT_BASE = RAW_CF
-  ? (RAW_CF.startsWith("http") ? RAW_CF : `https://${RAW_CF}`)
-  : "https://d3gvlfug24vd2e.cloudfront.net";
-
-
 
 export default function CustomVideoPlayer({
   src,
@@ -29,87 +16,71 @@ export default function CustomVideoPlayer({
 }) {
   const videoRef = useRef(null);
   const hlsRef = useRef(null);
-  const wrapperRef = useRef(null);
+  const wrapperRef = useRef(null); // ✅ ADD THIS LINE
 
   const [duration, setDuration] = useState(0);
   const [localPct, setLocalPct] = useState(0);
   const [resumeMsg, setResumeMsg] = useState("");
-
   const watched = useRef(new Set());
   const lastSentPct = useRef(0);
   const debounceTimer = useRef(null);
 
-  /* =====================================================
-     🔥 HLS / MP4 attach (BUG FIXED)
-     ===================================================== */
+  /** ---------------------------------------------
+   *  🔥 HLS OR MP4 AUTO DETECT + ATTACH
+   *  (fully fixed for AWS long filenames)
+   * --------------------------------------------- */
   useEffect(() => {
     const video = videoRef.current;
     if (!video || !src) return;
+ console.log("🎥 [CustomVideoPlayer] src received:", src);
+    let hls;
 
-    console.log("🎥 [CustomVideoPlayer] src received:", src);
+    // ⭐ FIXED HLS DETECTION
+    const isHls = src.includes(".m3u8");
 
-    let finalSrc = src;
+   if (Hls.isSupported() && isHls) {
+  const hlsInstance = new Hls({
+    autoStartLoad: true,
+  });
 
-    // ✅ FIX: correct CloudFront URL building
-    if (!/^https?:\/\//i.test(src)) {
-      if (!CLOUDFRONT_BASE) {
-        console.error("❌ REACT_APP_CLOUDFRONT_DOMAIN missing");
-        return;
-      }
+  hlsInstance.loadSource(src);
+  hlsInstance.attachMedia(video);
 
-      const base = CLOUDFRONT_BASE.replace(/\/$/, "");
-      const cleanSrc = String(src).replace(/^\//, "");
+  hlsRef.current = hlsInstance;
 
-      if (/\.(m3u8|mp4|webm)(\?.*)?$/i.test(cleanSrc)) {
-        finalSrc = `${base}/${cleanSrc}`;
-      } else {
-        finalSrc = `${base}/${cleanSrc}/index.m3u8`;
-      }
-    }
+  console.log("✅ HLS.js ATTACHED to video element");
+  console.log("🎬 HLS Source URL:", src);
 
-    console.log("🎬 FINAL VIDEO URL:", finalSrc);
+  // 🔴 HLS ERROR DEBUG (VERY IMPORTANT)
+ hlsInstance.on(Hls.Events.ERROR, (event, data) => {
+  // Ignore non-fatal buffer seek warnings
+  if (data?.details === "bufferSeekOverHole" && data?.fatal === false) {
+    console.warn("⚠️ HLS buffer hole (safe to ignore)");
+    return;
+  }
 
-    const isHls = finalSrc.includes(".m3u8");
+  console.error("❌ HLS ERROR:", data);
+});
 
-    if (Hls.isSupported() && isHls) {
-      const hls = new Hls({ autoStartLoad: true });
+} else {
+  console.log("⚠️ HLS NOT SUPPORTED, playing normally:", src);
 
-      hls.loadSource(finalSrc);
-      hls.attachMedia(video);
-      hlsRef.current = hls;
+  video.src = src;
+  video.load();
+}
 
-      console.log("✅ HLS.js attached");
-
-      hls.on(Hls.Events.ERROR, (event, data) => {
-        if (data?.details === "bufferSeekOverHole" && data?.fatal === false) {
-          console.warn("⚠️ HLS buffer hole (safe)");
-          return;
-        }
-        console.error("❌ HLS ERROR:", data);
-      });
-    } else {
-      video.src = finalSrc;
-      video.load();
-    }
 
     if (autoPlay) video.play().catch(() => {});
-
     return () => {
-      try {
-        hlsRef.current?.destroy();
-        hlsRef.current = null;
-      } catch {}
+      if (hls) hls.destroy();
     };
   }, [src, autoPlay]);
 
-  /* =====================================================
-     🧠 Resume logic (UNCHANGED)
-     ===================================================== */
+  /* 🧠 Resume from backend (accurate seek) */
   useEffect(() => {
     if (!lessonId) return;
     const v = videoRef.current;
     if (!v) return;
-
     let resumed = false;
     let attempts = 0;
 
@@ -134,56 +105,55 @@ export default function CustomVideoPlayer({
           Math.min(resumeTime - 0.5, (v.duration || 9999) - 1)
         );
 
-        const trySeek = () => {
+        const trySeekAccurate = () => {
           if (resumed) return;
           attempts++;
           if (v.readyState >= 2 && v.duration > 0 && safeResume > 0) {
             v.currentTime = safeResume;
             resumed = true;
-
+            console.log(`🎯 Resumed from ${safeResume.toFixed(2)}s`);
             setResumeMsg(
               `▶️ Resumed from ${Math.floor(safeResume / 60)}:${String(
                 Math.floor(safeResume % 60)
               ).padStart(2, "0")}`
             );
             setTimeout(() => setResumeMsg(""), 2500);
+            setTimeout(() => v.play().catch(() => {}), 200);
           } else if (attempts < 20) {
-            setTimeout(trySeek, 250);
+            setTimeout(trySeekAccurate, 250);
           }
         };
 
-        v.addEventListener("loadedmetadata", trySeek);
-        setTimeout(trySeek, 600);
+        v.addEventListener("loadedmetadata", trySeekAccurate);
+        setTimeout(trySeekAccurate, 600);
       } catch (err) {
-        console.warn("⚠️ getLessonProgress failed", err);
+        console.warn("⚠️ getLessonProgress failed:", err?.message || err);
       }
     };
 
     fetchAndSeek();
   }, [lessonId, src]);
 
-  /* =====================================================
-     📊 Progress tracking (UNCHANGED)
-     ===================================================== */
+  /* detect duration */
   const onLoaded = useCallback(() => {
     const d = Math.floor(videoRef.current?.duration || 0);
     setDuration(d);
   }, []);
 
+  /* 🧮 progress tracking all fix*/
   const handleTimeUpdate = useCallback(() => {
     const v = videoRef.current;
     if (!v) return;
-
     const d = Math.floor(v.duration || 0);
     const t = Math.floor(v.currentTime || 0);
     if (!d) return;
 
     watched.current.add(Math.max(0, Math.min(t, d)));
     const pct = Math.round((watched.current.size / Math.max(d, 1)) * 100);
-
     setLocalPct(pct);
     onProgress?.(pct);
 
+    // store locally
     localStorage.setItem(
       `videoProgress_${lessonId}`,
       JSON.stringify({ current: v.currentTime, duration: d })
@@ -192,10 +162,9 @@ export default function CustomVideoPlayer({
     if (debounceTimer.current) clearTimeout(debounceTimer.current);
     debounceTimer.current = setTimeout(async () => {
       try {
-        if (
-          (pct >= 50 && lastSentPct.current < 50) ||
-          (pct >= 95 && lastSentPct.current < 95)
-        ) {
+        const send50 = pct >= 50 && lastSentPct.current < 50;
+        const send95 = pct >= 95 && lastSentPct.current < 95;
+        if (send50 || send95) {
           await putLessonProgress({
             lessonId,
             courseSlug,
@@ -203,21 +172,36 @@ export default function CustomVideoPlayer({
             duration: d,
             percent: pct,
           });
-          lastSentPct.current = pct >= 95 ? 95 : 50;
+          lastSentPct.current = send95 ? 95 : 50;
+          console.log("✅ Progress updated:", pct);
         }
-      } catch {}
+      } catch (e) {
+        console.warn("⚠️ Progress update failed", e);
+      }
     }, 3000);
   }, [courseSlug, lessonId, onProgress]);
+// ⛶ Fullscreen toggle
+// ⛶ Fullscreen toggle (YouTube style)
+const toggleFullscreen = () => {
+  const wrapper = wrapperRef.current;
+  if (!wrapper) return;
 
+  if (!document.fullscreenElement) {
+    wrapper.requestFullscreen();
+  } else {
+    document.exitFullscreen();
+  }
+};
+
+
+  /* ended → 100% */
   const handleEnded = useCallback(async () => {
     const v = videoRef.current;
     if (!v) return;
-
     const d = Math.floor(v.duration || 0);
     watched.current = new Set(Array.from({ length: d }, (_, i) => i + 1));
     setLocalPct(100);
     onProgress?.(100);
-
     localStorage.removeItem(`videoProgress_${lessonId}`);
 
     try {
@@ -229,27 +213,36 @@ export default function CustomVideoPlayer({
         percent: 100,
         completed: true,
       });
+      lastSentPct.current = 100;
+      console.log("🏁 Completed 100%");
     } catch {}
-
     onEnded?.();
   }, [courseSlug, lessonId, onEnded, onProgress]);
 
-  /* =====================================================
-     🎬 UI (UNCHANGED)
-     ===================================================== */
+  /* cleanup */
+  useEffect(() => {
+    return () => {
+      clearTimeout(debounceTimer.current);
+      try {
+        hlsRef.current?.destroy();
+      } catch {}
+    };
+  }, []);
+
   return (
     <>
-      <div
-        ref={wrapperRef}
-        style={{
-          position: "relative",
-          width: "100%",
-          aspectRatio: "16 / 9",
-          background: "#000",
-          borderRadius: 10,
-          overflow: "hidden",
-        }}
-      >
+     <div
+  ref={wrapperRef}
+  style={{
+    position: "relative",
+    width: "100%",
+    aspectRatio: "16 / 9",
+    background: "#000",
+    borderRadius: 10,
+    overflow: "hidden",
+  }}
+>
+
         <video
           ref={videoRef}
           poster={poster}
@@ -259,6 +252,17 @@ export default function CustomVideoPlayer({
           onLoadedMetadata={onLoaded}
           onTimeUpdate={handleTimeUpdate}
           onEnded={handleEnded}
+         onDoubleClick={() => {
+  const wrapper = wrapperRef.current;
+  if (!wrapper) return;
+
+  if (!document.fullscreenElement) {
+    wrapper.requestFullscreen();
+  } else {
+    document.exitFullscreen();
+  }
+}}
+
           style={{
             width: "100%",
             height: "100%",
@@ -266,13 +270,50 @@ export default function CustomVideoPlayer({
             backgroundColor: "#000",
           }}
         />
+{/* ⛶ Fullscreen Button */}
+<button
+  onClick={toggleFullscreen}
+  style={{
+    position: "absolute",
+    bottom: 12,
+    right: 12,
+    background: "rgba(0,0,0,0.6)",
+    border: "none",
+    color: "#fff",
+    padding: "6px 10px",
+    borderRadius: 6,
+    cursor: "pointer",
+      zIndex: 10,     
+    fontSize: 14,
+  }}
+  title="Fullscreen"
+>
+  ⛶
+</button>
+
+        {resumeMsg && (
+          <div
+            style={{
+              position: "absolute",
+              bottom: 10,
+              left: 10,
+              background: "rgba(0,0,0,0.7)",
+              color: "#fff",
+              padding: "6px 12px",
+              borderRadius: 8,
+              fontSize: 13,
+              animation: "fadeinout 2.5s ease",
+            }}
+          >
+            {resumeMsg}
+          </div>
+        )}
       </div>
 
       <div style={{ fontSize: 12, color: "#777", marginTop: 6 }}>
         {duration > 0 ? (
           <>
-            ⏱ {Math.floor(duration / 60)}m {Math.round(duration % 60)}s • Watched{" "}
-            {localPct}%
+            ⏱ Duration: {Math.floor(duration / 60)}m {Math.round(duration % 60)}s • Watched: {localPct}%
           </>
         ) : (
           <>⏱ Detecting duration...</>
