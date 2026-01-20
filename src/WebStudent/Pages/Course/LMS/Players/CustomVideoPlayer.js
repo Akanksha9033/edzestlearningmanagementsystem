@@ -1,14 +1,19 @@
+
+
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import Hls from "hls.js";
 import {
   putLessonProgress,
   getLessonProgress,
 } from "../../../../../utils/ProgressApi";
-
+console.log("🔥 CF ENV AT BUILD =", process.env.REACT_APP_CLOUDFRONT_DOMAIN);
 /* =====================================================
    ✅ CRA-safe CloudFront base
    ===================================================== */
-const CLOUDFRONT_BASE = (process.env.REACT_APP_CLOUDFRONT_DOMAIN || "").trim();
+const CLOUDFRONT_BASE =
+  (process.env.REACT_APP_CLOUDFRONT_DOMAIN ||
+   "d3gvlfug24vd2e.cloudfront.net").trim();
+
 
 export default function CustomVideoPlayer({
   src,
