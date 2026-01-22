@@ -130,32 +130,25 @@ export default function EnrollButton({
      SAFE ENROLL / UPGRADE HANDLER
   -------------------------------------------------- */
   const enroll = async (source = "free") => {
-    try {
-      setLoading(true);
+  try {
+    setLoading(true);
 
-      await API.post("/api/student/enroll", {
-        productId,
-        productType,
-        title,
+    await API.post("/api/student/enroll/free", {
+      productId,
+      productType,
+      title,
+      thumbnailUrl: thumbnailUrl || null,
+    });
 
-        // ✅ ALWAYS send thumbnail (fixes missing image)
-        thumbnailUrl: thumbnailUrl || null,
+    onEnrolled?.();
+  } catch (err) {
+    console.error(err);
+    alert("Enrollment failed");
+  } finally {
+    setLoading(false);
+  }
+};
 
-        // free | paid
-        accessSource: source,
-
-        // ✅ tells backend: upgrade if already exists
-        upgradeIfExists: true,
-      });
-
-      onEnrolled?.();
-    } catch (err) {
-      console.error(err);
-      alert("Enrollment failed");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   /* -------------------------------------------------
      UI LOGIC
