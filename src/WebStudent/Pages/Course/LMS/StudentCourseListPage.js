@@ -3,6 +3,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 // ✅ centralized axios wrapper
 import API from "../../../../LoginSystem/axios";
+import EnrollButton from "../../../../Shared/EnrollButton";
+import { useAuth } from "../../../../LoginSystem/context/AuthContext";
 
 /* -------------------------------------------------------
    Config
@@ -147,6 +149,12 @@ async function fetchCoursesSmart() {
    Component
 ------------------------------------------------------- */
 export default function StudentCourseListPage() {
+
+    const { ready, user } = useAuth();
+
+  // ✅ enrollment map: courseId -> true
+  const [enrolledMap, setEnrolledMap] = useState({});
+
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
@@ -192,6 +200,32 @@ export default function StudentCourseListPage() {
   }, []);
 
   const totalCourses = useMemo(() => courses.length, [courses]);
+
+    /* ---------------- LOAD ENROLLMENTS (SAFE ADDITION) ---------------- */
+  const fetchEnrollments = async () => {
+    try {
+      const res = await API.get("/api/student/enrollments");
+      const list = res.data?.enrollments || [];
+
+      const map = {};
+      list.forEach((e) => {
+        if (e.productType === "COURSE") {
+          map[e.productId] = true;
+        }
+      });
+
+      setEnrolledMap(map);
+    } catch (err) {
+      console.error("❌ Failed to fetch enrollments", err);
+    }
+  };
+
+  useEffect(() => {
+    if (user) {
+      fetchEnrollments();
+    }
+  }, [user]);
+
 
   return (
     <div className="container mt-5">
@@ -248,11 +282,22 @@ export default function StudentCourseListPage() {
                           (course.price != null ? `₹ ${course.price}` : "Paid")
                         )}
                       </p>
-                      <div className="mt-auto">
-                        <span className="btn btn-outline-primary w-100">
-                          View Course
-                        </span>
-                      </div>
+                     <div className="mt-auto px-2 pb-3">
+  <EnrollButton
+    productId={course._id}
+    productType="COURSE"
+    title={course.title}
+    thumbnailUrl={resolveCourseImage(course)}
+    isPaid={!course.isFree && (course.price || 0) > 0}
+    pricePaise={(course.price || 0) * 100}
+    isEnrolled={enrolledMap[course._id] === true}
+    onEnrolled={fetchEnrollments}
+    onOpen={() =>
+      window.location.href = `/student/course/${course._id}`
+    }
+  />
+</div>
+
                     </div>
                   </div>
                 </Link>

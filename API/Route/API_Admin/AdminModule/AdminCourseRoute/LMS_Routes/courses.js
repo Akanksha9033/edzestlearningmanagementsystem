@@ -4,12 +4,41 @@
 // const router = express.Router();
 // const { v4: uuidv4 } = require("uuid");
 // const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
+// const multer = require("multer");
+// const upload = multer({ storage: multer.memoryStorage() });
 
 // /* ---------------- Resolve models & middleware (no logic change) ---------------- */
-// const COURSES_MODEL_PATH = path.join(__dirname, "..", "..", "models", "Courses.js");
-// const LESSON_MODEL_PATH  = path.join(__dirname, "..", "..", "models", "Lesson.js");
-// const AUTH_MW_PRIMARY    = path.join(__dirname, "..", "..", "middleware", "auth.js");
-// const AUTH_MW_FALLBACK   = path.join(__dirname, "..", "..", "..", "..", "..", "middleware", "auth.js");
+// const COURSES_MODEL_PATH = path.join(
+//   __dirname,
+//   "..",
+//   "..",
+//   "models",
+//   "Courses.js",
+// );
+// const LESSON_MODEL_PATH = path.join(
+//   __dirname,
+//   "..",
+//   "..",
+//   "models",
+//   "Lesson.js",
+// );
+// const AUTH_MW_PRIMARY = path.join(
+//   __dirname,
+//   "..",
+//   "..",
+//   "middleware",
+//   "auth.js",
+// );
+// const AUTH_MW_FALLBACK = path.join(
+//   __dirname,
+//   "..",
+//   "..",
+//   "..",
+//   "..",
+//   "..",
+//   "middleware",
+//   "auth.js",
+// );
 
 // // Courses (required)
 // const Courses = require(COURSES_MODEL_PATH);
@@ -35,10 +64,6 @@
 // /* ---------------- AWS S3 ---------------- */
 // const s3 = new S3Client({
 //   region: process.env.AWS_REGION,
-//   credentials: {
-//     accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-//     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-//   },
 // });
 // const BUCKET = process.env.S3_BUCKET;
 
@@ -48,18 +73,14 @@
 // async function loadCourseByIdOrKey(val) {
 //   if (!val) return null;
 
-//   // 1) try by id
-//   try {
-//     const byId = await Courses.findById(String(val));
-//     if (byId) return byId;
-//   } catch (_) {}
+//   // Try by ID
+//   const byId = await Courses.findById(String(val));
+//   if (byId) return byId;
 
-//   // 2) try slug
+//   // Try by slug (uses DynamoDB GSI)
 //   const slug = String(val).trim().toLowerCase();
-//   try {
-//     const bySlug = await Courses.findOne({ slug });
-//     if (bySlug) return bySlug;
-//   } catch (_) {}
+//   const bySlug = await Courses.findOne({ slug });
+//   if (bySlug) return bySlug;
 
 //   return null;
 // }
@@ -67,7 +88,7 @@
 // async function uploadToS3(base64, contentType, filename) {
 //   const base64Data = Buffer.from(
 //     base64.replace(/^data:[^;]+;base64,/, ""),
-//     "base64"
+//     "base64",
 //   );
 //   const key = `courses/${uuidv4()}-${filename || "course-image"}`;
 //   await s3.send(
@@ -76,7 +97,7 @@
 //       Key: key,
 //       Body: base64Data,
 //       ContentType: contentType || "image/png",
-//     })
+//     }),
 //   );
 //   return `https://${BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
 // }
@@ -91,7 +112,8 @@
 //   let lessons = await Lesson.find({ courseId });
 
 //   // 2: raw _id
-//   if (!lessons?.length) lessons = await Lesson.find({ courseId: courseDoc._id });
+//   if (!lessons?.length)
+//     lessons = await Lesson.find({ courseId: courseDoc._id });
 
 //   // 3: slug in courseSlug / courseKey
 //   if (!lessons?.length && slug) {
@@ -112,7 +134,7 @@
 //         String(l.courseId || "") === courseId ||
 //         String(l.courseId || "") === String(courseDoc._id) ||
 //         String(l.courseSlug || "").toLowerCase() === slug ||
-//         String(l.courseKey || "").toLowerCase() === slug
+//         String(l.courseKey || "").toLowerCase() === slug,
 //     );
 //   }
 //   return lessons || [];
@@ -126,6 +148,10 @@
 //   course.sections = Array.isArray(course.sections) ? course.sections : [];
 
 //   const lessons = await fetchLessonsForCourse(course);
+//   const lessonMap = {};
+//   (lessons || []).forEach((l) => {
+//     lessonMap[String(l._id)] = l;
+//   });
 
 //   const bySection = (lessons || []).reduce((acc, l) => {
 //     const sid = String(l.sectionId || "");
@@ -148,12 +174,15 @@
 //   }, {});
 
 //   for (const s of course.sections) {
-//     s.lessons = bySection[String(s._id)] || [];
+//     s.lessons =
+//       Array.isArray(s.lessons) && s.lessons.length
+//         ? s.lessons.map((id) => lessonMap[String(id)]).filter(Boolean)
+//         : bySection[String(s._id)] || [];
 //   }
 
 //   const sectionIds = new Set(course.sections.map((s) => String(s._id)));
 //   const orphans = (lessons || []).filter(
-//     (l) => l.sectionId && !sectionIds.has(String(l.sectionId))
+//     (l) => l.sectionId && !sectionIds.has(String(l.sectionId)),
 //   );
 //   if (orphans.length) {
 //     const unassignedId = `unassigned-${String(course._id).slice(0, 8)}`;
@@ -176,7 +205,7 @@
 //         createdAt: l.createdAt,
 //         updatedAt: l.updatedAt,
 //         sectionId: String(l.sectionId || ""),
-//       }))
+//       })),
 //     );
 //   }
 
@@ -202,7 +231,8 @@
 // router.get("/debug/:val", async (req, res) => {
 //   try {
 //     const cdoc = await loadCourseByIdOrKey(req.params.val);
-//     if (!cdoc) return res.status(404).json({ ok: false, reason: "course-not-found" });
+//     if (!cdoc)
+//       return res.status(404).json({ ok: false, reason: "course-not-found" });
 //     res.json({
 //       ok: true,
 //       courseId: String(cdoc._id),
@@ -233,30 +263,44 @@
 //       } = req.body;
 
 //       if (!title) return res.status(400).json({ message: "Title is required" });
+
 //       if (price && Number(price) < 0)
 //         return res.status(400).json({ message: "Price cannot be negative" });
 
-//       const slugify = (str) =>
-//         String(str).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)+/g, "");
+//       // Generate slug
+//       const slugify = (text) =>
+//         String(text)
+//           .toLowerCase()
+//           .replace(/[^a-z0-9]+/g, "-")
+//           .replace(/(^-|-$)+/g, "");
+
 //       const slug = slugify(title);
 
+//       // ❗ DynamoDB version of findOne still works same
 //       const existing = await Courses.findOne({ slug });
 //       if (existing) {
-//         return res
-//           .status(400)
-//           .json({ message: `Course "${title}" already exists.` });
+//         return res.status(400).json({
+//           message: `Course "${title}" already exists.`,
+//         });
 //       }
 
+//       // Upload S3 image (if given)
 //       let imageUrl = null;
 //       if (imageBase64) {
-//         imageUrl = await uploadToS3(imageBase64, imageContentType, imageFilename);
+//         imageUrl = await uploadToS3(
+//           imageBase64,
+//           imageContentType,
+//           imageFilename,
+//         );
 //       }
 
+//       // Course payload for DynamoDB
 //       const coursePayload = {
 //         title: title.trim(),
 //         slug,
-//         price: String(isFree) === "true" || isFree === true ? 0 : Number(price || 0),
-//         isFree: String(isFree) === "true" || isFree === true,
+//         price:
+//           isFree === true || String(isFree) === "true" ? 0 : Number(price || 0),
+//         isFree: isFree === true || String(isFree) === "true",
 //         status: status || "unpublished",
 //         createdBy: req.user.id,
 //         instituteId: instituteId || null,
@@ -264,15 +308,19 @@
 //         sections: [],
 //       };
 
+//       // ⭐ SAVE TO DYNAMODB (via Courses class)
 //       const course = new Courses(coursePayload);
 //       await course.save();
 
-//       res.status(201).json({ message: "Course created successfully", course });
+//       return res.status(201).json({
+//         message: "Course created successfully",
+//         course,
+//       });
 //     } catch (err) {
 //       console.error("❌ Course creation error:", err);
-//       res.status(500).json({ message: "Server error" });
+//       return res.status(500).json({ message: "Server error" });
 //     }
-//   }
+//   },
 // );
 
 // /* Full course (hydrate lessons) */
@@ -281,27 +329,47 @@
 //     const { courseId } = req.params;
 
 //     const courseDoc = await Courses.findById(courseId);
-//     if (!courseDoc) return res.status(404).json({ message: "Course not found" });
+//     if (!courseDoc)
+//       return res.status(404).json({ message: "Course not found" });
 
 //     const course = await hydrateLessonsIntoSections(courseId, courseDoc);
 //     return res.json({ course });
 //   } catch (err) {
 //     console.error("❌ Full course fetch error:", err);
-//     return res.status(500).json({ message: "Server error", detail: err.message });
+//     return res
+//       .status(500)
+//       .json({ message: "Server error", detail: err.message });
 //   }
 // });
 
 // /* Fetch by id or slug (hydrate lessons) */
 // router.get("/:courseId", authAccess, async (req, res) => {
 //   try {
-//     const cdoc = await loadCourseByIdOrKey(req.params.courseId);
-//     if (!cdoc) return res.status(404).json({ message: "Course not found" });
+//     const val = req.params.courseId;
 
-//     const course = await hydrateLessonsIntoSections(String(cdoc._id), cdoc);
-//     res.json({ course });
+//     // ⭐ Fetch course by ID or slug (DynamoDB version)
+//     const cdoc = await loadCourseByIdOrKey(val);
+//     if (!cdoc) {
+//       return res.status(404).json({ message: "Course not found" });
+//     }
+
+//     // ⭐ In DynamoDB model, _id is already stored in the item
+//     const courseId = String(cdoc._id);
+
+//     // ⭐ Attach lessons → sections
+//     const course = await hydrateLessonsIntoSections(courseId, cdoc);
+
+//     // 🔴 IMPORTANT: disable cache for student
+//     res.set({
+//       "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+//       Pragma: "no-cache",
+//       Expires: "0",
+//     });
+
+//     return res.json({ course });
 //   } catch (err) {
 //     console.error("❌ Course fetch error:", err);
-//     res.status(500).json({ message: "Server error" });
+//     return res.status(500).json({ message: "Server error" });
 //   }
 // });
 
@@ -311,9 +379,16 @@
 //     const { courseId } = req.params;
 
 //     const courseDoc = await Courses.findById(courseId);
-//     if (!courseDoc) return res.status(404).json({ message: "Course not found" });
+//     if (!courseDoc)
+//       return res.status(404).json({ message: "Course not found" });
 
 //     const course = await hydrateLessonsIntoSections(courseId, courseDoc);
+//     res.set({
+//       "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+//       Pragma: "no-cache",
+//       Expires: "0",
+//     });
+
 //     res.json({ course });
 //   } catch (err) {
 //     console.error("❌ Fallback fetchCourse error:", err);
@@ -322,84 +397,307 @@
 // });
 
 // /* Add Section */
-// router.post("/:courseId/add-section", authAccess, requireRoles(["Admin", "Teacher"]), async (req, res) => {
-//   try {
-//     const { title } = req.body;
-//     if (!title || title.trim() === "")
-//       return res.status(400).json({ message: "Section title is required" });
+// router.post(
+//   "/:courseId/add-section",
+//   authAccess,
+//   requireRoles(["Admin", "Teacher"]),
+//   async (req, res) => {
+//     try {
+//       const { title } = req.body;
+//       if (!title || title.trim() === "")
+//         return res.status(400).json({ message: "Section title is required" });
 
-//     const course = await Courses.findById(req.params.courseId);
-//     if (!course) return res.status(404).json({ message: "Course not found" });
+//       const course = await Courses.findById(req.params.courseId);
+//       if (!course) return res.status(404).json({ message: "Course not found" });
 
-//     const newSection = { _id: uuidv4(), title: title.trim(), lessons: [] };
-//     course.sections.push(newSection);
-//     await course.save();
+//       const newSection = { _id: uuidv4(), title: title.trim(), lessons: [] };
+//       course.sections.push(newSection);
+//       await course.save();
 
-//     res.status(200).json({ message: "Section added", section: newSection });
-//   } catch (err) {
-//     console.error("❌ Add section error:", err);
-//     res.status(500).json({ message: "Server error" });
-//   }
-// });
+//       res.status(200).json({ message: "Section added", section: newSection });
+//     } catch (err) {
+//       console.error("❌ Add section error:", err);
+//       res.status(500).json({ message: "Server error" });
+//     }
+//   },
+// );
 
 // /* Update Section Title */
-// router.put("/:courseId/section/:sectionId", authAccess, requireRoles(["Admin", "Teacher"]), async (req, res) => {
-//   try {
-//     const { title } = req.body;
-//     const course = await Courses.findById(req.params.courseId);
-//     if (!course) return res.status(404).json({ message: "Course not found" });
+// router.put(
+//   "/:courseId/section/:sectionId",
+//   authAccess,
+//   requireRoles(["Admin", "Teacher"]),
+//   async (req, res) => {
+//     try {
+//       const { title } = req.body;
+//       const course = await Courses.findById(req.params.courseId);
+//       if (!course) return res.status(404).json({ message: "Course not found" });
 
-//     const section = course.sections.find((s) => String(s._id) === String(req.params.sectionId));
-//     if (!section) return res.status(404).json({ message: "Section not found" });
+//       const section = course.sections.find(
+//         (s) => String(s._id) === String(req.params.sectionId),
+//       );
+//       if (!section)
+//         return res.status(404).json({ message: "Section not found" });
 
-//     section.title = title.trim();
-//     await course.save();
+//       section.title = title.trim();
+//       await course.save();
 
-//     res.json({ message: "Section updated", section });
-//   } catch (err) {
-//     console.error("❌ Update section error:", err);
-//     res.status(500).json({ message: "Server error" });
-//   }
-// });
+//       res.json({ message: "Section updated", section });
+//     } catch (err) {
+//       console.error("❌ Update section error:", err);
+//       res.status(500).json({ message: "Server error" });
+//     }
+//   },
+// );
 
 // /* Delete Section */
-// router.delete("/:courseId/section/:sectionId", authAccess, requireRoles(["Admin", "Teacher"]), async (req, res) => {
-//   try {
-//     const course = await Courses.findById(req.params.courseId);
-//     if (!course) return res.status(404).json({ message: "Course not found" });
+// router.delete(
+//   "/:courseId/section/:sectionId",
+//   authAccess,
+//   requireRoles(["Admin", "Teacher"]),
+//   async (req, res) => {
+//     try {
+//       const course = await Courses.findById(req.params.courseId);
+//       if (!course) return res.status(404).json({ message: "Course not found" });
 
-//     course.sections = course.sections.filter(
-//       (s) => String(s._id) !== req.params.sectionId
-//     );
-//     await course.save();
+//       course.sections = course.sections.filter(
+//         (s) => String(s._id) !== req.params.sectionId,
+//       );
+//       await course.save();
 
-//     res.json({ message: "Section deleted successfully" });
-//   } catch (err) {
-//     console.error("❌ Delete section error:", err);
-//     res.status(500).json({ message: "Server error" });
-//   }
-// });
+//       res.json({ message: "Section deleted successfully" });
+//     } catch (err) {
+//       console.error("❌ Delete section error:", err);
+//       res.status(500).json({ message: "Server error" });
+//     }
+//   },
+// );
+// /* ===============================
+//    🔀 Reorder SECTIONS in course
+// =============================== */
+// router.patch(
+//   "/:courseId/reorder-sections",
+//   authAccess,
+//   requireRoles(["Admin", "Teacher"]),
+//   async (req, res) => {
+//     try {
+//       const { courseId } = req.params;
+//       const { sections } = req.body;
+
+//       if (!Array.isArray(sections)) {
+//         return res.status(400).json({ message: "sections array required" });
+//       }
+
+//       const course = await Courses.findById(courseId);
+//       if (!course) {
+//         return res.status(404).json({ message: "Course not found" });
+//       }
+
+//       // 🔁 reorder sections by id order
+//       const map = {};
+//       (course.sections || []).forEach((s) => {
+//         map[String(s._id)] = s;
+//       });
+
+//       course.sections = sections.map((id) => map[String(id)]).filter(Boolean);
+
+//       await course.save();
+
+//       res.json({
+//         message: "Section order updated",
+//         sections: course.sections.map((s) => s._id),
+//       });
+//     } catch (err) {
+//       console.error("❌ Section reorder error:", err);
+//       res.status(500).json({ message: "Server error" });
+//     }
+//   },
+// );
+
+// /* ===============================
+//    🔁 Reorder lessons inside section
+// =============================== */
+// router.patch(
+//   "/:courseId/section/:sectionId/reorder-lessons",
+//   authAccess,
+//   requireRoles(["Admin", "Teacher"]),
+//   async (req, res) => {
+//     try {
+//       const { courseId, sectionId } = req.params;
+//       const { lessons } = req.body;
+
+//       if (!Array.isArray(lessons)) {
+//         return res.status(400).json({ message: "lessons array required" });
+//       }
+
+//       const course = await Courses.findById(courseId);
+//       if (!course) {
+//         return res.status(404).json({ message: "Course not found" });
+//       }
+
+//       const section = course.sections.find(
+//         (s) => String(s._id) === String(sectionId),
+//       );
+
+//       if (!section) {
+//         return res.status(404).json({ message: "Section not found" });
+//       }
+
+//       section.lessons = lessons; // ✅ reorder
+
+//       await course.save();
+
+//       res.json({
+//         message: "Lesson order updated",
+//         sectionId,
+//       });
+//     } catch (err) {
+//       console.error("❌ Lesson reorder error:", err);
+//       res.status(500).json({ message: "Server error" });
+//     }
+//   },
+// );
+// /* ===============================
+//    🔀 MOVE LESSON BETWEEN SECTIONS
+// =============================== */
+// router.post(
+//   "/:courseId/move-lesson",
+//   authAccess,
+//   requireRoles(["Admin", "Teacher"]),
+//   async (req, res) => {
+//     try {
+//       const { courseId } = req.params;
+//       const { lessonId, fromSectionId, toSectionId } = req.body;
+
+//       if (!lessonId || !fromSectionId || !toSectionId) {
+//         return res.status(400).json({
+//           message: "lessonId, fromSectionId, toSectionId required",
+//         });
+//       }
+
+//       // 1️⃣ update lesson table (DynamoDB)
+//       if (Lesson && typeof Lesson.findByIdAndUpdate === "function") {
+//         await Lesson.findByIdAndUpdate(lessonId, {
+//           $set: { sectionId: toSectionId },
+//         });
+//       }
+
+//       // 2️⃣ update course.sections (embedded order reference)
+//       const course = await Courses.findById(courseId);
+//       if (!course) {
+//         return res.status(404).json({ message: "Course not found" });
+//       }
+
+//       // remove lesson from old section
+//       const fromSection = course.sections.find(
+//         (s) => String(s._id) === String(fromSectionId),
+//       );
+//       if (fromSection) {
+//         fromSection.lessons = (fromSection.lessons || []).filter(
+//           (id) => String(id) !== String(lessonId),
+//         );
+//       }
+
+//       // add lesson to new section
+//       const toSection = course.sections.find(
+//         (s) => String(s._id) === String(toSectionId),
+//       );
+//       if (toSection) {
+//         toSection.lessons = Array.isArray(toSection.lessons)
+//           ? [...toSection.lessons, lessonId]
+//           : [lessonId];
+//       }
+
+//       await course.save();
+
+//       return res.json({ success: true });
+//     } catch (err) {
+//       console.error("❌ move-lesson error:", err);
+//       return res.status(500).json({
+//         message: "Lesson move failed",
+//         detail: err.message,
+//       });
+//     }
+//   },
+// );
 
 // /* Toggle Publish */
-// router.patch("/:courseId/publish", authAccess, requireRoles(["Admin", "Teacher"]), async (req, res) => {
-//   try {
-//     const course = await Courses.findById(req.params.courseId);
-//     if (!course) return res.status(404).json({ message: "Course not found" });
+// /* Toggle Publish */
+// router.patch(
+//   "/:courseId/publish",
+//   authAccess,
+//   requireRoles(["Admin", "Teacher"]),
+//   async (req, res) => {
+//     try {
+//       const course = await Courses.findById(req.params.courseId);
+//       if (!course) return res.status(404).json({ message: "Course not found" });
 
-//     course.status = course.status === "published" ? "unpublished" : "published";
-//     await course.save();
+//       course.status =
+//         course.status === "published" ? "unpublished" : "published";
+//       await course.save();
 
-//     res.json({ message: "Publish status updated", course });
-//   } catch (err) {
-//     console.error("❌ Publish error:", err);
-//     res.status(500).json({ message: "Server error" });
-//   }
-// });
+//       res.json({ message: "Publish status updated", course });
+//     } catch (err) {
+//       console.error("❌ Publish error:", err);
+//       res.status(500).json({ message: "Server error" });
+//     }
+//   },
+// );
+
+// /* ---------------- Update Course Cover Image (FormData upload) ---------------- */
+// router.patch(
+//   "/:courseId/cover",
+//   authAccess,
+//   requireRoles(["SuperAdmin", "Admin", "Teacher"]),
+//   upload.single("image"),
+//   async (req, res) => {
+//     try {
+//       const { courseId } = req.params;
+//       const file = req.file;
+//       if (!file)
+//         return res.status(400).json({ message: "No image file uploaded" });
+
+//       const course = await Courses.findById(courseId);
+//       if (!course) return res.status(404).json({ message: "Course not found" });
+
+//       const key = `courses/${uuidv4()}-${file.originalname}`;
+//       await s3.send(
+//         new PutObjectCommand({
+//           Bucket: BUCKET,
+//           Key: key,
+//           Body: file.buffer,
+//           ContentType: file.mimetype,
+//         }),
+//       );
+
+//       const imageUrl = `https://${BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
+//       course.image = imageUrl;
+//       await course.save();
+
+//       res.json({
+//         message: "Cover image updated successfully",
+//         course,
+//       });
+//     } catch (err) {
+//       console.error("❌ Cover update error:", err);
+//       res.status(500).json({
+//         message: "Failed to update cover image",
+//         detail: err.message,
+//       });
+//     }
+//   },
+// );
 
 // /* List (admin sees all, student sees published) */
 // router.get("/student-visible-courses", authAccess, async (req, res) => {
 //   try {
 //     const courses = await Courses.find({ status: "published" });
+//     res.set({
+//       "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+//       Pragma: "no-cache",
+//       Expires: "0",
+//     });
+
 //     res.json({ courses });
 //   } catch (err) {
 //     console.error("❌ Fetch published error:", err);
@@ -409,7 +707,7 @@
 
 // router.get("/", authAccess, async (req, res) => {
 //   try {
-//     const role  = String(req.user?.role || "").toLowerCase();
+//     const role = String(req.user?.role || "").toLowerCase();
 //     const query = role === "student" ? { status: "published" } : {};
 
 //     const courseDocs = await Courses.find(query);
@@ -418,9 +716,10 @@
 //       (courseDocs || []).map(async (doc) => {
 //         const c = doc && doc.toObject ? doc.toObject() : doc || {};
 //         c.sections = Array.isArray(c.sections) ? c.sections : [];
-//         for (const s of c.sections) s.lessons = Array.isArray(s.lessons) ? s.lessons : [];
+//         for (const s of c.sections)
+//           s.lessons = Array.isArray(s.lessons) ? s.lessons : [];
 //         return hydrateLessonsIntoSections(String(c._id), c);
-//       })
+//       }),
 //     );
 
 //     res.json({ courses });
@@ -442,10 +741,12 @@
 //       // Load course by id or slug using existing helper
 //       const courseDoc = await loadCourseByIdOrKey(courseId);
 //       if (!courseDoc) {
-//         return res.status(404).json({ success: false, message: "Course not found" });
+//         return res
+//           .status(404)
+//           .json({ success: false, message: "Course not found" });
 //       }
 
-//       const cid  = String(courseDoc._id);
+//       const cid = String(courseDoc._id);
 //       const slug = String(courseDoc.slug || "").toLowerCase();
 
 //       // 1) Try to delete lessons if a separate Lesson collection exists
@@ -479,12 +780,21 @@
 //       // 3) Delete the course itself
 //       await Courses.findByIdAndDelete(cid);
 
-//       return res.json({ success: true, message: "Course and related data deleted" });
+//       return res.json({
+//         success: true,
+//         message: "Course and related data deleted",
+//       });
 //     } catch (err) {
 //       console.error("❌ Delete course error:", err);
-//       return res.status(500).json({ success: false, message: "Server error", detail: err?.message });
+//       return res
+//         .status(500)
+//         .json({
+//           success: false,
+//           message: "Server error",
+//           detail: err?.message,
+//         });
 //     }
-//   }
+//   },
 // );
 
 // module.exports = router;
@@ -494,16 +804,45 @@ const path = require("path");
 const express = require("express");
 const router = express.Router();
 const { v4: uuidv4 } = require("uuid");
+const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
+const { DynamoDBDocumentClient, PutCommand } = require("@aws-sdk/lib-dynamodb");
+
 const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
 const multer = require("multer");
 const upload = multer({ storage: multer.memoryStorage() });
 
-
 /* ---------------- Resolve models & middleware (no logic change) ---------------- */
-const COURSES_MODEL_PATH = path.join(__dirname, "..", "..", "models", "Courses.js");
-const LESSON_MODEL_PATH  = path.join(__dirname, "..", "..", "models", "Lesson.js");
-const AUTH_MW_PRIMARY    = path.join(__dirname, "..", "..", "middleware", "auth.js");
-const AUTH_MW_FALLBACK   = path.join(__dirname, "..", "..", "..", "..", "..", "middleware", "auth.js");
+const COURSES_MODEL_PATH = path.join(
+  __dirname,
+  "..",
+  "..",
+  "models",
+  "Courses.js",
+);
+const LESSON_MODEL_PATH = path.join(
+  __dirname,
+  "..",
+  "..",
+  "models",
+  "Lesson.js",
+);
+const AUTH_MW_PRIMARY = path.join(
+  __dirname,
+  "..",
+  "..",
+  "middleware",
+  "auth.js",
+);
+const AUTH_MW_FALLBACK = path.join(
+  __dirname,
+  "..",
+  "..",
+  "..",
+  "..",
+  "..",
+  "middleware",
+  "auth.js",
+);
 
 // Courses (required)
 const Courses = require(COURSES_MODEL_PATH);
@@ -529,8 +868,14 @@ const { authAccess, requireRoles } = authMod;
 /* ---------------- AWS S3 ---------------- */
 const s3 = new S3Client({
   region: process.env.AWS_REGION,
-  
 });
+
+const ddbClient = new DynamoDBClient({
+  region: process.env.AWS_REGION,
+});
+
+const ddb = DynamoDBDocumentClient.from(ddbClient);
+
 const BUCKET = process.env.S3_BUCKET;
 
 /* ---------------- Helpers (unchanged logic) ---------------- */
@@ -551,11 +896,10 @@ async function loadCourseByIdOrKey(val) {
   return null;
 }
 
-
 async function uploadToS3(base64, contentType, filename) {
   const base64Data = Buffer.from(
     base64.replace(/^data:[^;]+;base64,/, ""),
-    "base64"
+    "base64",
   );
   const key = `courses/${uuidv4()}-${filename || "course-image"}`;
   await s3.send(
@@ -564,7 +908,7 @@ async function uploadToS3(base64, contentType, filename) {
       Key: key,
       Body: base64Data,
       ContentType: contentType || "image/png",
-    })
+    }),
   );
   return `https://${BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
 }
@@ -579,7 +923,8 @@ async function fetchLessonsForCourse(courseDoc) {
   let lessons = await Lesson.find({ courseId });
 
   // 2: raw _id
-  if (!lessons?.length) lessons = await Lesson.find({ courseId: courseDoc._id });
+  if (!lessons?.length)
+    lessons = await Lesson.find({ courseId: courseDoc._id });
 
   // 3: slug in courseSlug / courseKey
   if (!lessons?.length && slug) {
@@ -600,7 +945,7 @@ async function fetchLessonsForCourse(courseDoc) {
         String(l.courseId || "") === courseId ||
         String(l.courseId || "") === String(courseDoc._id) ||
         String(l.courseSlug || "").toLowerCase() === slug ||
-        String(l.courseKey || "").toLowerCase() === slug
+        String(l.courseKey || "").toLowerCase() === slug,
     );
   }
   return lessons || [];
@@ -615,10 +960,9 @@ async function hydrateLessonsIntoSections(_courseId, courseDoc) {
 
   const lessons = await fetchLessonsForCourse(course);
   const lessonMap = {};
-(lessons || []).forEach((l) => {
-  lessonMap[String(l._id)] = l;
-});
-
+  (lessons || []).forEach((l) => {
+    lessonMap[String(l._id)] = l;
+  });
 
   const bySection = (lessons || []).reduce((acc, l) => {
     const sid = String(l.sectionId || "");
@@ -641,16 +985,15 @@ async function hydrateLessonsIntoSections(_courseId, courseDoc) {
   }, {});
 
   for (const s of course.sections) {
-  s.lessons =
-    Array.isArray(s.lessons) && s.lessons.length
-      ? s.lessons.map(id => lessonMap[String(id)]).filter(Boolean)
-      : bySection[String(s._id)] || [];
-}
-
+    s.lessons =
+      Array.isArray(s.lessons) && s.lessons.length
+        ? s.lessons.map((id) => lessonMap[String(id)]).filter(Boolean)
+        : bySection[String(s._id)] || [];
+  }
 
   const sectionIds = new Set(course.sections.map((s) => String(s._id)));
   const orphans = (lessons || []).filter(
-    (l) => l.sectionId && !sectionIds.has(String(l.sectionId))
+    (l) => l.sectionId && !sectionIds.has(String(l.sectionId)),
   );
   if (orphans.length) {
     const unassignedId = `unassigned-${String(course._id).slice(0, 8)}`;
@@ -673,7 +1016,7 @@ async function hydrateLessonsIntoSections(_courseId, courseDoc) {
         createdAt: l.createdAt,
         updatedAt: l.updatedAt,
         sectionId: String(l.sectionId || ""),
-      }))
+      })),
     );
   }
 
@@ -699,7 +1042,8 @@ router.get("/noauth/:val", async (req, res) => {
 router.get("/debug/:val", async (req, res) => {
   try {
     const cdoc = await loadCourseByIdOrKey(req.params.val);
-    if (!cdoc) return res.status(404).json({ ok: false, reason: "course-not-found" });
+    if (!cdoc)
+      return res.status(404).json({ ok: false, reason: "course-not-found" });
     res.json({
       ok: true,
       courseId: String(cdoc._id),
@@ -729,8 +1073,7 @@ router.post(
         imageFilename,
       } = req.body;
 
-      if (!title)
-        return res.status(400).json({ message: "Title is required" });
+      if (!title) return res.status(400).json({ message: "Title is required" });
 
       if (price && Number(price) < 0)
         return res.status(400).json({ message: "Price cannot be negative" });
@@ -758,7 +1101,7 @@ router.post(
         imageUrl = await uploadToS3(
           imageBase64,
           imageContentType,
-          imageFilename
+          imageFilename,
         );
       }
 
@@ -767,9 +1110,7 @@ router.post(
         title: title.trim(),
         slug,
         price:
-          isFree === true || String(isFree) === "true"
-            ? 0
-            : Number(price || 0),
+          isFree === true || String(isFree) === "true" ? 0 : Number(price || 0),
         isFree: isFree === true || String(isFree) === "true",
         status: status || "unpublished",
         createdBy: req.user.id,
@@ -781,6 +1122,23 @@ router.post(
       // ⭐ SAVE TO DYNAMODB (via Courses class)
       const course = new Courses(coursePayload);
       await course.save();
+// 🔥 CREATE COURSE MASTER ITEM IN edzest_lms (FOR ASSIGN PRODUCT)
+await ddb.send(
+  new PutCommand({
+    TableName: "edzest_lms",
+    Item: {
+      pk: `COURSE#${course._id}`,
+      sk: "META",
+      type: "COURSE",
+      title: course.title,
+      status: course.status === "published" ? "PUBLISHED" : "DRAFT",
+      price: course.price || 0,
+      isFree: course.isFree || false,
+      instituteId: course.instituteId || null,
+      createdAt: new Date().toISOString(),
+    },
+  })
+);
 
       return res.status(201).json({
         message: "Course created successfully",
@@ -790,9 +1148,8 @@ router.post(
       console.error("❌ Course creation error:", err);
       return res.status(500).json({ message: "Server error" });
     }
-  }
+  },
 );
-
 
 /* Full course (hydrate lessons) */
 router.get("/:courseId/full", authAccess, async (req, res) => {
@@ -800,13 +1157,16 @@ router.get("/:courseId/full", authAccess, async (req, res) => {
     const { courseId } = req.params;
 
     const courseDoc = await Courses.findById(courseId);
-    if (!courseDoc) return res.status(404).json({ message: "Course not found" });
+    if (!courseDoc)
+      return res.status(404).json({ message: "Course not found" });
 
     const course = await hydrateLessonsIntoSections(courseId, courseDoc);
     return res.json({ course });
   } catch (err) {
     console.error("❌ Full course fetch error:", err);
-    return res.status(500).json({ message: "Server error", detail: err.message });
+    return res
+      .status(500)
+      .json({ message: "Server error", detail: err.message });
   }
 });
 
@@ -827,21 +1187,19 @@ router.get("/:courseId", authAccess, async (req, res) => {
     // ⭐ Attach lessons → sections
     const course = await hydrateLessonsIntoSections(courseId, cdoc);
 
-// 🔴 IMPORTANT: disable cache for student
-res.set({
-  "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
-  Pragma: "no-cache",
-  Expires: "0",
-});
+    // 🔴 IMPORTANT: disable cache for student
+    res.set({
+      "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+      Pragma: "no-cache",
+      Expires: "0",
+    });
 
-return res.json({ course });
-
+    return res.json({ course });
   } catch (err) {
     console.error("❌ Course fetch error:", err);
     return res.status(500).json({ message: "Server error" });
   }
 });
-
 
 /* Explicit fallback (hydrate lessons) */
 router.get("/fetchCourse/by/:courseId", authAccess, async (req, res) => {
@@ -849,17 +1207,17 @@ router.get("/fetchCourse/by/:courseId", authAccess, async (req, res) => {
     const { courseId } = req.params;
 
     const courseDoc = await Courses.findById(courseId);
-    if (!courseDoc) return res.status(404).json({ message: "Course not found" });
+    if (!courseDoc)
+      return res.status(404).json({ message: "Course not found" });
 
     const course = await hydrateLessonsIntoSections(courseId, courseDoc);
     res.set({
-  "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
-  Pragma: "no-cache",
-  Expires: "0",
-});
+      "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+      Pragma: "no-cache",
+      Expires: "0",
+    });
 
-res.json({ course });
-
+    res.json({ course });
   } catch (err) {
     console.error("❌ Fallback fetchCourse error:", err);
     res.status(500).json({ message: "Server error", detail: err.message });
@@ -867,63 +1225,81 @@ res.json({ course });
 });
 
 /* Add Section */
-router.post("/:courseId/add-section", authAccess, requireRoles(["Admin", "Teacher"]), async (req, res) => {
-  try {
-    const { title } = req.body;
-    if (!title || title.trim() === "")
-      return res.status(400).json({ message: "Section title is required" });
+router.post(
+  "/:courseId/add-section",
+  authAccess,
+  requireRoles(["Admin", "Teacher"]),
+  async (req, res) => {
+    try {
+      const { title } = req.body;
+      if (!title || title.trim() === "")
+        return res.status(400).json({ message: "Section title is required" });
 
-    const course = await Courses.findById(req.params.courseId);
-    if (!course) return res.status(404).json({ message: "Course not found" });
+      const course = await Courses.findById(req.params.courseId);
+      if (!course) return res.status(404).json({ message: "Course not found" });
 
-    const newSection = { _id: uuidv4(), title: title.trim(), lessons: [] };
-    course.sections.push(newSection);
-    await course.save();
+      const newSection = { _id: uuidv4(), title: title.trim(), lessons: [] };
+      course.sections.push(newSection);
+      await course.save();
 
-    res.status(200).json({ message: "Section added", section: newSection });
-  } catch (err) {
-    console.error("❌ Add section error:", err);
-    res.status(500).json({ message: "Server error" });
-  }
-});
+      res.status(200).json({ message: "Section added", section: newSection });
+    } catch (err) {
+      console.error("❌ Add section error:", err);
+      res.status(500).json({ message: "Server error" });
+    }
+  },
+);
 
 /* Update Section Title */
-router.put("/:courseId/section/:sectionId", authAccess, requireRoles(["Admin", "Teacher"]), async (req, res) => {
-  try {
-    const { title } = req.body;
-    const course = await Courses.findById(req.params.courseId);
-    if (!course) return res.status(404).json({ message: "Course not found" });
+router.put(
+  "/:courseId/section/:sectionId",
+  authAccess,
+  requireRoles(["Admin", "Teacher"]),
+  async (req, res) => {
+    try {
+      const { title } = req.body;
+      const course = await Courses.findById(req.params.courseId);
+      if (!course) return res.status(404).json({ message: "Course not found" });
 
-    const section = course.sections.find((s) => String(s._id) === String(req.params.sectionId));
-    if (!section) return res.status(404).json({ message: "Section not found" });
+      const section = course.sections.find(
+        (s) => String(s._id) === String(req.params.sectionId),
+      );
+      if (!section)
+        return res.status(404).json({ message: "Section not found" });
 
-    section.title = title.trim();
-    await course.save();
+      section.title = title.trim();
+      await course.save();
 
-    res.json({ message: "Section updated", section });
-  } catch (err) {
-    console.error("❌ Update section error:", err);
-    res.status(500).json({ message: "Server error" });
-  }
-});
+      res.json({ message: "Section updated", section });
+    } catch (err) {
+      console.error("❌ Update section error:", err);
+      res.status(500).json({ message: "Server error" });
+    }
+  },
+);
 
 /* Delete Section */
-router.delete("/:courseId/section/:sectionId", authAccess, requireRoles(["Admin", "Teacher"]), async (req, res) => {
-  try {
-    const course = await Courses.findById(req.params.courseId);
-    if (!course) return res.status(404).json({ message: "Course not found" });
+router.delete(
+  "/:courseId/section/:sectionId",
+  authAccess,
+  requireRoles(["Admin", "Teacher"]),
+  async (req, res) => {
+    try {
+      const course = await Courses.findById(req.params.courseId);
+      if (!course) return res.status(404).json({ message: "Course not found" });
 
-    course.sections = course.sections.filter(
-      (s) => String(s._id) !== req.params.sectionId
-    );
-    await course.save();
+      course.sections = course.sections.filter(
+        (s) => String(s._id) !== req.params.sectionId,
+      );
+      await course.save();
 
-    res.json({ message: "Section deleted successfully" });
-  } catch (err) {
-    console.error("❌ Delete section error:", err);
-    res.status(500).json({ message: "Server error" });
-  }
-});
+      res.json({ message: "Section deleted successfully" });
+    } catch (err) {
+      console.error("❌ Delete section error:", err);
+      res.status(500).json({ message: "Server error" });
+    }
+  },
+);
 /* ===============================
    🔀 Reorder SECTIONS in course
 =============================== */
@@ -937,9 +1313,7 @@ router.patch(
       const { sections } = req.body;
 
       if (!Array.isArray(sections)) {
-        return res
-          .status(400)
-          .json({ message: "sections array required" });
+        return res.status(400).json({ message: "sections array required" });
       }
 
       const course = await Courses.findById(courseId);
@@ -953,9 +1327,7 @@ router.patch(
         map[String(s._id)] = s;
       });
 
-      course.sections = sections
-        .map((id) => map[String(id)])
-        .filter(Boolean);
+      course.sections = sections.map((id) => map[String(id)]).filter(Boolean);
 
       await course.save();
 
@@ -967,7 +1339,7 @@ router.patch(
       console.error("❌ Section reorder error:", err);
       res.status(500).json({ message: "Server error" });
     }
-  }
+  },
 );
 
 /* ===============================
@@ -992,7 +1364,7 @@ router.patch(
       }
 
       const section = course.sections.find(
-        (s) => String(s._id) === String(sectionId)
+        (s) => String(s._id) === String(sectionId),
       );
 
       if (!section) {
@@ -1011,7 +1383,7 @@ router.patch(
       console.error("❌ Lesson reorder error:", err);
       res.status(500).json({ message: "Server error" });
     }
-  }
+  },
 );
 /* ===============================
    🔀 MOVE LESSON BETWEEN SECTIONS
@@ -1046,17 +1418,17 @@ router.post(
 
       // remove lesson from old section
       const fromSection = course.sections.find(
-        (s) => String(s._id) === String(fromSectionId)
+        (s) => String(s._id) === String(fromSectionId),
       );
       if (fromSection) {
         fromSection.lessons = (fromSection.lessons || []).filter(
-          (id) => String(id) !== String(lessonId)
+          (id) => String(id) !== String(lessonId),
         );
       }
 
       // add lesson to new section
       const toSection = course.sections.find(
-        (s) => String(s._id) === String(toSectionId)
+        (s) => String(s._id) === String(toSectionId),
       );
       if (toSection) {
         toSection.lessons = Array.isArray(toSection.lessons)
@@ -1074,26 +1446,31 @@ router.post(
         detail: err.message,
       });
     }
-  }
+  },
 );
 
-
 /* Toggle Publish */
 /* Toggle Publish */
-router.patch("/:courseId/publish", authAccess, requireRoles(["Admin", "Teacher"]), async (req, res) => {
-  try {
-    const course = await Courses.findById(req.params.courseId);
-    if (!course) return res.status(404).json({ message: "Course not found" });
+router.patch(
+  "/:courseId/publish",
+  authAccess,
+  requireRoles(["Admin", "Teacher"]),
+  async (req, res) => {
+    try {
+      const course = await Courses.findById(req.params.courseId);
+      if (!course) return res.status(404).json({ message: "Course not found" });
 
-    course.status = course.status === "published" ? "unpublished" : "published";
-    await course.save();
+      course.status =
+        course.status === "published" ? "unpublished" : "published";
+      await course.save();
 
-    res.json({ message: "Publish status updated", course });
-  } catch (err) {
-    console.error("❌ Publish error:", err);
-    res.status(500).json({ message: "Server error" });
-  }
-});
+      res.json({ message: "Publish status updated", course });
+    } catch (err) {
+      console.error("❌ Publish error:", err);
+      res.status(500).json({ message: "Server error" });
+    }
+  },
+);
 
 /* ---------------- Update Course Cover Image (FormData upload) ---------------- */
 router.patch(
@@ -1105,7 +1482,8 @@ router.patch(
     try {
       const { courseId } = req.params;
       const file = req.file;
-      if (!file) return res.status(400).json({ message: "No image file uploaded" });
+      if (!file)
+        return res.status(400).json({ message: "No image file uploaded" });
 
       const course = await Courses.findById(courseId);
       if (!course) return res.status(404).json({ message: "Course not found" });
@@ -1117,7 +1495,7 @@ router.patch(
           Key: key,
           Body: file.buffer,
           ContentType: file.mimetype,
-        })
+        }),
       );
 
       const imageUrl = `https://${BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
@@ -1135,22 +1513,20 @@ router.patch(
         detail: err.message,
       });
     }
-  }
+  },
 );
-
 
 /* List (admin sees all, student sees published) */
 router.get("/student-visible-courses", authAccess, async (req, res) => {
   try {
     const courses = await Courses.find({ status: "published" });
-  res.set({
-  "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
-  Pragma: "no-cache",
-  Expires: "0",
-});
+    res.set({
+      "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+      Pragma: "no-cache",
+      Expires: "0",
+    });
 
-res.json({ courses });
-
+    res.json({ courses });
   } catch (err) {
     console.error("❌ Fetch published error:", err);
     res.status(500).json({ message: "Server error" });
@@ -1159,7 +1535,7 @@ res.json({ courses });
 
 router.get("/", authAccess, async (req, res) => {
   try {
-    const role  = String(req.user?.role || "").toLowerCase();
+    const role = String(req.user?.role || "").toLowerCase();
     const query = role === "student" ? { status: "published" } : {};
 
     const courseDocs = await Courses.find(query);
@@ -1168,9 +1544,10 @@ router.get("/", authAccess, async (req, res) => {
       (courseDocs || []).map(async (doc) => {
         const c = doc && doc.toObject ? doc.toObject() : doc || {};
         c.sections = Array.isArray(c.sections) ? c.sections : [];
-        for (const s of c.sections) s.lessons = Array.isArray(s.lessons) ? s.lessons : [];
+        for (const s of c.sections)
+          s.lessons = Array.isArray(s.lessons) ? s.lessons : [];
         return hydrateLessonsIntoSections(String(c._id), c);
-      })
+      }),
     );
 
     res.json({ courses });
@@ -1192,10 +1569,12 @@ router.delete(
       // Load course by id or slug using existing helper
       const courseDoc = await loadCourseByIdOrKey(courseId);
       if (!courseDoc) {
-        return res.status(404).json({ success: false, message: "Course not found" });
+        return res
+          .status(404)
+          .json({ success: false, message: "Course not found" });
       }
 
-      const cid  = String(courseDoc._id);
+      const cid = String(courseDoc._id);
       const slug = String(courseDoc.slug || "").toLowerCase();
 
       // 1) Try to delete lessons if a separate Lesson collection exists
@@ -1229,14 +1608,21 @@ router.delete(
       // 3) Delete the course itself
       await Courses.findByIdAndDelete(cid);
 
-      return res.json({ success: true, message: "Course and related data deleted" });
+      return res.json({
+        success: true,
+        message: "Course and related data deleted",
+      });
     } catch (err) {
       console.error("❌ Delete course error:", err);
-      return res.status(500).json({ success: false, message: "Server error", detail: err?.message });
+      return res
+        .status(500)
+        .json({
+          success: false,
+          message: "Server error",
+          detail: err?.message,
+        });
     }
-  }
+  },
 );
 
 module.exports = router;
-
-

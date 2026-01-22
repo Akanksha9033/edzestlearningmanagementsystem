@@ -210,8 +210,10 @@ app.use("/api", adminAddProductRoute);
 
 
 
-const adminProductsCatalogRoute = require("./Route/API_Admin/AdminAssignableProductsCatalogRoute");
-app.use("/api", adminProductsCatalogRoute);
+// const adminProductsCatalogRoute = require("./Route/API_Admin/AdminAssignableProductsCatalogRoute");
+// app.use("/api", adminProductsCatalogRoute);
+
+const getAllPublishedProducts = require("./Route/API_Admin/getAllPublishedProducts"); app.use(getAllPublishedProducts);
 
 const studentEnrollmentsRoute =
   require("./Route/API_Student/StudentEnrollmentsRoute");
